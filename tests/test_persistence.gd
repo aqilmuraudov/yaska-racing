@@ -97,7 +97,7 @@ func test_invalid_types_fall_back_to_defaults() -> void:
 	d.currency = 50
 	SafeFile.write_json(TEST_PROFILE, d)
 	SaveManager.load_profile()
-	check_eq(SaveManager.data.selected_kart, "balanced", "bad field replaced by default")
+	check_eq(SaveManager.get_selected_kart(), RacerRoster.DEFAULT_ID, "bad field replaced by default")
 	check_eq(int(SaveManager.data.currency), 50, "valid fields kept")
 
 

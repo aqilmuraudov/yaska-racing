@@ -20,7 +20,6 @@ const START_PERFECT_WINDOW := 0.25
 const FINISH_WINDOW := 18.0
 const SAFE_MARK_INTERVAL := 0.25
 const CONTACT_DIST := 1.75
-const AI_KARTS := ["balanced", "agile", "fast"]
 
 
 class Racer:
@@ -145,25 +144,24 @@ func _spawn_racers(seed_value: int) -> void:
 	var total := ai_count + 1
 	var player_slot := mini(3, total - 1) if total > 1 else 0
 	var density: float = Settings.get_value("graphics", "effects_density", 1.0)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value
+	var player_racer: String = config.kart_id if RacerRoster.is_valid(String(config.kart_id)) else RacerRoster.DEFAULT_ID
+	var ai_racers := RacerRoster.opponents(player_racer, ai_count, seed_value)
 	var ai_index := 0
 	for slot in total:
 		var r := Racer.new()
 		r.index = slot
 		r.is_player = slot == player_slot
-		var kart_id: String
-		var paint: int
+		var racer_id: String
 		if r.is_player:
-			kart_id = config.kart_id
-			paint = int(config.paint)
-			r.name = tr("RESULTS_YOU")
+			racer_id = player_racer
 		else:
+			racer_id = ai_racers[ai_index]
 			ai_index += 1
-			kart_id = AI_KARTS[(ai_index + rng.randi_range(0, 2)) % AI_KARTS.size()]
-			paint = (ai_index + 1) % 4
-			r.name = tr("RACER_NAME_%d" % ai_index)
-		var kart := KartFactory.create(kart_id, paint, r.is_player, density if r.is_player else density * 0.7)
+		var def := RacerRoster.get_def(racer_id)
+		r.name = def.display_name
+		if r.is_player:
+			r.name = "%s %s" % [def.display_name, tr("RACER_YOU_SUFFIX")]
+		var kart := KartFactory.create(racer_id, r.is_player, density if r.is_player else density * 0.7)
 		kart.racer_index = slot
 		kart.display_name = r.name
 		kart.name = "Kart_%d" % slot
@@ -209,6 +207,15 @@ func _spawn_racers(seed_value: int) -> void:
 			r.ai.set_catchup_reference(player.tracker)
 			r.ai.catchup_enabled = config.mode != "time_trial"
 	_reset_racers()
+	if bool(config.get("balance_test", false)):
+		# Balance runs: identical AI skill for everyone, no catch-up, so only
+		# each racer's handling differs.
+		for r in racers:
+			r.ai.autopilot = true
+			r.ai.catchup_enabled = false
+			r.ai.set_physics_process(true)
+			if r.player_input:
+				r.player_input.enabled = false
 
 
 func grid_transform(slot: int) -> Transform3D:
@@ -242,7 +249,7 @@ func _reset_racers() -> void:
 		if r.is_player:
 			r.ai.set_physics_process(bool(config.get("debug_autopilot", false)))
 			r.ai.autopilot = true
-		r.kart.speed_scale = 1.0 if r.is_player else float(r.ai.profile.speed_factor)
+		r.kart.speed_scale = 1.0 if (r.is_player or bool(config.get("balance_test", false))) else float(r.ai.profile.speed_factor)
 
 
 # --- Lifecycle ----------------------------------------------------------------
@@ -367,6 +374,8 @@ func _tick_racers(delta: float) -> void:
 		var pos := k.global_position
 		var events := r.tracker.update(r.prev_pos, pos, race_time, k.velocity, delta)
 		r.prev_pos = pos
+		var rt := track.route_tangent(pos, {"s": r.tracker.s, "on_shortcut": r.tracker.on_shortcut})
+		k.route_forward = Vector3(rt.x, 0.0, rt.z).normalized()
 		for e in events:
 			_handle_event(r, e)
 		# Items

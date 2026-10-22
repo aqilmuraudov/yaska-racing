@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RacerDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/racer_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "havhav"
+display_name = "HavHav"
+kart_name = "Buddy Rally"
+species = "dog"
+kart_style = "buddy"
+personality_key = "PERS_HAVHAV"
+specialty_key = "SPEC_HAVHAV"
+accent = Color(0.184, 0.455, 0.788, 1)
+kart_primary = Color(0.184, 0.455, 0.788, 1)
+kart_secondary = Color(1.000, 0.788, 0.235, 1)
+kart_trim = Color(0.106, 0.165, 0.290, 1)
+fur_main = Color(0.659, 0.416, 0.235, 1)
+fur_light = Color(0.957, 0.875, 0.749, 1)
+fur_dark = Color(0.353, 0.204, 0.125, 1)
+detail = Color(0.878, 0.204, 0.294, 1)
+top_speed = 7
+acceleration = 7
+handling = 7
+drift = 7
+boost = 7

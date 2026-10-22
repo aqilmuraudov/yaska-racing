@@ -19,7 +19,7 @@ func _init() -> void:
 
 
 func build() -> void:
-	stage.show_kart(Game.race_config.kart_id, int(Game.race_config.paint))
+	stage.show_racer(String(Game.race_config.kart_id))
 	stage.set_camera_offset(2.6)
 	var mode: String = Game.race_config.mode
 	var row := HBoxContainer.new()

@@ -21,6 +21,8 @@ var flame_mat: StandardMaterial3D
 var shield: MeshInstance3D
 var shield_mat: ShaderMaterial
 var _flame_t := 0.0
+var landing_puff: CPUParticles3D
+var boost_burst: CPUParticles3D
 
 
 func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void:
@@ -74,6 +76,36 @@ func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void
 		f.visible = false
 		add_child(f)
 		flames.append(f)
+	# One-shot landing dust and boost burst (readable feedback, pooled per kart).
+	landing_puff = _particles(dot, 16, 0.6, Color("e6d3ad"), 0.5, 1.1)
+	landing_puff.one_shot = true
+	landing_puff.explosiveness = 1.0
+	landing_puff.position = Vector3(0, 0.1, 0.2)
+	landing_puff.direction = Vector3(0, 0.3, 0)
+	landing_puff.spread = 180.0
+	landing_puff.flatness = 0.8
+	landing_puff.initial_velocity_min = 2.5
+	landing_puff.initial_velocity_max = 4.5
+	landing_puff.gravity = Vector3(0, -1.0, 0)
+	boost_burst = _spark_particles()
+	boost_burst.one_shot = true
+	boost_burst.explosiveness = 0.9
+	boost_burst.amount = maxi(6, int(24 * density))
+	boost_burst.lifetime = 0.45
+	boost_burst.position = Vector3(0, 0.6, 1.1)
+	boost_burst.direction = Vector3(0, 0.2, 1)
+	boost_burst.spread = 55.0
+	boost_burst.initial_velocity_min = 5.0
+	boost_burst.initial_velocity_max = 9.0
+	boost_burst.scale_amount_min = 1.6
+	boost_burst.scale_amount_max = 2.4
+	kart.landed.connect(func(t):
+		if t > 0.35 and density > 0.05:
+			landing_puff.restart())
+	kart.boost_started.connect(func(src):
+		if density > 0.05:
+			boost_burst.color = BOOST_COLORS.get(src, Color("ffb21f"))
+			boost_burst.restart())
 	shield = MeshInstance3D.new()
 	shield.mesh = ShapeKit.sphere(1.0, 24, 14)
 	shield_mat = ShaderMaterial.new()

@@ -85,7 +85,7 @@ func test_simulation_independent_of_render_frames() -> void:
 		cs.position = Vector3(0, -0.5, 0)
 		floor_body.add_child(cs)
 		world.add_child(floor_body)
-		var kart := KartFactory.create("balanced", 0, false, 0.0)
+		var kart := KartFactory.create("havhav", false, 0.0)
 		world.add_child(kart)
 		kart.place_at(Transform3D(Basis.IDENTITY, Vector3(0, 0.05, 0)))
 		kart.controls_locked = false

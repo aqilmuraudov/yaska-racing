@@ -5,8 +5,8 @@ extends Camera3D
 ## Features: speed FOV, restrained drift framing, boost kick, look-back,
 ## wall avoidance, respawn smoothing and accessibility-scaled shake.
 
-const DISTANCES := [4.6, 5.6, 6.8]
-const HEIGHTS := [1.9, 2.25, 2.7]
+const DISTANCES := [4.2, 5.0, 6.2]
+const HEIGHTS := [1.8, 2.05, 2.5]
 
 var target: KartController
 var base_fov := 68.0

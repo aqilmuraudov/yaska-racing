@@ -223,3 +223,23 @@ CAP_LANDING,[Landing boost],[Eniş sürəti]
 CAP_WALL,[Crash into barrier],[Maneəyə çırpılma]
 CAP_TRAP_DROP,[Trap dropped behind],[Arxaya tələ atıldı]
 CAP_START,[Start boost],[Start sürəti]
+PERS_POSI,"Friendly, cheerful and reassuring.","Mehriban, şən və arxayın."
+SPEC_POSI,Excellent acceleration and quick recovery after slowing down.,Əla sürətlənmə və yavaşıdıqdan sonra cəld bərpa.
+PERS_BICOK,"Clever, mischievous and confident.","Ağıllı, dəcəl və özünəinamlı."
+SPEC_BICOK,Strong top speed and precise steering.,Yüksək maksimal sürət və dəqiq idarəetmə.
+PERS_LELOYUN,"Energetic, playful and enthusiastic.","Enerjili, oynaq və həvəsli."
+SPEC_LELOYUN,Rapid acceleration and agile cornering.,Cəld sürətlənmə və çevik döngələr.
+PERS_MESTAN,"Charming, relaxed and skilful.","Cazibədar, sakit və bacarıqlı."
+SPEC_MESTAN,Controlled drifting and a more forgiving boost window.,Nəzarətli drift və daha geniş sürət pəncərəsi.
+PERS_HAVHAV,"Loyal, brave and approachable.","Sadiq, cəsur və səmimi."
+SPEC_HAVHAV,Balanced performance and predictable handling.,Balanslı göstəricilər və proqnozlaşdırıla bilən idarə.
+PERS_CEPIS,"Sweet, fluffy and surprisingly powerful.","Şirin, yumşaq və gözlənilmədən güclü."
+SPEC_CEPIS,"Powerful, longer-lasting boosts; gentler acceleration and steering.",Güclü və uzun sürən sürətlənmə; daha zəif təkan və dönmə.
+RACER_TITLE,Choose Your Racer,Yarışçını seç
+STAT_TOP,Top speed,Maks. sürət
+STAT_DRIFT,Drift,Drift
+STAT_BOOST,Boost,Turbo
+RACER_SPECIALTY,Specialty,Xüsusiyyət
+RACER_KART,Kart,Kart
+RACER_YOU_SUFFIX,(You),(Sən)
+HUD_TRAP_AHEAD,Trap ahead!,Qarşıda tələ!

@@ -424,7 +424,8 @@ func _build_gate() -> void:
 	a.add(PropKit.rbox(Vector3(span, 1.6, 2.4), 0.15), Transform3D(Basis.IDENTITY, Vector3.UP * (tower_h - 1.6)), PropKit.m("limestone_warm"))
 	a.add(PropKit.rbox(Vector3(span - 3.0, 0.5, 2.6), 0.2), Transform3D(Basis.IDENTITY, Vector3.UP * (tower_h - 0.6)), PropKit.m("limestone"))
 	var basis := Basis(r, Vector3.UP, r.cross(Vector3.UP)).orthonormalized()
-	_landmark(a.commit(), Transform3D(basis, p + Vector3.DOWN * 0.05), "CityGate")
+	var gate := _landmark(a.commit(), Transform3D(basis, p + Vector3.DOWN * 0.05), "CityGate")
+	_sign(gate, "İÇƏRİŞƏHƏR", Vector3(0, tower_h - 1.6, 0), 1.25, Color("fff3d6"), Color("7a4a2a"))
 
 
 func _build_gantry() -> void:
@@ -444,6 +445,7 @@ func _build_gantry() -> void:
 		a.add(PropKit.box(Vector3(half * 2.0 / 24.0, 0.5, 0.05)), Transform3D(Basis.IDENTITY, Vector3(x, h - 0.05, 0.52)), PropKit.m("navy" if i % 2 == 0 else "white"))
 	var basis := Basis(r, Vector3.UP, r.cross(Vector3.UP)).orthonormalized()
 	var gantry := _landmark(a.commit(), Transform3D(basis, p + Vector3.DOWN * 0.05), "StartGantry")
+	_sign(gantry, "BAKU TURBO", Vector3(0, h + 0.3, 0), 0.55, Color("ffc93c"), Color("1b2a4a"))
 	# Countdown lights (lit by RaceManager's countdown signal).
 	_light_on_mat = StandardMaterial3D.new()
 	_light_on_mat.albedo_color = Color("ff3b3b")
@@ -480,6 +482,24 @@ func set_countdown_lights(value: int) -> void:
 func reset_lights() -> void:
 	for l in gantry_lights:
 		l.material_override = _light_off_mat
+
+
+## Two-sided readable sign text (Label3D, Azerbaijani-capable font).
+func _sign(parent: Node3D, text: String, pos: Vector3, depth: float, col: Color, outline: Color) -> void:
+	for side: float in [-1.0, 1.0]:
+		var l := Label3D.new()
+		l.text = text
+		l.font = UITheme.heading_font()
+		l.font_size = 128
+		l.pixel_size = 0.008
+		l.outline_size = 22
+		l.modulate = col
+		l.outline_modulate = outline
+		l.position = pos + Vector3(0, 0, side * depth)
+		l.rotation.y = 0.0 if side > 0.0 else PI
+		l.double_sided = false
+		l.shaded = false
+		parent.add_child(l)
 
 
 func _place_bunting() -> void:

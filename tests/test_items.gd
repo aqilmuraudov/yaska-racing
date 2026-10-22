@@ -3,7 +3,7 @@ extends TestCase
 
 func _kart() -> KartController:
 	var k := KartController.new()
-	k.stats = KartFactory.load_stats("balanced")
+	k.stats = KartFactory.load_stats("havhav")
 	tree.root.add_child(k)
 	k.controls_locked = false
 	return k

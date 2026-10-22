@@ -10,6 +10,7 @@ extends Node
 ##   --overview             one extra top-down screenshot of the layout
 ##   --views=s1,s2,...      screenshots from fixed cameras at track distances
 ##   --screens=main,mode,kart,track,settings,credits,loading  capture menus
+##   --racer-shots          front / rear / side / face shots of every racer
 ##   --quit-after=SECONDS   quit after this many real seconds
 ##   --stats                print per-second FPS / frame time / memory
 ##   --timescale=X          Engine.time_scale for fast soak runs
@@ -17,6 +18,8 @@ extends Node
 ##   --quit-on-results      print the race summary and quit when results show
 ##   --soak                 restart the race 3 s after every results screen
 ##   --ui-shots             capture pause, pause→settings and results screens
+##   --chaos                player kart driven erratically (wall rams, reversing,
+##                          drift spam) to expose snags, falls and stuck states
 ## Used for screenshots, soak tests and reproducible AI races.
 
 var args := {}
@@ -34,6 +37,12 @@ var _probe_done := false
 var _soak_timer := -1.0
 var _soak_races := 0
 var _ui_stage := 0
+var _gpu_measure := false
+var _chaos_t := 0.0
+var _chaos_steer := 0.0
+var _chaos_stuck := 0.0
+var _chaos_stuck_events := 0
+var _chaos_max_stuck := 0.0
 
 
 static func parse_args() -> Dictionary:
@@ -65,16 +74,21 @@ func _ready() -> void:
 		flow.call_deferred("run")
 	if args.has("screens"):
 		call_deferred("_capture_screens")
+	if args.has("racer-shots"):
+		call_deferred("_capture_racers")
 	if args.has("race"):
 		var cfg := Game.default_race_config()
 		cfg.debug_autopilot = args.has("autopilot")
 		cfg.seed = int(args.get("seed", "1234"))
 		cfg.active_seed = cfg.seed
 		cfg.difficulty = args.get("difficulty", "medium")
-		cfg.kart_id = args.get("kart", "balanced")
+		cfg.kart_id = args.get("kart", RacerRoster.DEFAULT_ID)
 		cfg.laps = int(args.get("laps", "3"))
 		cfg.ai_count = int(args.get("ai", "5"))
 		cfg.mode = args.get("mode", "quick")
+		cfg.balance_test = args.has("balance")
+		if args.has("items"):
+			cfg.items = args.items == "on"
 		cfg.event_instance_id = "debug-%d" % Time.get_ticks_usec()
 		Game.race_config = cfg
 		call_deferred("_enter_race")
@@ -99,8 +113,31 @@ func _ui_shots(race: RaceManager) -> void:
 		await _save_shot("ui_results.png")
 
 
+func _capture_racers() -> void:
+	await get_tree().create_timer(1.0).timeout
+	Game.goto(Game.State.KART_SELECT)
+	await get_tree().create_timer(1.5).timeout
+	var scr = get_tree().current_scene
+	var stage: MenuStage = scr.stage
+	scr.get("ui_layer").visible = false
+	stage.auto_rotate = false
+	var views := {"front": [PI + 0.55, Vector3(0, 1.6, 5.2), Vector3(0, 0.8, 0)], "rear": [0.35, Vector3(0, 2.0, 5.0), Vector3(0, 0.9, 0)],
+		"side": [PI * 0.5, Vector3(0, 1.3, 5.0), Vector3(0, 0.75, 0)], "face": [PI + 0.25, Vector3(0, 1.75, 2.4), Vector3(0, 1.2, 0)]}
+	for i in RacerRoster.IDS.size():
+		scr._select(i, true)
+		await get_tree().create_timer(1.4).timeout
+		for v in views.keys():
+			var cfg: Array = views[v]
+			stage.turntable.rotation.y = cfg[0]
+			stage.camera.look_at_from_position(cfg[1], cfg[2])
+			await get_tree().process_frame
+			await get_tree().process_frame
+			await _save_shot("racer_%s_%s.png" % [RacerRoster.IDS[i], v])
+	get_tree().quit()
+
+
 func _capture_screens() -> void:
-	var map := {"main": Game.State.MAIN_MENU, "mode": Game.State.MODE_SELECT, "kart": Game.State.KART_SELECT,
+	var map := {"main": Game.State.MAIN_MENU, "mode": Game.State.MODE_SELECT, "kart": Game.State.KART_SELECT, "racer": Game.State.KART_SELECT,
 		"track": Game.State.TRACK_SELECT, "settings": Game.State.SETTINGS, "credits": Game.State.CREDITS}
 	await get_tree().create_timer(1.0).timeout
 	for name in String(args.screens).split(","):
@@ -163,15 +200,45 @@ func _process(delta: float) -> void:
 	if (_quit_after > 0.0 and _elapsed >= _quit_after) or results_now:
 		if race != null:
 			print("RACE_STATE state=%d time=%.2f" % [race.state, race.race_time])
+			if args.has("chaos"):
+				print("CHAOS stuck_events(>1s)=%d max_stuck=%.1fs player_recovers=%d" % [_chaos_stuck_events, maxf(_chaos_max_stuck, _chaos_stuck), race.player.stats.recovers])
 			for r in race.racers:
 				print("RACER %-6s %-8s place=%d lap=%d finished=%s time=%.2f best=%.2f dist=%.0f scale=%.3f diff=%s %s" % [r.name, r.kart.stats.id, r.place, r.tracker.current_lap(), r.tracker.finished, r.tracker.finish_time, r.tracker.best_lap, r.tracker.race_distance, r.kart.speed_scale, str(r.ai.profile.get("speed_factor")), "off=%.1fs drift=%.1fs boost=%.1fs avg=%.1f sc=%d it=%d db=%d hh=%d rec=%d" % [r.stats.offroad_s, r.stats.drift_s, r.stats.boost_s, r.stats.speed_sum / maxf(r.stats.ticks, 1), r.stats.shortcut_uses, r.stats.items_used, r.stats.drift_boosts, r.stats.hard_hits, r.stats.recovers]])
 		get_tree().quit()
 
 
+func _chaos_drive(race: RaceManager, delta: float) -> void:
+	var k := race.player.kart
+	race.player.player_input.enabled = false
+	race.player.ai.set_physics_process(false)
+	_chaos_t -= delta
+	if _chaos_t <= 0.0:
+		_chaos_t = randf_range(0.3, 1.5)
+		_chaos_steer = [-1.0, 1.0, 0.0, randf_range(-1, 1)][randi() % 4]
+	var inp := k.input
+	inp.steer = _chaos_steer
+	inp.throttle = 0.0 if randf() < 0.1 else 1.0
+	inp.brake = 1.0 if (int(race.race_time) % 9 == 0) else 0.0
+	inp.drift_pressed = randf() < 0.03
+	inp.drift_held = inp.drift_pressed or (inp.drift_held and randf() < 0.97)
+	inp.boost_pressed = randf() < 0.05
+	inp.item_pressed = randf() < 0.01
+	inp.recover_held = false
+	if absf(k.speed) < 1.0 and k.state == KartController.State.NORMAL:
+		_chaos_stuck += delta
+	else:
+		if _chaos_stuck > 1.0:
+			_chaos_stuck_events += 1
+		_chaos_max_stuck = maxf(_chaos_max_stuck, _chaos_stuck)
+		_chaos_stuck = 0.0
+
+
 ## Probe on the physics tick so runs at different render rates compare the
 ## exact same simulation step.
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	var race := get_tree().current_scene as RaceManager
+	if race != null and args.has("chaos") and race.player and race.state == RaceManager.RaceState.RACING:
+		_chaos_drive(race, delta)
 	if race != null and args.has("probe") and not _probe_done and race.race_time >= float(args.probe):
 		_probe_done = true
 		for r in race.racers:
@@ -180,15 +247,23 @@ func _physics_process(_delta: float) -> void:
 
 
 func _print_stats(race: RaceManager) -> void:
+	var vp_rid := get_viewport().get_viewport_rid()
+	if not _gpu_measure:
+		RenderingServer.viewport_set_measure_render_time(vp_rid, true)
+		_gpu_measure = true
 	var worst := 0.0
 	var total := 0.0
 	for f in _frame_times:
 		worst = maxf(worst, f)
 		total += f
 	var avg := total / maxf(_frame_times.size(), 1)
-	print("STATS t=%.0f fps=%d avg_ms=%.2f worst_ms=%.2f mem_mb=%.1f objects=%d draw_calls=%d prims=%d race_t=%.1f" % [
+	print("STATS t=%.0f fps=%d avg_ms=%.2f worst_ms=%.2f cpu_proc_ms=%.2f cpu_phys_ms=%.2f gpu_ms=%.2f mem_mb=%.1f vmem_mb=%.1f objects=%d draw_calls=%d prims=%d race_t=%.1f" % [
 		_elapsed, Engine.get_frames_per_second(), avg * 1000.0, worst * 1000.0,
+		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+		RenderingServer.viewport_get_measured_render_time_gpu(vp_rid),
 		Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0,
+		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
 		Performance.get_monitor(Performance.OBJECT_COUNT),
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),

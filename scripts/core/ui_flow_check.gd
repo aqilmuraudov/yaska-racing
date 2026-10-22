@@ -23,8 +23,10 @@ func run() -> void:
 	await _wait(1.0)
 	await _tap_text(tr("MODE_QUICK"))
 	await _wait(1.0)
-	await _tap_text(tr("MENU_CONFIRM"))
-	await _wait(1.0)
+	await _expect_scene("RacerSelect", "mode leads to racer selection")
+	await _tap_text("Bicok")
+	await _wait(0.6)
+	_check(get_tree().current_scene.get("current") == 1, "tapping a racer card selects it")
 	await _tap_text(tr("MENU_START_RACE"))
 	var race: RaceManager = null
 	for i in 200:

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RacerDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/racer_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "cepis"
+display_name = "Çəpiş"
+kart_name = "Cloud Booster"
+species = "lamb"
+kart_style = "cloud"
+personality_key = "PERS_CEPIS"
+specialty_key = "SPEC_CEPIS"
+accent = Color(1.000, 0.435, 0.380, 1)
+kart_primary = Color(1.000, 0.482, 0.420, 1)
+kart_secondary = Color(0.984, 0.945, 0.863, 1)
+kart_trim = Color(0.420, 0.290, 0.227, 1)
+fur_main = Color(0.973, 0.945, 0.878, 1)
+fur_light = Color(0.914, 0.824, 0.690, 1)
+fur_dark = Color(0.478, 0.353, 0.282, 1)
+detail = Color(1.000, 0.702, 0.655, 1)
+top_speed = 8
+acceleration = 5
+handling = 5
+drift = 7
+boost = 10

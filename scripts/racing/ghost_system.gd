@@ -99,9 +99,8 @@ func _build_ghost_model() -> void:
 		_ghost_model = null
 	if _best.is_empty():
 		return
-	var stats := KartFactory.load_stats(String(_best.get("kart_id", "balanced")))
 	var model := KartModel.new()
-	model.build(stats.model_style, Color(String(_best.get("paint", "ffffff"))), false)
+	model.build(RacerRoster.get_def(String(_best.get("kart_id", RacerRoster.DEFAULT_ID))), false)
 	_ghost_model = Node3D.new()
 	_ghost_model.name = "Ghost"
 	_ghost_model.add_child(model)

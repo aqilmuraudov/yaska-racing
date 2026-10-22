@@ -22,7 +22,7 @@ static func default_profile() -> Dictionary:
 		"version": SAVE_VERSION,
 		"profile_name": "Player",
 		"currency": 0,
-		"selected_kart": "balanced",
+		"selected_kart": RacerRoster.DEFAULT_ID,
 		"paints": {},
 		"unlocks": [],
 		"reward_ledger": [],
@@ -95,13 +95,15 @@ func _merge_into(dst: Dictionary, src: Dictionary) -> void:
 
 # --- Selections -----------------------------------------------------------
 
+## Last selected racer package (animal + its kart). Ids from the first
+## version (balanced/agile/fast) map to the default racer.
 func get_selected_kart() -> String:
-	return data.selected_kart
+	var id := String(data.selected_kart)
+	return id if RacerRoster.is_valid(id) else RacerRoster.DEFAULT_ID
 
 
-func set_selected_kart(kart_id: String, paint_index: int) -> void:
-	data.selected_kart = kart_id
-	data.paints[kart_id] = paint_index
+func set_selected_kart(racer_id: String, _paint_index: int = 0) -> void:
+	data.selected_kart = racer_id
 	save_profile()
 
 

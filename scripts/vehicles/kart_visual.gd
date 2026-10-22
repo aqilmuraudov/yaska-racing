@@ -24,7 +24,7 @@ var _victory := false
 var blob: MeshInstance3D
 
 
-func setup(p_kart: KartController, paint: Color, density: float) -> void:
+func setup(p_kart: KartController, def: RacerDefinition, density: float) -> void:
 	kart = p_kart
 	body_pivot = Node3D.new()
 	body_pivot.name = "BodyPivot"
@@ -32,7 +32,7 @@ func setup(p_kart: KartController, paint: Color, density: float) -> void:
 	model = KartModel.new()
 	model.name = "Model"
 	body_pivot.add_child(model)
-	model.build(kart.stats.model_style, paint, kart.is_player)
+	model.build(def, kart.is_player)
 	effects = KartEffects.new()
 	effects.name = "Effects"
 	body_pivot.add_child(effects)
@@ -59,8 +59,15 @@ func _make_blob_shadow() -> void:
 	blob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	blob.position = Vector3(0, 0.05, 0.05)
 	blob.add_to_group("blob_shadow")
-	blob.visible = int(Settings.get_value("graphics", "shadows", 1)) == 0
+	set_blob_strength(int(Settings.get_value("graphics", "shadows", 1)) == 0)
 	add_child(blob)
+
+
+## Grounding shadow on every preset: full strength when real-time shadows
+## are off (Low), a soft contact darkening otherwise.
+func set_blob_strength(full: bool) -> void:
+	(blob.material_override as StandardMaterial3D).albedo_color = Color(0, 0, 0, 0.55 if full else 0.3)
+	blob.visible = true
 
 
 func set_victory(on: bool) -> void:
@@ -69,6 +76,8 @@ func set_victory(on: bool) -> void:
 
 func _on_landed(airtime: float) -> void:
 	_susp_vel -= clampf(airtime * 9.0, 1.0, 7.0)
+	if model.driver:
+		model.driver.land(airtime * 1.5)
 
 
 func _physics_process(delta: float) -> void:
@@ -131,7 +140,7 @@ func _physics_process(delta: float) -> void:
 	if drifting:
 		steer_vis = -kart.drift_dir * deg_to_rad(10.0) + steer * deg_to_rad(10.0)
 	model.update_wheels(_wheel_angle, -steer_vis, _susp)
-	model.update_driver(steer, kart.state, _victory, delta)
+	model.update_driver(steer, kart.state, _victory, delta, kart.boost.is_active(), not kart.grounded, -_roll * 0.6)
 	effects.update(delta)
 
 	# Recovery fade (scale pop) and protection blink.

@@ -266,7 +266,11 @@ func _wall_visual(mb: MeshBuilder, a: Vector3, b: Vector3, out_a: Vector3, out_b
 	mb.quad_facing(oa + down, ob + down, ob + up, oa + up, out, body.darkened(0.08))
 	# Cap with small overhang and bevels for a rounded read.
 	mb.quad_facing(ia_c + up, ib_c + up, ib_c + cap_up - (ib_c - b) * 0.7, ia_c + cap_up - (ia_c - a) * 0.7, -out + Vector3.UP, cap.darkened(0.06))
-	mb.quad_facing(a + cap_up, b + cap_up, ob + cap_up, oa + cap_up, Vector3.UP, cap)
+	var cap_col := cap
+	if st.stripe.a > 0.0:
+		# Racing kerb-style cap: alternate red and white every 2 m.
+		cap_col = cap if int(floor((a.x + a.z) / 2.0)) % 2 == 0 else Color("f4f2ec")
+	mb.quad_facing(a + cap_up, b + cap_up, ob + cap_up, oa + cap_up, Vector3.UP, cap_col)
 	mb.quad_facing(oa_c + up, ob_c + up, ob + cap_up, oa + cap_up, out + Vector3.UP, cap.darkened(0.1))
 	mb.quad_facing(ia_c + up, ib_c + up, b + up, a + up, Vector3.DOWN, cap.darkened(0.2))
 	if st.stripe.a > 0.0:

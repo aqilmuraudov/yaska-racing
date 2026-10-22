@@ -9,7 +9,7 @@ enum State { BOOT, MAIN_MENU, MODE_SELECT, KART_SELECT, TRACK_SELECT, LOADING, R
 const SCENES := {
 	State.MAIN_MENU: "res://scenes/menus/main_menu.tscn",
 	State.MODE_SELECT: "res://scenes/menus/mode_select.tscn",
-	State.KART_SELECT: "res://scenes/menus/kart_select.tscn",
+	State.KART_SELECT: "res://scenes/menus/racer_select.tscn", # animal + kart package
 	State.TRACK_SELECT: "res://scenes/menus/track_select.tscn",
 	State.LOADING: "res://scenes/menus/loading.tscn",
 	State.SETTINGS: "res://scenes/menus/settings_menu.tscn",
@@ -54,7 +54,7 @@ func default_race_config() -> Dictionary:
 	return {
 		"mode": "quick",
 		"track_id": "seafront_sprint",
-		"kart_id": SaveManager.get_selected_kart() if SaveManager.data.size() > 0 else "balanced",
+		"kart_id": SaveManager.get_selected_kart() if SaveManager.data.size() > 0 else RacerRoster.DEFAULT_ID,
 		"paint": 0,
 		"difficulty": Settings.get_value("gameplay", "difficulty", "medium"),
 		"laps": 3,

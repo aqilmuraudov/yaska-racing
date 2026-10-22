@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RacerDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/racer_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "bicok"
+display_name = "Bicok"
+kart_name = "Amber Dash"
+species = "fox"
+kart_style = "amber"
+personality_key = "PERS_BICOK"
+specialty_key = "SPEC_BICOK"
+accent = Color(1.000, 0.541, 0.239, 1)
+kart_primary = Color(0.941, 0.478, 0.165, 1)
+kart_secondary = Color(0.122, 0.227, 0.431, 1)
+kart_trim = Color(0.965, 0.918, 0.816, 1)
+fur_main = Color(0.910, 0.459, 0.165, 1)
+fur_light = Color(0.984, 0.925, 0.839, 1)
+fur_dark = Color(0.227, 0.141, 0.094, 1)
+detail = Color(0.122, 0.227, 0.431, 1)
+top_speed = 9
+acceleration = 6
+handling = 8
+drift = 6
+boost = 6

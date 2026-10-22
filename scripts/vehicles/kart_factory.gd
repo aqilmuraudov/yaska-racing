@@ -3,27 +3,21 @@ extends RefCounted
 ## Assembles a racer: physics controller + collision + visual + audio.
 ## All handling classes share the same collision footprint (fairness).
 
-const KART_IDS := ["balanced", "agile", "fast"]
+const KART_IDS := RacerRoster.IDS
 const COLLISION_RADIUS := 0.6
 const COLLISION_LENGTH := 2.0
 
 static var _stats_cache := {}
 
 
-static func load_stats(kart_id: String) -> KartStats:
-	if _stats_cache.has(kart_id):
-		return _stats_cache[kart_id]
-	var path := "res://data/vehicles/%s.tres" % kart_id
-	var st: KartStats = load(path) if ResourceLoader.exists(path) else null
-	if st == null:
-		push_warning("KartFactory: missing %s, using defaults" % path)
-		st = KartStats.new()
-	_stats_cache[kart_id] = st
-	return st
+## Handling for a racer package (derived from its ratings).
+static func load_stats(racer_id: String) -> KartStats:
+	return RacerRoster.get_def(racer_id).make_stats()
 
 
-static func create(kart_id: String, paint_index: int, is_player: bool, effects_density: float) -> KartController:
-	var stats := load_stats(kart_id)
+static func create(racer_id: String, is_player: bool, effects_density: float) -> KartController:
+	var def := RacerRoster.get_def(racer_id)
+	var stats := def.make_stats()
 	var kart := KartController.new()
 	kart.name = "Kart"
 	kart.stats = stats
@@ -39,13 +33,13 @@ static func create(kart_id: String, paint_index: int, is_player: bool, effects_d
 	var visual := KartVisual.new()
 	visual.name = "Visual"
 	kart.add_child(visual)
-	var paint: Color = stats.paints[posmod(paint_index, stats.paints.size())] if stats.paints.size() > 0 else Color.RED
-	visual.setup(kart, paint, effects_density)
+	visual.setup(kart, def, effects_density)
 	var audio := KartAudio.new()
 	audio.name = "Audio"
 	kart.add_child(audio)
 	audio.setup(kart)
 	kart.set_meta("visual", visual)
 	kart.set_meta("audio", audio)
-	kart.set_meta("paint", paint)
+	kart.set_meta("paint", def.accent)
+	kart.set_meta("racer", def)
 	return kart

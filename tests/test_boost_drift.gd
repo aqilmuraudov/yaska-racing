@@ -2,7 +2,7 @@ extends TestCase
 ## Boost stacking limits, cancellation and drift timing rules.
 
 func _stats() -> KartStats:
-	return KartFactory.load_stats("balanced")
+	return KartFactory.load_stats("havhav")
 
 
 func test_boost_bank_and_bonus_are_capped() -> void:

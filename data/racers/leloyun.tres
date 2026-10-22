@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RacerDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/racer_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "leloyun"
+display_name = "Ləlöyün"
+kart_name = "Hop Rocket"
+species = "rabbit"
+kart_style = "hop"
+personality_key = "PERS_LELOYUN"
+specialty_key = "SPEC_LELOYUN"
+accent = Color(0.663, 0.545, 1.000, 1)
+kart_primary = Color(0.725, 0.635, 0.941, 1)
+kart_secondary = Color(1.000, 0.824, 0.247, 1)
+kart_trim = Color(1.000, 0.541, 0.239, 1)
+fur_main = Color(0.945, 0.925, 0.984, 1)
+fur_light = Color(1.000, 1.000, 1.000, 1)
+fur_dark = Color(0.561, 0.478, 0.722, 1)
+detail = Color(1.000, 0.624, 0.753, 1)
+top_speed = 7
+acceleration = 9
+handling = 9
+drift = 5
+boost = 5

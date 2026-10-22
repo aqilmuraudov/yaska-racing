@@ -34,7 +34,7 @@ func _ready() -> void:
 
 func build() -> void:
 	if stage:
-		stage.show_kart(SaveManager.get_selected_kart(), SaveManager.get_paint(SaveManager.get_selected_kart()))
+		stage.show_racer(SaveManager.get_selected_kart())
 		stage.set_camera_offset(-3.2)
 	if overlay_mode:
 		ui_layer.layer = 20
@@ -357,7 +357,7 @@ func _gameplay() -> void:
 		content.add_child(make_button(tr("SET_TUTORIAL_REPLAY"), func():
 			Game.race_config.mode = "tutorial"
 			Game.race_config.kart_id = SaveManager.get_selected_kart()
-			Game.race_config.paint = SaveManager.get_paint(Game.race_config.kart_id)
+			Game.race_config.paint = 0
 			Game.race_config.laps = 1
 			Game.race_config.ai_count = 0
 			Game.race_config.items = false

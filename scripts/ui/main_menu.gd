@@ -9,7 +9,7 @@ func _init() -> void:
 
 
 func build() -> void:
-	stage.show_kart(SaveManager.get_selected_kart(), SaveManager.get_paint(SaveManager.get_selected_kart()))
+	stage.show_racer(SaveManager.get_selected_kart())
 	stage.set_camera_offset(-1.6)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 14)

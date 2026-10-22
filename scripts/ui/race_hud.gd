@@ -32,6 +32,12 @@ var _uses_touch := false
 var speed_blur: ColorRect
 var _blur := 0.0
 var captions: VBoxContainer
+var pos_badge: PanelContainer
+var pos_arrow: Label
+var lap_pill: PanelContainer
+var trap_warning: Label
+var _last_place := 0
+var _place_flash := 0.0
 
 
 func setup(p_race: RaceManager) -> void:
@@ -61,72 +67,94 @@ func setup(p_race: RaceManager) -> void:
 	get_viewport().size_changed.connect(_apply_safe_area)
 	_uses_touch = DisplayServer.is_touchscreen_available() or Settings.is_mobile() or DebugRunner.parse_args().has("touch")
 
-	# Top-left: position and lap
-	var tl := VBoxContainer.new()
-	tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tl.position = Vector2(0, 0)
-	tl.add_theme_constant_override("separation", -8)
-	frame.add_child(tl)
+	var accent: Color = race.player.kart.get_meta("paint", UITheme.TURQUOISE)
+
+	# Upper left: race position badge (strong hierarchy, colour by place)
+	pos_badge = PanelContainer.new()
+	pos_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(pos_badge)
 	var pos_row := HBoxContainer.new()
 	pos_row.add_theme_constant_override("separation", 2)
-	tl.add_child(pos_row)
+	pos_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pos_badge.add_child(pos_row)
 	pos_label = _label("1", &"HudBig")
-	pos_label.add_theme_font_size_override("font_size", 76)
+	pos_label.add_theme_font_size_override("font_size", 70)
 	pos_row.add_child(pos_label)
-	pos_total = _label("/6", &"HudSmall")
-	pos_total.add_theme_font_size_override("font_size", 30)
-	# Sit "/6" on the big number's baseline (Baloo has a tall line box).
 	var total_box := MarginContainer.new()
-	total_box.add_theme_constant_override("margin_top", 34)
+	total_box.add_theme_constant_override("margin_top", 30)
 	total_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pos_total = _label("/6", &"HudSmall")
+	pos_total.add_theme_font_size_override("font_size", 28)
 	total_box.add_child(pos_total)
 	pos_row.add_child(total_box)
-	lap_label = _label("", &"HudSmall")
-	lap_label.add_theme_font_size_override("font_size", 30)
-	tl.add_child(lap_label)
+	pos_arrow = _label("", &"HudSmall")
+	pos_arrow.add_theme_font_size_override("font_size", 30)
+	pos_row.add_child(pos_arrow)
 
-	# Top-centre: item slot
-	item_panel = PanelContainer.new()
-	item_panel.theme_type_variation = &"HudPill"
-	item_panel.custom_minimum_size = Vector2(104, 104)
-	item_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	item_panel.position = Vector2(-52, 0)
-	item_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(item_panel)
-	item_icon = ItemIcon.new()
-	item_icon.custom_minimum_size = Vector2(80, 80)
-	item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item_panel.add_child(item_icon)
-
-	# Top-right: timer, best lap, minimap
+	# Upper right: lap pill, compact timer pill and the pause button
 	var tr_box := VBoxContainer.new()
 	tr_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	tr_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	tr_box.alignment = BoxContainer.ALIGNMENT_BEGIN
 	tr_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tr_box.add_theme_constant_override("separation", 2)
+	tr_box.add_theme_constant_override("separation", 4)
 	frame.add_child(tr_box)
-	var timer_row := HBoxContainer.new()
-	timer_row.alignment = BoxContainer.ALIGNMENT_END
-	timer_row.add_theme_constant_override("separation", 12)
-	tr_box.add_child(timer_row)
+	var top_row := HBoxContainer.new()
+	top_row.alignment = BoxContainer.ALIGNMENT_END
+	top_row.add_theme_constant_override("separation", 10)
+	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tr_box.add_child(top_row)
+	lap_pill = PanelContainer.new()
+	lap_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lap_pill.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.78), 20, 3, Color(accent, 0.9), 8))
+	top_row.add_child(lap_pill)
+	lap_label = _label("", &"HudSmall")
+	lap_label.add_theme_font_size_override("font_size", 28)
+	lap_pill.add_child(lap_label)
+	var timer_pill := PanelContainer.new()
+	timer_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	timer_pill.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.7), 20, 0, Color.TRANSPARENT, 8))
+	top_row.add_child(timer_pill)
 	timer_label = _label("0:00.000", &"HudSmall")
-	timer_label.add_theme_font_size_override("font_size", 34)
-	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	timer_row.add_child(timer_label)
+	timer_label.add_theme_font_size_override("font_size", 26)
+	timer_label.custom_minimum_size = Vector2(124, 0)
+	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	timer_pill.add_child(timer_label)
 	pause_button = Button.new()
 	pause_button.text = "II"
-	pause_button.custom_minimum_size = Vector2(64, 56)
+	pause_button.custom_minimum_size = Vector2(68, 60)
 	pause_button.focus_mode = Control.FOCUS_NONE
+	pause_button.add_theme_stylebox_override("normal", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.85), 18, 3, Color(1, 1, 1, 0.5), 8))
 	pause_button.pressed.connect(func(): race.set_paused(true))
-	timer_row.add_child(pause_button)
+	top_row.add_child(pause_button)
 	best_label = _label("", &"Dim")
 	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	tr_box.add_child(best_label)
+	trap_warning = _label("⚠ " + tr("HUD_TRAP_AHEAD"), &"HudSmall")
+	trap_warning.add_theme_color_override("font_color", Color("ff6b6b"))
+	trap_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	trap_warning.visible = false
+	tr_box.add_child(trap_warning)
+
+	# Item slot: next to the driving controls (right side), racer accent ring.
+	item_panel = PanelContainer.new()
+	item_panel.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.78), 26, 4, Color(accent, 0.95), 8))
+	item_panel.custom_minimum_size = Vector2(100, 100)
+	item_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	item_panel.position = Vector2(-100 - (128.0 if _uses_touch else 0.0), -100 - (380.0 if _uses_touch else 60.0))
+	frame.add_child(item_panel)
+	item_icon = ItemIcon.new()
+	item_icon.custom_minimum_size = Vector2(78, 78)
+	item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item_panel.add_child(item_icon)
+
+	# Minimap: lower-left corner; with touch controls it sits above them.
 	minimap = MinimapWidget.new()
-	minimap.custom_minimum_size = Vector2(230, 170)
+	minimap.custom_minimum_size = Vector2(210, 156)
 	minimap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tr_box.add_child(minimap)
+	minimap.set_anchors_preset(Control.PRESET_TOP_LEFT if _uses_touch else Control.PRESET_BOTTOM_LEFT)
+	minimap.position = Vector2(0, 146) if _uses_touch else Vector2(0, -156)
+	frame.add_child(minimap)
 	minimap.setup(race)
 
 	# Centre texts
@@ -186,7 +214,7 @@ func setup(p_race: RaceManager) -> void:
 	captions = VBoxContainer.new()
 	captions.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	captions.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	captions.position = Vector2(0, -60 - (230.0 if _uses_touch else 0.0))
+	captions.position = Vector2(0, -330.0 if _uses_touch else -190.0)
 	captions.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(captions)
 
@@ -196,7 +224,7 @@ func setup(p_race: RaceManager) -> void:
 	speed_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	speed_label.custom_minimum_size = Vector2(200, 40)
-	speed_label.position = Vector2(-200, -40 - (250.0 if _uses_touch else 0.0))
+	speed_label.position = Vector2(-200, -290.0) if _uses_touch else Vector2(-320, -40)
 	frame.add_child(speed_label)
 
 	# Touch controls, pause menu and results
@@ -285,6 +313,7 @@ func reset() -> void:
 	item_icon.rolling = false
 	results.visible = false
 	pause_menu.visible = false
+	_last_place = 0
 	if touch:
 		touch.visible = _uses_touch
 	_update_static()
@@ -397,15 +426,34 @@ func _process(delta: float) -> void:
 		return
 	var p := race.player
 	var mode: String = race.config.mode
-	pos_label.get_parent().visible = mode == "quick"
-	lap_label.visible = mode != "tutorial"
+	pos_badge.visible = mode == "quick"
+	lap_pill.visible = mode != "tutorial"
+	if p.place != _last_place:
+		if _last_place != 0 and race.state == RaceManager.RaceState.RACING:
+			var up := p.place < _last_place
+			pos_arrow.text = "▲" if up else "▼"
+			pos_arrow.add_theme_color_override("font_color", Color("5cf08a") if up else Color("ff7070"))
+			_place_flash = 1.2
+			pos_badge.pivot_offset = pos_badge.size * 0.5
+			pos_badge.scale = Vector2.ONE * 1.25
+		_last_place = p.place
+		var place_cols := [Color("ffc93c"), Color("cfd8e3"), Color("e0965a")]
+		var pc: Color = place_cols[p.place - 1] if p.place <= 3 else Color(race.player.kart.get_meta("paint", UITheme.TURQUOISE))
+		pos_badge.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.8), 24, 4, pc, 10))
+		pos_label.add_theme_color_override("font_color", pc.lightened(0.35))
+	if _place_flash > 0.0:
+		_place_flash -= delta
+		if _place_flash <= 0.0:
+			pos_arrow.text = ""
+	pos_badge.scale = pos_badge.scale.lerp(Vector2.ONE, 1.0 - exp(-8.0 * delta))
+	trap_warning.visible = race.state == RaceManager.RaceState.RACING and race.items.threat_near(p.kart)
 	pos_label.text = str(p.place)
 	pos_total.text = "/%d" % race.racers.size()
 	lap_label.text = "%s %d/%d" % [tr("HUD_LAP"), p.tracker.current_lap(), int(race.config.laps)]
 	var t := race.race_time
 	if p.tracker.finished:
 		t = p.tracker.finish_time
-	timer_label.text = format_time(t) if race.state != RaceManager.RaceState.COUNTDOWN and race.state != RaceManager.RaceState.INTRO else format_time(0.0).replace("-", "0")
+	timer_label.text = format_time(maxf(t, 0.0001)) if race.state != RaceManager.RaceState.COUNTDOWN and race.state != RaceManager.RaceState.INTRO else "0:00.000"
 	speed_label.text = "%d %s" % [int(absf(p.kart.speed) * 3.6), tr("HUD_KMH")]
 	wrong_way_label.visible = p.tracker.wrong_way and race.state == RaceManager.RaceState.RACING
 	var hold := p.player_input.recover_hold_progress() if p.player_input else 0.0

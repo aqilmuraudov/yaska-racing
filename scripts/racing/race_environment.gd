@@ -19,8 +19,9 @@ func build() -> void:
 	world_env = WorldEnvironment.new()
 	env = Environment.new()
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.25, 0.52, 0.86)
-	sky_mat.sky_horizon_color = Color(0.74, 0.86, 0.95)
+	sky_mat.sky_top_color = Color(0.17, 0.46, 0.86)
+	sky_mat.sky_horizon_color = Color(0.78, 0.88, 0.96)
+	sky_mat.sky_energy_multiplier = 1.05
 	sky_mat.sky_curve = 0.12
 	sky_mat.ground_bottom_color = Color(0.36, 0.42, 0.42)
 	sky_mat.ground_horizon_color = Color(0.74, 0.84, 0.9)
@@ -51,7 +52,7 @@ func build() -> void:
 	env.glow_hdr_threshold = 1.15
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.12
+	env.adjustment_saturation = 1.16
 	env.adjustment_contrast = 1.04
 	env.ssao_radius = 1.2
 	env.ssao_intensity = 1.4
@@ -60,8 +61,8 @@ func build() -> void:
 
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.light_color = Color(1.0, 0.94, 0.84)
-	sun.light_energy = 1.35
+	sun.light_color = Color(1.0, 0.93, 0.8)
+	sun.light_energy = 1.45
 	# Afternoon sun from the south-west so the seafront faces are lit.
 	sun.rotation = Vector3(deg_to_rad(-48.0), deg_to_rad(-140.0), 0.0)
 	sun.shadow_bias = 0.04
@@ -100,7 +101,10 @@ func apply_graphics() -> void:
 	var decor: float = DECOR_DISTANCES[int(g.decor_distance)]
 	env.fog_density = [0.0032, 0.0018, 0.0011][int(g.decor_distance)]
 	decor_distance_changed.emit(decor)
-	get_tree().call_group("blob_shadow", "set_visible", blob_shadows_enabled)
+	for v in get_tree().get_nodes_in_group("blob_shadow"):
+		var kv := v.get_parent()
+		if kv and kv.has_method("set_blob_strength"):
+			kv.set_blob_strength(blob_shadows_enabled)
 	get_tree().call_group("kart_effects_density", "set_density", float(g.effects_density))
 
 

@@ -10,7 +10,7 @@ func _init() -> void:
 
 
 func build() -> void:
-	stage.show_kart("agile", 0)
+	stage.show_racer("leloyun")
 	stage.set_camera_offset(-2.6)
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_LEFT_WIDE)

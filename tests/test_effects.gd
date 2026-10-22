@@ -5,7 +5,7 @@ func test_skid_marks_respect_density_budget() -> void:
 	var world := Node3D.new()
 	tree.root.add_child(world)
 	var kart := KartController.new()
-	kart.stats = KartFactory.load_stats("balanced")
+	kart.stats = KartFactory.load_stats("havhav")
 	world.add_child(kart)
 	var marks := SkidMarks.new()
 	world.add_child(marks)

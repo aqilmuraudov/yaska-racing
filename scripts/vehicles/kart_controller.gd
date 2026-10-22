@@ -72,6 +72,11 @@ var _hard_hit_cooldown := 0.0
 var _hop_timer := 0.0
 var _rehop_cooldown := 0.0
 var last_airtime := 0.0
+## > 0 while (recently) touching a barrier; enables low-speed pivoting.
+var _wall_contact := 0.0
+## Preferred escape direction along the barrier (race direction), set by RaceManager.
+var route_forward := Vector3.ZERO
+var _last_wall_normal := Vector3.ZERO
 var _respawn_target := Transform3D.IDENTITY
 var _pending_push := Vector3.ZERO
 var _last_floor_normal := Vector3.UP
@@ -228,6 +233,7 @@ func _physics_process(delta: float) -> void:
 func _tick_timers(delta: float) -> void:
 	boost.tick(delta)
 	_hard_hit_cooldown = maxf(_hard_hit_cooldown - delta, 0.0)
+	_wall_contact = maxf(_wall_contact - delta, 0.0)
 	if state == State.HOP:
 		_hop_timer += delta
 	_rehop_cooldown = maxf(_rehop_cooldown - delta, 0.0)
@@ -298,10 +304,22 @@ func _steer_ground(delta: float) -> void:
 	var spd := absf(speed)
 	var ratio := clampf(spd / stats.top_speed, 0.0, 1.0)
 	var rate := deg_to_rad(lerpf(stats.steer_rate_low, stats.steer_rate_high, ratio))
-	rate *= clampf(spd / stats.steer_min_speed, 0.0, 1.0)
+	var authority := clampf(spd / stats.steer_min_speed, 0.0, 1.0)
+	if _wall_contact > 0.0:
+		# Pinned against a barrier: keep enough authority to pivot away.
+		authority = maxf(authority, 0.6)
+	rate *= authority
 	var grip := stats.lateral_grip * (stats.offroad_grip_factor if surface == &"offroad" else 1.0)
 	var dir := 1.0 if speed >= 0.0 else -1.0
 	yaw -= steer_smoothed * rate * dir * delta
+	# Slow and pressing into a barrier: ease the nose round to run along it
+	# (towards the race direction when known) so the kart never stays pinned.
+	if _wall_contact > 0.0 and spd < 4.0 and input.throttle > 0.3 and _last_wall_normal != Vector3.ZERO:
+		var along := Vector3(-_last_wall_normal.z, 0.0, _last_wall_normal.x)
+		var pref := route_forward if route_forward != Vector3.ZERO else forward_dir()
+		if along.dot(pref) < 0.0:
+			along = -along
+		yaw = lerp_angle(yaw, atan2(-along.x, -along.z), 1.0 - exp(-2.5 * delta))
 	lateral = lerpf(lateral, 0.0, 1.0 - exp(-grip * delta))
 
 
@@ -537,6 +555,8 @@ func _after_slide(pre_horizontal: Vector3, delta: float) -> void:
 		if hn.length_squared() < 0.0001:
 			continue
 		hn = hn.normalized()
+		_wall_contact = 0.25
+		_last_wall_normal = hn
 		var into := -pre_horizontal.dot(hn)
 		if into <= 0.3:
 			continue

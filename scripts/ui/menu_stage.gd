@@ -132,14 +132,16 @@ func build() -> void:
 	camera.current = true
 
 
-func show_kart(kart_id: String, paint_index: int) -> void:
+## Shows one racer package. Only the current preview exists; the previous
+## one is freed, so the selection screen never holds six animated models.
+func show_racer(racer_id: String, greet := true) -> void:
 	for c in kart_holder.get_children():
 		c.queue_free()
-	var stats := KartFactory.load_stats(kart_id)
 	kart_model = KartModel.new()
-	var paint: Color = stats.paints[posmod(paint_index, stats.paints.size())]
-	kart_model.build(stats.model_style, paint, true)
+	kart_model.build(RacerRoster.get_def(racer_id), true)
 	kart_holder.add_child(kart_model)
+	if greet and kart_model.driver:
+		kart_model.driver.greet()
 	kart_holder.scale = Vector3.ONE * 0.85
 	var tw := create_tween()
 	kart_holder.scale = Vector3.ONE * 0.6
