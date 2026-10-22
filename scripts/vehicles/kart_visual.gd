@@ -142,3 +142,30 @@ func _physics_process(delta: float) -> void:
 	elif kart.immunity_timer > 0.0 and not Settings.get_value("accessibility", "reduced_flashing", false):
 		vis = fmod(kart.immunity_timer * 8.0, 1.0) < 0.7
 	model.visible = vis
+	_update_camera_fade(delta)
+
+
+var _fade := 0.0
+
+
+## Rival karts that come between the camera and the player fade out so the
+## player's kart and the road stay visible. Collision is unaffected.
+func _update_camera_fade(delta: float) -> void:
+	if kart.is_player:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var d := cam.global_position.distance_to(global_position + Vector3.UP * 0.6)
+	var target := clampf((4.2 - d) / 2.0, 0.0, 0.85)
+	var nf := lerpf(_fade, target, 1.0 - exp(-12.0 * delta))
+	if absf(nf - _fade) > 0.01 or (nf == 0.0 and _fade != 0.0):
+		_fade = nf if nf > 0.01 else 0.0
+		_set_transparency(body_pivot, _fade)
+
+
+func _set_transparency(n: Node, t: float) -> void:
+	if n is GeometryInstance3D:
+		(n as GeometryInstance3D).transparency = t
+	for c in n.get_children():
+		_set_transparency(c, t)

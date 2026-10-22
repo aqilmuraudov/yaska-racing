@@ -29,12 +29,22 @@ var _msg_time := 0.0
 var _count_time := 0.0
 var _last_item: StringName = &""
 var _uses_touch := false
+var speed_blur: ColorRect
+var _blur := 0.0
 
 
 func setup(p_race: RaceManager) -> void:
 	race = p_race
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	speed_blur = ColorRect.new()
+	speed_blur.set_anchors_preset(Control.PRESET_FULL_RECT)
+	speed_blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var blur_mat := ShaderMaterial.new()
+	blur_mat.shader = preload("res://assets/materials/speed_blur.gdshader")
+	speed_blur.material = blur_mat
+	speed_blur.visible = false
+	add_child(speed_blur)
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -48,7 +58,7 @@ func setup(p_race: RaceManager) -> void:
 	safe.add_child(frame)
 	_apply_safe_area()
 	get_viewport().size_changed.connect(_apply_safe_area)
-	_uses_touch = DisplayServer.is_touchscreen_available() or Settings.is_mobile()
+	_uses_touch = DisplayServer.is_touchscreen_available() or Settings.is_mobile() or DebugRunner.parse_args().has("touch")
 
 	# Top-left: position and lap
 	var tl := VBoxContainer.new()
@@ -370,5 +380,14 @@ func _process(delta: float) -> void:
 			message_label.text = ""
 	item_panel.scale = item_panel.scale.lerp(Vector2.ONE, 1.0 - exp(-8.0 * delta))
 	item_panel.pivot_offset = item_panel.size * 0.5
+	# Optional speed blur while boosting.
+	var want_blur := bool(Settings.get_value("graphics", "motion_blur", false)) and not bool(Settings.get_value("accessibility", "reduced_flashing", false))
+	var target_blur := 0.0
+	if want_blur and p.kart.boost.is_active() and race.state == RaceManager.RaceState.RACING:
+		target_blur = clampf(p.kart.speed / p.kart.stats.top_speed - 0.85, 0.0, 0.5) * 2.0
+	_blur = lerpf(_blur, target_blur, 1.0 - exp(-6.0 * delta))
+	speed_blur.visible = _blur > 0.02
+	if speed_blur.visible:
+		(speed_blur.material as ShaderMaterial).set_shader_parameter("strength", _blur)
 	var shield_on := p.kart.has_shield()
 	item_panel.modulate = Color(0.75, 0.95, 1.0) if shield_on else Color.WHITE

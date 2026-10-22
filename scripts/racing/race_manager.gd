@@ -38,6 +38,10 @@ class Racer:
 	var safe_timer := 0.0
 	var grid_xform := Transform3D.IDENTITY
 	var paint := Color.WHITE
+	## Debug / balancing counters (not saved).
+	var stats := {"recovers": 0, "shortcut_uses": 0, "hard_hits": 0, "items_used": 0, "drift_boosts": 0,
+		"offroad_s": 0.0, "drift_s": 0.0, "boost_s": 0.0, "speed_sum": 0.0, "ticks": 0}
+	var was_on_shortcut := false
 
 
 var config: Dictionary
@@ -159,6 +163,13 @@ func _spawn_racers(seed_value: int) -> void:
 		r.paint = kart.get_meta("paint")
 		r.grid_xform = grid_transform(slot)
 		kart.respawn_provider = _respawn_transform
+		kart.respawn_started.connect(func(): r.stats.recovers += 1)
+		kart.wall_hit.connect(func(strength):
+			if strength >= 0.6:
+				r.stats.hard_hits += 1
+				if OS.has_feature("editor") and DebugRunner.parse_args().has("log-hits"):
+					print("HARDHIT %s s=%.0f lat=%.1f speed=%.1f state=%d sc=%d %s" % [r.name, r.tracker.s, r.tracker.lateral, kart.speed, kart.state, r.tracker.on_shortcut, kart.last_wall_info]))
+		kart.drift_boost.connect(func(_t, _p): r.stats.drift_boosts += 1)
 		# Drift School never "finishes": the tutorial ends when its steps do.
 		r.tracker = RaceTracker.new(track, 99 if config.mode == "tutorial" else int(config.laps))
 		if r.is_player:
@@ -209,6 +220,9 @@ func _reset_racers() -> void:
 		r.place = r.index + 1
 		r.finish_place = 0
 		r.safe_timer = 0.0
+		r.was_on_shortcut = false
+		for key in r.stats.keys():
+			r.stats[key] = 0.0 if typeof(r.stats[key]) == TYPE_FLOAT else 0
 		r.ai.reset()
 		r.kart.get_meta("visual").set_victory(false)
 		if r.player_input:
@@ -269,6 +283,11 @@ func _physics_process(delta: float) -> void:
 				_set_state(RaceState.COUNTDOWN)
 		RaceState.COUNTDOWN:
 			_tick_countdown()
+		RaceState.RESULTS:
+			# Karts keep cruising behind the results screen; trackers must
+			# stay current so the AI keeps a sensible line.
+			_tick_racers(delta)
+			_resolve_contacts()
 		RaceState.RACING, RaceState.FINISHING:
 			race_time += delta
 			_tick_racers(delta)
@@ -340,6 +359,20 @@ func _tick_racers(delta: float) -> void:
 		# Items
 		if k.input.item_pressed and k.can_use_item():
 			items.use_item(k)
+			r.stats.items_used += 1
+		if state != RaceState.RESULTS and not r.tracker.finished:
+			if k.surface == &"offroad" or k.surface == &"rough":
+				r.stats.offroad_s += delta
+			if k.is_drifting():
+				r.stats.drift_s += delta
+			if k.boost.is_active():
+				r.stats.boost_s += delta
+			r.stats.speed_sum += k.speed
+			r.stats.ticks += 1
+		var on_sc := r.tracker.on_shortcut >= 0
+		if on_sc and not r.was_on_shortcut:
+			r.stats.shortcut_uses += 1
+		r.was_on_shortcut = on_sc
 		# Safe recovery points
 		r.safe_timer -= delta
 		if r.safe_timer <= 0.0:
@@ -354,6 +387,8 @@ func _tick_racers(delta: float) -> void:
 
 
 func _handle_event(r: Racer, e: Array) -> void:
+	if state == RaceState.RESULTS:
+		return # results are final
 	match e[0]:
 		"lap":
 			lap_completed.emit(r, int(e[1]), float(e[2]))

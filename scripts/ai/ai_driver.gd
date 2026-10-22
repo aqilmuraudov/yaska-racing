@@ -100,27 +100,37 @@ func _physics_process(delta: float) -> void:
 	_lane_timer -= delta
 	if _lane_timer <= 0.0:
 		_lane_timer = rng.randf_range(2.0, 5.0)
-		_lane_target = rng.randf_range(-0.45, 0.45)
-	# Racing line: drift toward the inside of the next corner.
-	var curv_ahead := path.curvature_at(route_s + 18.0 + speed * 0.6, 10.0)
-	var inside := clampf(curv_ahead * 25.0, -0.6, 0.6) * float(profile.corner_factor)
-	var lane := clampf(_lane_target + inside, -0.7, 0.7)
+		_lane_target = rng.randf_range(-0.35, 0.35)
+	# Racing line: lean toward the inside of the next corner (modestly).
+	var curv_ahead := path.curvature_at(route_s + 14.0 + speed * 0.5, 10.0)
+	var inside := clampf(curv_ahead * 18.0, -0.35, 0.35) * float(profile.corner_factor)
+	var lane := clampf(_lane_target + inside, -0.6, 0.6)
 	lane += _avoidance(pos, path, hw) # racers and hazards
-	lane = clampf(lane, -0.8, 0.8)
+	lane = clampf(lane, -0.7, 0.7)
 	if _near_ramp():
 		lane = 0.0
 	_lane = lerpf(_lane, lane, 1.0 - exp(-2.5 * delta))
 
 	# --- Steering ----------------------------------------------------------
-	var la := LOOKAHEAD_BASE + speed * LOOKAHEAD_SPEED
+	# Pure pursuit on a lane expressed as a fraction of the *usable* width
+	# (wheels stay on asphalt), aimed slightly wide to cancel the corner
+	# cutting that pursuit steering naturally does (sagitta ≈ la²·κ/8).
+	var la := 4.0 + speed * 0.38
 	var tgt_s := route_s + la
-	var target := path.position_at(tgt_s) + path.right_at(tgt_s) * (_lane * path.half_width_at(tgt_s))
+	var usable := maxf(path.half_width_at(tgt_s) - 1.6, 0.5)
+	var kappa := path.curvature_at(tgt_s - la * 0.5, 6.0)
+	var target := path.position_at(tgt_s) + path.right_at(tgt_s) * (_lane * usable - la * la * kappa / 8.0)
 	var to_t := target - pos
 	to_t.y = 0.0
 	var fwd := kart.forward_dir()
 	var angle := fwd.signed_angle_to(to_t.normalized(), Vector3.UP) # + = target to the left
 	var steer := clampf(-angle * float(profile.steer_gain), -1.0, 1.0)
 	steer += sin(_noise_phase * 1.7) * float(profile.steer_noise)
+	# Edge guard: steer back before the wheels reach the off-road strip.
+	var lat := _current_lateral(pos, path)
+	var edge := hw - 1.1
+	if absf(lat) > edge:
+		steer = clampf(steer - signf(lat) * clampf((absf(lat) - edge) / 1.2, 0.0, 1.0) * 0.9, -1.0, 1.0)
 	_mistake_timer -= delta
 	if _mistake_timer > 0.0:
 		steer = clampf(steer + _mistake_steer, -1.0, 1.0)
@@ -153,6 +163,9 @@ func _physics_process(delta: float) -> void:
 		steer = inward * kart.drift_dir
 		var corner_sign := int(signf(corner)) if absf(corner) > 0.004 else 0
 		drift_held = corner_sign == kart.drift_dir and absf(angle) < 0.9
+		# Release a drift that is carrying the kart onto the outside edge.
+		if lat * -kart.drift_dir > edge - 0.6:
+			drift_held = false
 		throttle = 1.0
 		brake = 0.0
 		boost_pressed = _drift_boost_decision(delta)
@@ -198,6 +211,13 @@ func _physics_process(delta: float) -> void:
 	inp.recover_held = recover
 	if catchup_enabled and not autopilot:
 		_apply_catchup()
+
+
+## Signed lateral offset from the current route's centreline (+ = right).
+func _current_lateral(pos: Vector3, path: TrackPath) -> float:
+	if route < 0:
+		return tracker.lateral
+	return path.closest(pos).lateral
 
 
 func _route_path() -> TrackPath:

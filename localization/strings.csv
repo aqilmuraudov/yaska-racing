@@ -66,7 +66,7 @@ HUD_MISS,Miss,Qaçırıldı
 HUD_NEW_RECORD,NEW RECORD!,YENİ REKORD!
 HUD_INCOMING,Incoming!,Diqqət!
 HUD_SHIELD_BLOCK,Blocked!,Dəf edildi!
-HUD_KMH,km/h,km/s
+HUD_KMH,km/h,km/saat
 ITEM_TURBO,Turbo Canister,Turbo balon
 ITEM_SHIELD,Shield,Qalxan
 ITEM_TRAP,Road Trap,Yol tələsi

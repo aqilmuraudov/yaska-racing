@@ -77,6 +77,8 @@ var _pending_push := Vector3.ZERO
 var _last_floor_normal := Vector3.UP
 ## Set by RaceManager: returns a safe Transform3D for recovery.
 var respawn_provider: Callable
+## Debug: what the last hard wall contact was.
+var last_wall_info := ""
 
 
 func _ready() -> void:
@@ -542,6 +544,7 @@ func _after_slide(pre_horizontal: Vector3, delta: float) -> void:
 		if ratio >= stats.wall_hard_ratio and into > 8.0 and _hard_hit_cooldown <= 0.0:
 			hard = true
 			_hard_hit_cooldown = HARD_HIT_COOLDOWN
+			last_wall_info = "%s n=%s pos=%s" % [collider.name if collider else "?", n, c.get_position()]
 			speed = speed * (1.0 - stats.wall_hard_loss)
 			lateral = 0.0
 			_pending_push += hn * stats.wall_bounce

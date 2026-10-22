@@ -14,6 +14,7 @@ extends Node
 ##   --stats                print per-second FPS / frame time / memory
 ##   --timescale=X          Engine.time_scale for fast soak runs
 ##   --probe=T              print every kart's position once race time >= T
+##   --quit-on-results      print the race summary and quit when results show
 ## Used for screenshots, soak tests and reproducible AI races.
 
 var args := {}
@@ -118,11 +119,12 @@ func _process(delta: float) -> void:
 			_print_stats(race)
 			_stat_timer = 0.0
 			_frame_times.clear()
-	if _quit_after > 0.0 and _elapsed >= _quit_after:
+	var results_now := args.has("quit-on-results") and race != null and race.state == RaceManager.RaceState.RESULTS
+	if (_quit_after > 0.0 and _elapsed >= _quit_after) or results_now:
 		if race != null:
 			print("RACE_STATE state=%d time=%.2f" % [race.state, race.race_time])
 			for r in race.racers:
-				print("RACER %s place=%d lap=%d cp=%d finished=%s time=%.2f best=%.2f dist=%.1f recovers=%s" % [r.name, r.place, r.tracker.current_lap(), r.tracker.cp_count, r.tracker.finished, r.tracker.finish_time, r.tracker.best_lap, r.tracker.race_distance, r.kart.get_meta("recovers", 0)])
+				print("RACER %-6s %-8s place=%d lap=%d finished=%s time=%.2f best=%.2f dist=%.0f scale=%.3f diff=%s %s" % [r.name, r.kart.stats.id, r.place, r.tracker.current_lap(), r.tracker.finished, r.tracker.finish_time, r.tracker.best_lap, r.tracker.race_distance, r.kart.speed_scale, str(r.ai.profile.get("speed_factor")), "off=%.1fs drift=%.1fs boost=%.1fs avg=%.1f sc=%d it=%d db=%d hh=%d rec=%d" % [r.stats.offroad_s, r.stats.drift_s, r.stats.boost_s, r.stats.speed_sum / maxf(r.stats.ticks, 1), r.stats.shortcut_uses, r.stats.items_used, r.stats.drift_boosts, r.stats.hard_hits, r.stats.recovers]])
 		get_tree().quit()
 
 

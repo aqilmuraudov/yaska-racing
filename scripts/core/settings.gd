@@ -15,6 +15,10 @@ var save_path := DEFAULT_PATH
 var values: Dictionary = {}
 var presets: Dictionary = {}
 var safe_mode := false
+## Dynamic resolution: current automatic scale (<= the chosen scale).
+var dynamic_scale := 1.0
+var _frame_ema := 0.0
+var _dyn_timer := 0.0
 
 
 func _ready() -> void:
@@ -231,7 +235,7 @@ func apply_graphics() -> void:
 	var g: Dictionary = values.graphics
 	var vp := get_tree().root
 	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR if float(g.resolution_scale) >= 0.99 else _upscale_mode()
-	vp.scaling_3d_scale = float(g.resolution_scale)
+	vp.scaling_3d_scale = clampf(float(g.resolution_scale) * dynamic_scale, 0.5, 1.0)
 	vp.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][int(g.msaa)]
 	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if g.fxaa else Viewport.SCREEN_SPACE_AA_DISABLED
 	vp.texture_mipmap_bias = [0.75, 0.0, -0.25][int(g.texture_detail)]
@@ -245,11 +249,36 @@ func apply_graphics() -> void:
 	graphics_changed.emit()
 
 
+## Adaptive render scale: drops in 5 % steps when frames run long and
+## recovers slowly when there is headroom. Never exceeds the chosen scale.
+func _process(delta: float) -> void:
+	var g: Dictionary = values.get("graphics", {})
+	if g.is_empty() or not bool(g.get("dynamic_resolution", false)) or unsupported_reason("dynamic_resolution") != "":
+		if dynamic_scale != 1.0:
+			dynamic_scale = 1.0
+			apply_graphics()
+		return
+	var target := 1.0 / maxf(float(g.fps_cap if int(g.fps_cap) > 0 else 60), 30.0)
+	_frame_ema = lerpf(_frame_ema, delta, 0.1)
+	_dyn_timer += delta
+	if _dyn_timer < 0.5:
+		return
+	_dyn_timer = 0.0
+	var old := dynamic_scale
+	if _frame_ema > target * 1.12:
+		dynamic_scale = maxf(dynamic_scale - 0.05, 0.5 / maxf(float(g.resolution_scale), 0.5))
+	elif _frame_ema < target * 0.85:
+		dynamic_scale = minf(dynamic_scale + 0.025, 1.0)
+	if not is_equal_approx(old, dynamic_scale):
+		get_tree().root.scaling_3d_scale = clampf(float(g.resolution_scale) * dynamic_scale, 0.5, 1.0)
+
+
 func _upscale_mode() -> Viewport.Scaling3DMode:
-	# FSR 1.0 sharpens the upscale and runs on both renderers we ship.
-	if rendering_method() == "gl_compatibility":
-		return Viewport.SCALING_3D_MODE_BILINEAR
-	return Viewport.SCALING_3D_MODE_FSR
+	# FSR 1.0 sharpens the upscale but Godot only offers it on Forward+;
+	# the Mobile renderer (Android) uses bilinear scaling.
+	if rendering_method() == "forward_plus":
+		return Viewport.SCALING_3D_MODE_FSR
+	return Viewport.SCALING_3D_MODE_BILINEAR
 
 
 static func is_desktop() -> bool:
