@@ -26,12 +26,12 @@ func _ready() -> void:
 	ui_layer = CanvasLayer.new()
 	add_child(ui_layer)
 	root = Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_layer.add_child(root)
 	if not use_stage:
 		var bg := ColorRect.new()
 		bg.color = UITheme.NAVY_DEEP
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		root.add_child(bg)
 	var shade := TextureRect.new()
 	var grad := Gradient.new()
@@ -42,12 +42,12 @@ func _ready() -> void:
 	gt.fill_from = Vector2(0, 0)
 	gt.fill_to = Vector2(0.75, 0)
 	shade.texture = gt
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.stretch_mode = TextureRect.STRETCH_SCALE
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(shade)
 	safe = MarginContainer.new()
-	safe.set_anchors_preset(Control.PRESET_FULL_RECT)
+	safe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_apply_safe_area()
 	root.add_child(safe)
 	var col := VBoxContainer.new()

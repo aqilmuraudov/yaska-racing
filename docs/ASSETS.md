@@ -7,8 +7,8 @@ this table is a downloaded third-party 3D model, texture or sound.
 
 | Category | Items | Source (generator) | Licence |
 |---|---|---|---|
-| Karts | Bulvar (balanced), Nar (agile, pomegranate crown), Külək (fast) with 4 paints each | `scripts/vehicles/kart_model.gd` (rounded superellipsoid parts, merged per animated node) | Original, project |
-| Driver | helmeted driver, articulated torso/head/arms (steer, brake lean, jump, hit, victory) | `kart_model.gd` | Original, project |
+| Karts | Bamboo Sprint, Amber Dash, Hop Rocket, Velvet Slide, Buddy Rally, Cloud Booster — six distinct bodies | `scripts/vehicles/kart_model.gd` (rounded parts merged per animated node) | Original, project |
+| Animal drivers | Posi (panda), Bicok (fox), Ləlöyün (rabbit), Məstan (cat), HavHav (dog), Çəpiş (lamb); procedural animation | `scripts/vehicles/animal_driver.gd`; portraits `scripts/ui/racer_icon.gd` | Original, project |
 | Track surfaces | asphalt / cobbles with markings, kerbs, off-road strips, barriers, ramp, boost pads, finish line, terrain, seawall, sea | `scripts/track/track_builder.gd` + shaders `assets/materials/*.gdshader` | Original, project |
 | Environment kit | palms, lamps, benches, balustrades, bollards, tyre stacks, chevron signs, trees, cypresses, 4 Old City houses (enclosed wooden balconies), 3 modern blocks, tower inspired by the Old City keep, observation wheel, flame-like and glass towers, grandstand, umbrellas, kiosk, fountain, boats, bunting, city gate, start gantry with countdown lights, hills, city blocks | `scripts/track/prop_kit.gd`, `track_decor.gd` | Original, project |
 | Carpets | procedural Caucasian-style rug patterns (4 palettes) | `assets/materials/carpet.gdshader` | Original, project |

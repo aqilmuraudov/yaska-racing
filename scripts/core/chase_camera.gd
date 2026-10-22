@@ -59,10 +59,12 @@ func _process(delta: float) -> void:
 	var kpos := xf.origin
 	if orbit:
 		_orbit_angle += delta * 0.35
-		var op := kpos + Vector3(sin(_orbit_angle) * 6.5, 2.6, cos(_orbit_angle) * 6.5)
+		var op := kpos + Vector3(sin(_orbit_angle) * 5.0, 2.0, cos(_orbit_angle) * 5.0)
 		global_position = global_position.lerp(op, 1.0 - exp(-3.0 * delta)) if not _snap else op
 		_snap = false
-		look_at(kpos + Vector3.UP * 0.8, Vector3.UP)
+		# Frame the racer in the left half (results panel docks on the right).
+		var cam_right := global_transform.basis.x
+		look_at(kpos + Vector3.UP * 0.8 + cam_right * 1.8, Vector3.UP)
 		return
 	var dist_idx: int = Settings.get_value("gameplay", "camera_distance", 1)
 	var dist: float = DISTANCES[clampi(dist_idx, 0, 2)]

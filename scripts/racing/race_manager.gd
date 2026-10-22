@@ -405,6 +405,8 @@ func _tick_racers(delta: float) -> void:
 		# Out of bounds: fell below the course or escaped the corridor.
 		var ground_y := track.main.position_at(r.tracker.s).y
 		if k.state != KartController.State.RECOVER and (pos.y < ground_y - 6.0 or r.tracker.off_route_distance > track.offroad_width + 9.0):
+			if OS.has_feature("editor") and DebugRunner.parse_args().has("log-hits"):
+				print("OOB %s pos=%s ground_y=%.1f s=%.0f off=%.1f sc=%d" % [r.name, pos, ground_y, r.tracker.s, r.tracker.off_route_distance, r.tracker.on_shortcut])
 			k.start_recover()
 
 

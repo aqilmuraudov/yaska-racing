@@ -32,7 +32,7 @@ func build() -> void:
 		b.add_theme_stylebox_override("pressed", UITheme.rounded(Color(mode.color, 0.9), 24, 5, Color.WHITE, 16))
 		var v := VBoxContainer.new()
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.set_anchors_preset(Control.PRESET_FULL_RECT)
+		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		v.offset_left = 26
 		v.offset_top = 14
 		v.offset_right = -20

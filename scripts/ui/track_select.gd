@@ -24,7 +24,7 @@ func build() -> void:
 	var mode: String = Game.race_config.mode
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 22)
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	body.add_child(row)
 	# Track card
 	var card := PanelContainer.new()

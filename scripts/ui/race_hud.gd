@@ -45,7 +45,7 @@ func setup(p_race: RaceManager) -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	speed_blur = ColorRect.new()
-	speed_blur.set_anchors_preset(Control.PRESET_FULL_RECT)
+	speed_blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	speed_blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var blur_mat := ShaderMaterial.new()
 	blur_mat.shader = preload("res://assets/materials/speed_blur.gdshader")
@@ -53,11 +53,11 @@ func setup(p_race: RaceManager) -> void:
 	speed_blur.visible = false
 	add_child(speed_blur)
 	root = Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	safe = MarginContainer.new()
-	safe.set_anchors_preset(Control.PRESET_FULL_RECT)
+	safe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	safe.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(safe)
 	var frame := Control.new()
@@ -248,6 +248,8 @@ func setup(p_race: RaceManager) -> void:
 	race.results_ready.connect(func(res):
 		touch.release_all()
 		touch.visible = false
+		for w in [pos_badge, item_panel, minimap, drift_meter, speed_label, lap_pill, trap_warning, captions]:
+			w.visible = false
 		results.show_results(res))
 	race.state_changed.connect(_on_state)
 	var pk := race.player.kart
@@ -316,6 +318,8 @@ func reset() -> void:
 	_last_place = 0
 	if touch:
 		touch.visible = _uses_touch
+	for w in [item_panel, minimap, drift_meter, speed_label, captions]:
+		w.visible = true
 	_update_static()
 
 
@@ -426,8 +430,9 @@ func _process(delta: float) -> void:
 		return
 	var p := race.player
 	var mode: String = race.config.mode
-	pos_badge.visible = mode == "quick"
-	lap_pill.visible = mode != "tutorial"
+	var in_results := race.state == RaceManager.RaceState.RESULTS
+	pos_badge.visible = mode == "quick" and not in_results
+	lap_pill.visible = mode != "tutorial" and not in_results
 	if p.place != _last_place:
 		if _last_place != 0 and race.state == RaceManager.RaceState.RACING:
 			var up := p.place < _last_place

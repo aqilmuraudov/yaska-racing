@@ -4,7 +4,7 @@ extends Control
 func _ready() -> void:
 	var bg := ColorRect.new()
 	bg.color = UITheme.NAVY_DEEP
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 	var title := Label.new()
 	title.text = tr("GAME_TITLE")

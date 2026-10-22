@@ -15,17 +15,29 @@ var retry_btn: Button
 func setup(p_race: RaceManager) -> void:
 	race = p_race
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	visible = false
 	var dim := ColorRect.new()
-	dim.color = Color(0.03, 0.05, 0.1, 0.45)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.03, 0.05, 0.1, 0.25)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Docked right so the winner's celebration stays visible on the left.
+	var center := MarginContainer.new()
+	center.anchor_left = 1.0
+	center.anchor_right = 1.0
+	center.anchor_top = 0.0
+	center.anchor_bottom = 1.0
+	center.offset_left = -740
+	center.offset_right = 0
+	center.offset_top = 0
+	center.offset_bottom = 0
+	center.add_theme_constant_override("margin_right", 24)
+	center.add_theme_constant_override("margin_top", 24)
+	center.add_theme_constant_override("margin_bottom", 24)
 	add_child(center)
 	panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(760, 0)
+	panel.custom_minimum_size = Vector2(700, 0)
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	center.add_child(panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)

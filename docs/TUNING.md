@@ -3,16 +3,42 @@
 All values are **initial tuning parameters** meant to be refined in
 playtests. Speeds in m/s (×3.6 = km/h), angles in degrees, times in seconds.
 
-## Kart handling (`data/vehicles/*.tres`, class `KartStats`)
+## Racers and handling (`data/racers/*.tres` → `RacerTuning` → `KartStats`)
 
-| Parameter | Balanced "Bulvar" | Agile "Nar" | Fast "Külək" | Meaning |
-|---|---|---|---|---|
-| top_speed | 27.3 | 26.5 | 28.2 | cap on road without boost (×surface factor) |
-| acceleration | 15.0 | 19.0 | 12.5 | m/s² from standstill |
-| accel_taper | 0.6 | 0.5 | 0.65 | how much acceleration fades near the cap |
-| steer_rate_low / high | 115 / 72 | 128 / 86 | 104 / 62 | yaw rate at low / top speed |
-| lateral_grip | 9.0 | 10.0 | 8.5 | sideways slip decay (1/s) |
-| drift_turn_base / range | 62 / ±34 | 68 / ±36 | 56 / ±30 | drift yaw rate, steering modulates within range |
+Each racer package (animal + kart) stores five ratings (1–10). The UI stat
+bars and the simulation read the **same resource**. Ratings never multiply
+physics directly; each goes through a named, bounded linear curve
+(`scripts/vehicles/racer_tuning.gd`, value at rating 1 → value at 10):
+
+| Curve | 1 → 10 | Driven by |
+|---|---|---|
+| top_speed (m/s) | 26.5 → 27.7 | Top speed |
+| acceleration (m/s²) / accel_taper | 11.5 → 20.5 / 0.66 → 0.5 | Acceleration |
+| steer_rate_low / high (°/s), steer_response, lateral_grip | 100→132 / 58→90, 5.5→9, 8→11 | Handling |
+| drift_window_start / perfect_start | 0.74→0.67 / 0.93→0.88 (lower = more forgiving) | Drift |
+| drift_overheat_time, drift_turn_range, drift_correction | 0.18→0.34 s, 28→40°/s, 5→8 | Drift |
+| boost strength × / duration × (all sources) | 0.95→1.09 / 0.95→1.17 | Boost |
+| boost bank / absolute boost cap | 2.5→2.85 s / +9.5→+11 m/s | Boost |
+
+| Racer | Animal | Kart | Top | Accel | Handling | Drift | Boost |
+|---|---|---|---|---|---|---|---|
+| Posi | panda | Bamboo Sprint | 6 | 10 | 7 | 6 | 6 |
+| Bicok | fox | Amber Dash | 9 | 6 | 8 | 6 | 6 |
+| Ləlöyün | rabbit | Hop Rocket | 7 | 9 | 9 | 5 | 5 |
+| Məstan | cat | Velvet Slide | 7 | 6 | 7 | 10 | 5 |
+| HavHav | dog | Buddy Rally | 7 | 7 | 7 | 7 | 7 |
+| Çəpiş | lamb | Cloud Booster | 8 | 5 | 5 | 7 | 10 |
+
+Balance check (`--balance`: identical hard-AI skill for all six, no
+catch-up, no items, every racer takes the player slot once, two seed sets,
+3 laps): mean best laps Məstan 51.55 s, Bicok 51.88, Çəpiş 51.90, HavHav
+52.09, Ləlöyün 52.36, Posi 52.48 → **spread 0.93 s (1.8 %)**, within
+seed-to-seed noise (~1 s). The first curve set gave 2.7 s (5 %); top speed
+and boost were compressed. On this fast circuit drift/boost ratings matter
+most for AI; acceleration pays off mainly after slowdowns, hits and the
+start (more relevant for human players). Re-check on new tracks.
+
+All racers share the same collision capsule (r 0.6, length 2.0).
 
 Shared defaults (see `scripts/vehicles/kart_stats.gd`): brake 30 m/s²,
 coast 5, reverse 8 m/s after 0.25 s stopped with brake held, overspeed decay

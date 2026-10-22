@@ -7,7 +7,17 @@ extends Node
 var failures := 0
 
 
+var _orig_profile := ""
+var _orig_settings := ""
+
+
 func run() -> void:
+	# Never touch the player's real profile or settings.
+	_orig_profile = SaveManager.save_path
+	_orig_settings = Settings.save_path
+	SaveManager.save_path = "user://uiflow_profile.json"
+	Settings.save_path = "user://uiflow_settings.json"
+	SaveManager.load_profile()
 	await _wait(1.5)
 	await _expect_scene("MainMenu", "boot reaches main menu")
 	# Main Menu → Settings → Back
@@ -60,6 +70,10 @@ func run() -> void:
 
 
 func _finish() -> void:
+	SafeFile.delete_all(SaveManager.save_path)
+	SafeFile.delete_all(Settings.save_path)
+	SaveManager.save_path = _orig_profile
+	Settings.save_path = _orig_settings
 	print("UIFLOW DONE failures=%d" % failures)
 	get_tree().quit(1 if failures > 0 else 0)
 

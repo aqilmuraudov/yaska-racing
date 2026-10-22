@@ -3,7 +3,7 @@
 Original arcade kart racer set in a colourful, stylised Baku. Godot 4.4.1,
 GDScript, Android-first (landscape) with Windows builds for development.
 
-**Status: vertical slice (Milestones 1–3) implemented and verified on
+**Status (0.4.0): vertical slice plus animal racers, implemented and verified on
 desktop. Not yet tested on the target phone** — see
 [docs/STATUS.md](docs/STATUS.md).
 
@@ -14,8 +14,10 @@ desktop. Not yet tested on the target phone** — see
   gate into the limestone Old City (enclosed wooden balconies, carpets,
   bunting, a keep inspired by the old tower); a risky cobbled alley shortcut;
   a ramp and boost pad on the descent back to the shore.
-- **3 karts** with distinct silhouettes and handling (Bulvar balanced,
-  Nar agile, Külək fast), 4 paints each, rotatable 3D preview.
+- **6 animal racers, each with its own kart**: Posi (panda, Bamboo Sprint),
+  Bicok (fox, Amber Dash), Ləlöyün (rabbit, Hop Rocket), Məstan (cat, Velvet
+  Slide), HavHav (dog, Buddy Rally), Çəpiş (lamb, Cloud Booster). Ratings
+  (top speed, acceleration, handling, drift, boost) drive real handling.
 - **Driving**: responsive arcade handling, hop-drift with a 3-tier timed
   boost chain, start boost, pads, landing boost, wall sliding, kart bumps,
   recovery, wrong-way detection.

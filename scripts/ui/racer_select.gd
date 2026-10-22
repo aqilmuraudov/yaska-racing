@@ -46,7 +46,7 @@ func build() -> void:
 		b.focus_mode = Control.FOCUS_ALL
 		b.clip_contents = true
 		var v := VBoxContainer.new()
-		v.set_anchors_preset(Control.PRESET_FULL_RECT)
+		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_theme_constant_override("separation", -4)
 		b.add_child(v)

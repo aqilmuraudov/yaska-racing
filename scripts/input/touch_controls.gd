@@ -28,7 +28,7 @@ var _scale := 1.0
 
 func setup(p_input: PlayerInput) -> void:
 	player_input = p_input
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_add("steer_left", InputActions.STEER_LEFT, "", Color("25c2c2"))
 	_add("steer_right", InputActions.STEER_RIGHT, "", Color("25c2c2"))

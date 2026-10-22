@@ -39,7 +39,7 @@ func build() -> void:
 	if overlay_mode:
 		ui_layer.layer = 20
 	var col := VBoxContainer.new()
-	col.set_anchors_preset(Control.PRESET_FULL_RECT)
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	col.add_theme_constant_override("separation", 10)
 	body.add_child(col)
 	var tabs := HBoxContainer.new()
@@ -405,14 +405,14 @@ func _confirm_restore() -> void:
 ## Modal with optional auto-cancel countdown (display safety).
 func _show_modal(text: String, yes_text: String, no_text: String, cb: Callable, timeout: float) -> void:
 	_modal = Control.new()
-	_modal.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_modal.process_mode = Node.PROCESS_MODE_ALWAYS
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.6)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_modal.add_child(dim)
 	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_modal.add_child(center)
 	var p := PanelContainer.new()
 	p.custom_minimum_size = Vector2(560, 0)

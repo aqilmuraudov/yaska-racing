@@ -1,6 +1,77 @@
 # Status, verification evidence and known issues
 
-Date: 2026-10-22 · Build: 0.3.0 · Engine: Godot 4.4.1-stable
+Date: 2026-10-22 · Build: 0.4.0 · Engine: Godot 4.4.1-stable
+
+## Update 0.4.0 — Settings fix, animal racers, UI/graphics/perf pass
+
+### Fixes
+| Problem | Root cause | Fix | Evidence |
+|---|---|---|---|
+| Settings inaccessible during a race | Pause→Settings assigned the settings root (a `Node`) to a `Control`-typed variable → script error, overlay never opened | Typed as `Node` | `--ui-flow` (injected touch taps): Race→Pause→Settings→Back→Resume passes; race clock frozen in Settings; still paused after Back |
+| Settings unusable on a phone | Rows (buttons/sliders/selectors) swallowed touches, so the list could not be scrolled with a finger | `TouchScroll`: vertical drag past 14 px scrolls with inertia and cancels the tap underneath | `--ui-flow`: drag scrolls 0→~495 px and changes no setting |
+| Settings showing options with no effect | Unsupported options were shown disabled | Hidden per platform: 30/60 FPS on phones; VSync/window/SSAO hidden where unsupported; touch options only with touch | code + screenshots |
+| Full-screen panels sized 0×0 (results drawn off-screen when docked) | `set_anchors_preset` does not resize existing controls | `set_anchors_and_offsets_preset` everywhere | results/pause screenshots |
+| Karts pinned nose-first on barriers | Steering authority scaled with speed, which a wall holds at 0 | Wall-contact pivot authority + low-speed alignment along the barrier toward the race direction | chaos driver: stuck >1 s 21–30/run → 0–1/run (max 1.6 s incl. deliberate braking) |
+| Respawn could be read as a gate crossing | Teleport segment evaluated by the gate test | Respawn resets the previous position | code; lap/gate tests pass |
+
+### New content
+- Six racer packages (data resources): Posi/panda/Bamboo Sprint, Bicok/fox/Amber Dash,
+  Ləlöyün/rabbit/Hop Rocket, Məstan/cat/Velvet Slide, HavHav/dog/Buddy Rally,
+  Çəpiş/lamb/Cloud Booster — exact names, rating table as specified, ratings mapped
+  through bounded curves (see TUNING.md); balance spread 1.8 %.
+- Procedural animal drivers (shared rig, species ears/muzzles/markings/tails,
+  accessories) with blink, breathing, steering with paws on the rim, lean, jump/land,
+  boost, hit, victory, ear/tail motion; six distinct kart bodies; identical collision.
+- Racer selection (6 cards with drawn portraits, one live preview, 5 stat bars,
+  specialty, Start Race, race-setup button); the separate kart/paint picker is gone;
+  AI uses the other five racers; last racer saved.
+- HUD: position badge with up/down change cue, lap and timer pills + pause (upper
+  right), minimap lower-left (above steering buttons on touch), item slot by the
+  driving controls, trap-ahead warning; results docked right so the winner
+  celebrates on screen.
+- Graphics: contact shadows on all presets, deeper sky and warmer grade, red/white
+  barrier caps, "BAKU TURBO" gantry and "İÇƏRİŞƏHƏR" gate signage, landing dust and
+  boost bursts, closer chase camera.
+
+### Performance (desktop proxy: RTX 3070, **Mobile renderer**, 1600×720, one full race lap, `--stats`)
+| | Draw calls med / p95 | Primitives med | GPU ms med | CPU process+physics ms | Frames >20 ms | Static mem |
+|---|---|---|---|---|---|---|
+| Medium before | 223 / 298 | 319k | 2.41 | 2.21 + 2.79 | 1 | 131–134 MB |
+| Medium after | 254 / 299 | 340k | 2.73 | 2.10 + 2.66 | 0 | 153–156 MB |
+| Low before | 166 / 211 | 160k | 0.53 | 2.18 + 2.88 | 0 | 130–132 MB |
+| Low after | 200 / 241 | 188k | 1.30 | 1.94 + 2.42 | 0 | 153–155 MB |
+| High after | 286 / 371 | 522k | 1.78 | 2.42 + 3.02 | 0 | 154–156 MB |
+
+Six animated animal drivers first raised Medium to 310 draws; merging kart surfaces,
+one node per rear axle, a shared eye node, no wheel shadows and a 45 m draw distance
+for small driver parts brought it to 254. Repeated races (9 consecutive, headless):
+memory 109.0–109.3 MB, objects ~4155 — no growth.
+
+### Verification
+- Tests: **48 test methods, 683 checks, 0 failures** (adds `test_racers.gd`: names,
+  ratings, rating→handling direction and bounds, identical collision, selected racer
+  loads with five distinct rivals, selection persists and old ids migrate).
+- `--ui-flow` passes at 1280×720 and at 1600×720 with touch controls (uses a temporary
+  profile, never the player's).
+- AI races at easy/medium/hard complete with 0 recoveries; chaos driver 16 runs:
+  1 automatic recovery (valid respawn; trigger not reproduced since).
+- APK rebuilt and signed (`builds/android/BakuTurbo-debug.apk`, 30.1 MB); Windows exe rebuilt.
+
+### Still unverified (no Android device attached — `adb devices` empty)
+Frame rate / frame-time / thermals on the Xiaomi Mi 12 Lite, sustained play on the
+phone, real notch insets, touch feel of the new layout, vibration, OS suspend/resume.
+
+### Remaining issues
+- Animals are procedural low-poly forms (no sculpted fur, no skeletal rigs); expressions
+  are limited to blinking, head/ear/tail motion and poses.
+- Memory rose ~23 MB (unique meshes per racer); acceptable on 8 GB, but meshes could be
+  shared between duplicate AI racers when more than six race.
+- Balance measured with AI on one track only; human playtests needed.
+- One unexplained automatic recovery in chaos testing.
+
+---
+
+## Previous release (0.3.0)
 
 Legend: **Implemented** = code exists and runs; **Verified** = checked by an
 automated test, a measured run or a reviewed screenshot (evidence named);
