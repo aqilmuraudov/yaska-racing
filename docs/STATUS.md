@@ -30,9 +30,10 @@ automated test, a measured run or a reviewed screenshot (evidence named);
 | AI difficulty differs by skill, not teleporting | seeded races: easy/medium/hard AI median best lap 60.9 / 54.9 / 53.0 s; speed factors ≤ 1.0 + ≤ 3 % capped catch-up |
 | Android APK builds and is signed (arm64-v8a, debug keystore) | `builds/android/BakuTurbo-debug.apk` (≈ 30 MB), data/translations present in package |
 | Windows release builds and runs a race | `builds/windows/BakuTurbo.exe`, smoke race via log |
+| Pause → Settings overlay, results, Drift School, Time Trial ghost playback, shortcut fork/alley | screenshots reviewed; ghost shows stored best lap and drives ahead |
 | Mobile renderer compatibility | game run with `--rendering-method mobile` at 1600×720, screenshots reviewed |
 
-Test suite: **40 test methods, 615 checks, 0 failures** (`tests/run_tests.gd`).
+Test suite: **42 test methods, 626 checks, 0 failures** (`tests/run_tests.gd`).
 
 ## Implemented, verified only partially
 
@@ -55,7 +56,15 @@ Test suite: **40 test methods, 615 checks, 0 failures** (`tests/run_tests.gd`).
 
 ## Desktop soak (proxy)
 
-SOAK_RESULTS_PLACEHOLDER
+20-minute real-time session, Mobile renderer, Medium preset, 1600×720
+(20:9), autopilot, continuous 3-lap races (`--soak --stats`), RTX 3070 desktop.
+
+| Window | Result |
+|---|---|
+| First 15.4 min, unattended (5 complete races, auto-restarts) | 60 FPS every second; **0 frames over 20 ms**; static memory 120.6–124.6 MB (124.1 → 124.4 MB at each race end); objects 3505–3643; draw calls median 161, p95 243, max 309; primitives median 0.30 M, max 0.54 M |
+| Remaining minutes | someone interacted with the window (pause, settings, menu, new race); this exposed a bug — opening Settings from the pause menu failed (typed variable) — now fixed and covered by `test_pause_settings_overlay_opens_and_closes` |
+
+This is a **desktop proxy**. It does not demonstrate the phone target.
 
 ## Known issues / limitations
 

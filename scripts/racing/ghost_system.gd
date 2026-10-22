@@ -129,6 +129,11 @@ func _apply_material(n: Node, mat: Material) -> void:
 func _on_lap(r, _lap: int, lap_time: float) -> void:
 	if not r.is_player:
 		return
+	# Autopilot (debug/demo) laps are not the player's and are never saved.
+	if bool(race.config.get("debug_autopilot", false)) and not DebugRunner.parse_args().has("keep-ghost"):
+		_recording.clear()
+		_play_time = 0.0
+		return
 	var best_ms := int(_best.get("lap_ms", 0)) if not _best.is_empty() else 0
 	if best_ms <= 0 or int(round(lap_time * 1000.0)) < best_ms:
 		save_ghost(_recording.duplicate(), lap_time)

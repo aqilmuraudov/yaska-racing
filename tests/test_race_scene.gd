@@ -143,3 +143,31 @@ func test_full_race_completes_with_results() -> void:
 				check(row.time > 30.0, "plausible finish time %.1f" % row.time)
 		check(finished >= 4, "most racers finished the lap within the window (%d)" % finished)
 		check_eq(got.rows[0].place, 1, "first row is P1")
+
+
+func test_pause_settings_overlay_opens_and_closes() -> void:
+	var cfg := Game.default_race_config()
+	cfg.debug_autopilot = true
+	cfg.seed = 3
+	cfg.active_seed = 3
+	cfg.event_instance_id = "test-pause"
+	Game.race_config = cfg
+	race = load("res://scenes/race/race.tscn").instantiate()
+	tree.root.add_child(race)
+	await tree.process_frame
+	check(race.hud != null, "HUD built")
+	race.set_paused(true)
+	check(race.hud.pause_menu.visible, "pause menu visible")
+	race.hud.pause_menu._open_settings()
+	await tree.process_frame
+	var ov = race.hud.pause_menu.settings_overlay
+	check(ov != null and ov is MenuScreen, "settings overlay opened from pause")
+	check(not race.hud.pause_menu.panel.visible, "pause panel hidden behind settings")
+	if ov:
+		ov.go_back()
+	await tree.process_frame
+	await tree.process_frame
+	check(race.hud.pause_menu.settings_overlay == null, "overlay closed")
+	check(race.hud.pause_menu.panel.visible, "pause panel back")
+	race.set_paused(false)
+	check(not tree.paused, "resumed")

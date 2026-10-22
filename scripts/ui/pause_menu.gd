@@ -6,7 +6,7 @@ extends Control
 var race: RaceManager
 var panel: PanelContainer
 var resume_btn: Button
-var settings_overlay: Control
+var settings_overlay: Node
 
 
 func setup(p_race: RaceManager) -> void:

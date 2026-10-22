@@ -16,6 +16,7 @@ extends Node
 ##   --probe=T              print every kart's position once race time >= T
 ##   --quit-on-results      print the race summary and quit when results show
 ##   --soak                 restart the race 3 s after every results screen
+##   --ui-shots             capture pause, pause→settings and results screens
 ## Used for screenshots, soak tests and reproducible AI races.
 
 var args := {}
@@ -32,6 +33,7 @@ var _views_done := false
 var _probe_done := false
 var _soak_timer := -1.0
 var _soak_races := 0
+var _ui_stage := 0
 
 
 static func parse_args() -> Dictionary:
@@ -72,6 +74,25 @@ func _ready() -> void:
 		cfg.event_instance_id = "debug-%d" % Time.get_ticks_usec()
 		Game.race_config = cfg
 		call_deferred("_enter_race")
+
+
+func _ui_shots(race: RaceManager) -> void:
+	if _ui_stage == 0 and race.race_time > 6.0:
+		_ui_stage = 1
+		race.set_paused(true)
+		await get_tree().create_timer(0.5).timeout
+		await _save_shot("ui_pause.png")
+		race.hud.pause_menu._open_settings()
+		await get_tree().create_timer(0.8).timeout
+		await _save_shot("ui_pause_settings.png")
+		race.hud.pause_menu.settings_overlay.go_back()
+		await get_tree().create_timer(0.3).timeout
+		race.set_paused(false)
+		_ui_stage = 2
+	elif _ui_stage == 2 and race.state == RaceManager.RaceState.RESULTS:
+		_ui_stage = 3
+		await get_tree().create_timer(1.2).timeout
+		await _save_shot("ui_results.png")
 
 
 func _capture_screens() -> void:
@@ -132,6 +153,8 @@ func _process(delta: float) -> void:
 			if _soak_timer <= 0.0:
 				_soak_timer = -1.0
 				race.restart()
+	if args.has("ui-shots") and race != null and _capture_dir != "":
+		_ui_shots(race)
 	var results_now := args.has("quit-on-results") and race != null and race.state == RaceManager.RaceState.RESULTS
 	if (_quit_after > 0.0 and _elapsed >= _quit_after) or results_now:
 		if race != null:
