@@ -25,6 +25,9 @@ func _draw() -> void:
 	var it := item
 	if rolling:
 		it = ROLL_ORDER[int(_roll_t * 12.0) % ROLL_ORDER.size()]
+	if it == &"":
+		draw_arc(c, s * 0.62, 0.0, TAU, 32, Color(1, 1, 1, 0.14), 3.0, true)
+		return
 	draw_icon(self, it, c, s)
 
 

@@ -136,3 +136,23 @@ func _notification(what: int) -> void:
 			# Android may kill a backgrounded process without further notice.
 			SaveManager.save_profile()
 			Settings.save_settings()
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			_on_back_request()
+
+
+## Android back button: pause a race, navigate back in menus, and only
+## leave the app from the main menu.
+func _on_back_request() -> void:
+	var scene := get_tree().current_scene
+	if scene is RaceManager:
+		var race := scene as RaceManager
+		if not race.paused:
+			race.set_paused(true)
+		elif race.hud and race.hud.pause_menu.settings_overlay:
+			race.hud.pause_menu.settings_overlay.go_back()
+		else:
+			race.set_paused(false)
+	elif state == State.MAIN_MENU:
+		quit_game()
+	elif scene != null and scene.has_method("go_back"):
+		scene.go_back()

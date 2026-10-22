@@ -178,7 +178,7 @@ SET_TUTORIAL_REPLAY,Replay drift tutorial,Drift dərsini təkrarla
 SET_UI_SCALE,Interface scale,İnterfeys miqyası
 SET_SHAKE,Camera shake,Kamera titrəməsi
 SET_REDUCED_FLASH,Reduce flashing,Parıltıları azalt
-SET_SUBTITLES,Subtitles,Altyazılar
+SET_SUBTITLES,Subtitles & sound captions,Altyazılar və səs başlıqları
 SET_HIGH_CONTRAST,High-contrast HUD,Yüksək kontrastlı HUD
 SET_RESTORE,Restore defaults,Standartları bərpa et
 SET_RESTORE_CONFIRM,Restore all settings to defaults?,Bütün ayarlar standarta qaytarılsın?
@@ -215,3 +215,11 @@ RACER_NAME_4,Tural,Tural
 RACER_NAME_5,Nigar,Nigar
 RACER_NAME_6,Kamran,Kamran
 RACER_NAME_7,Günay,Günay
+CAP_ITEM,[Item: %s],[Əşya: %s]
+CAP_HIT,[Spun out!],[Fırlandın!]
+CAP_SHIELD,[Shield blocked a hit],[Qalxan zərbəni dəf etdi]
+CAP_PAD,[Boost pad],[Sürət zolağı]
+CAP_LANDING,[Landing boost],[Eniş sürəti]
+CAP_WALL,[Crash into barrier],[Maneəyə çırpılma]
+CAP_TRAP_DROP,[Trap dropped behind],[Arxaya tələ atıldı]
+CAP_START,[Start boost],[Start sürəti]

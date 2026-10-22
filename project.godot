@@ -12,6 +12,7 @@ run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://assets/icons/icon.svg"
 run/low_processor_mode=false
+config/quit_on_go_back=false
 
 [autoload]
 

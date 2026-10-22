@@ -556,6 +556,25 @@ func _place_backdrop() -> void:
 		city.add(PropKit.box(bs), Transform3D(Basis(Vector3.UP, rng.randf_range(-0.2, 0.2)), q + Vector3(0, bh * 0.5 - 1.0, 0)), plaster[i % plaster.size()])
 	var city_mi := _landmark(city.commit(), Transform3D.IDENTITY, "CityBlocks")
 	city_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Soft low-poly clouds (one merged mesh, no shadows).
+	var cloud_mat := StandardMaterial3D.new()
+	cloud_mat.albedo_color = Color(1, 1, 1)
+	cloud_mat.roughness = 1.0
+	cloud_mat.emission_enabled = true
+	cloud_mat.emission = Color(0.85, 0.88, 0.95)
+	cloud_mat.emission_energy_multiplier = 0.35
+	cloud_mat.disable_receive_shadows = true
+	var clouds := PropKit.Accum.new()
+	for i in 14:
+		var ang := rng.randf() * TAU
+		var dist := rng.randf_range(450.0, 800.0)
+		var cpos := center + Vector3(cos(ang) * dist, rng.randf_range(110.0, 180.0), sin(ang) * dist)
+		for k in 4:
+			var sz := Vector3(rng.randf_range(40, 80), rng.randf_range(14, 24), rng.randf_range(26, 48))
+			var off := Vector3(rng.randf_range(-35, 35), rng.randf_range(-4, 6), rng.randf_range(-15, 15))
+			clouds.add(ShapeKit.superellipsoid(sz, 0.9, 0.9, Vector2.ONE, Vector2.ONE, 5, 8), Transform3D(Basis.IDENTITY, cpos + off), cloud_mat)
+	var cloud_mi := _landmark(clouds.commit(), Transform3D.IDENTITY, "Clouds")
+	cloud_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 func _process(delta: float) -> void:

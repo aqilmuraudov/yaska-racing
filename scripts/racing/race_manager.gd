@@ -67,6 +67,7 @@ var headless_test := false ## set by tests to skip UI
 var auto_pause_on_focus_loss := true
 var tutorial: TutorialDirector
 var ghosts: GhostSystem
+var skid_marks: SkidMarks
 
 
 func _ready() -> void:
@@ -76,6 +77,7 @@ func _ready() -> void:
 	if Game.debug_race:
 		auto_pause_on_focus_loss = false # unattended debug/soak runs
 	build_world()
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	start_intro()
 
 
@@ -106,6 +108,13 @@ func build_world() -> void:
 	items.setup(track, bool(config.items) and config.mode != "time_trial", seed_value)
 	items.racers_provider = _racer_place_info
 	_spawn_racers(seed_value)
+	skid_marks = SkidMarks.new()
+	skid_marks.name = "SkidMarks"
+	add_child(skid_marks)
+	var all_karts: Array = []
+	for r in racers:
+		all_karts.append(r.kart)
+	skid_marks.setup(all_karts)
 	if config.mode == "time_trial":
 		ghosts = GhostSystem.new()
 		ghosts.name = "Ghosts"
@@ -261,6 +270,8 @@ func restart() -> void:
 	items.reset()
 	if decor:
 		decor.reset_lights()
+	if skid_marks:
+		skid_marks.clear()
 	if tutorial:
 		tutorial.reset()
 	if ghosts:
@@ -615,6 +626,15 @@ func _notification(what: int) -> void:
 				player.player_input.release_all()
 			if hud and hud.has_method("release_touches"):
 				hud.release_touches()
+
+
+## A controller dropping out mid-race pauses instead of leaving the kart
+## running with stale input.
+func _on_joy_connection_changed(_device: int, connected: bool) -> void:
+	if connected or not auto_pause_on_focus_loss:
+		return
+	if state in [RaceState.COUNTDOWN, RaceState.RACING, RaceState.FINISHING] and not paused:
+		set_paused(true)
 
 
 func quit_to_mode_select() -> void:

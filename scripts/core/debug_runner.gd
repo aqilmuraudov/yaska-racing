@@ -15,6 +15,7 @@ extends Node
 ##   --timescale=X          Engine.time_scale for fast soak runs
 ##   --probe=T              print every kart's position once race time >= T
 ##   --quit-on-results      print the race summary and quit when results show
+##   --soak                 restart the race 3 s after every results screen
 ## Used for screenshots, soak tests and reproducible AI races.
 
 var args := {}
@@ -29,6 +30,8 @@ var _frame_times: Array[float] = []
 var _overview_done := false
 var _views_done := false
 var _probe_done := false
+var _soak_timer := -1.0
+var _soak_races := 0
 
 
 static func parse_args() -> Dictionary:
@@ -119,6 +122,16 @@ func _process(delta: float) -> void:
 			_print_stats(race)
 			_stat_timer = 0.0
 			_frame_times.clear()
+	if args.has("soak") and race != null:
+		if race.state == RaceManager.RaceState.RESULTS:
+			if _soak_timer < 0.0:
+				_soak_timer = 3.0
+				_soak_races += 1
+				print("SOAK race %d finished at %.0f s real, mem=%.1f MB objects=%d" % [_soak_races, _elapsed, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, Performance.get_monitor(Performance.OBJECT_COUNT)])
+			_soak_timer -= delta
+			if _soak_timer <= 0.0:
+				_soak_timer = -1.0
+				race.restart()
 	var results_now := args.has("quit-on-results") and race != null and race.state == RaceManager.RaceState.RESULTS
 	if (_quit_after > 0.0 and _elapsed >= _quit_after) or results_now:
 		if race != null:
@@ -170,15 +183,19 @@ func _capture_views(race: RaceManager) -> void:
 	race.add_child(cam)
 	cam.current = true
 	for v in String(args.views).split(","):
+		# "sc:20" = 20 m into shortcut 0; plain numbers are main-route distances.
+		var tp: TrackPath = race.track.main
+		if v.begins_with("sc:"):
+			tp = race.track.shortcuts[0].path
+			v = v.substr(3)
 		var s := float(v)
-		var tp := race.track.main
 		var p := tp.position_at(s)
 		var t := tp.tangent_at(s)
 		cam.global_position = p - Vector3(t.x, 0, t.z).normalized() * 6.0 + Vector3.UP * 2.6
 		cam.look_at(tp.position_at(s + 22.0) + Vector3.UP * 1.2, Vector3.UP)
 		for i in 4:
 			await get_tree().process_frame
-		await _save_shot("view_%04d.png" % int(s))
+		await _save_shot("view_%s%04d.png" % ["sc_" if tp != race.track.main else "", int(s)])
 	cam.current = false
 	race.camera.current = true
 	cam.queue_free()

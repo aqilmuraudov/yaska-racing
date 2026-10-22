@@ -31,6 +31,7 @@ var _last_item: StringName = &""
 var _uses_touch := false
 var speed_blur: ColorRect
 var _blur := 0.0
+var captions: VBoxContainer
 
 
 func setup(p_race: RaceManager) -> void:
@@ -73,9 +74,13 @@ func setup(p_race: RaceManager) -> void:
 	pos_label.add_theme_font_size_override("font_size", 76)
 	pos_row.add_child(pos_label)
 	pos_total = _label("/6", &"HudSmall")
-	pos_total.size_flags_vertical = Control.SIZE_SHRINK_END
 	pos_total.add_theme_font_size_override("font_size", 30)
-	pos_row.add_child(pos_total)
+	# Sit "/6" on the big number's baseline (Baloo has a tall line box).
+	var total_box := MarginContainer.new()
+	total_box.add_theme_constant_override("margin_top", 34)
+	total_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	total_box.add_child(pos_total)
+	pos_row.add_child(total_box)
 	lap_label = _label("", &"HudSmall")
 	lap_label.add_theme_font_size_override("font_size", 30)
 	tl.add_child(lap_label)
@@ -177,6 +182,14 @@ func setup(p_race: RaceManager) -> void:
 	recover_bar.visible = false
 	frame.add_child(recover_bar)
 
+	# Sound captions (accessibility): short text for important audio cues.
+	captions = VBoxContainer.new()
+	captions.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	captions.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	captions.position = Vector2(0, -60 - (230.0 if _uses_touch else 0.0))
+	captions.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(captions)
+
 	speed_label = _label("", &"HudSmall")
 	speed_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	speed_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -214,6 +227,11 @@ func setup(p_race: RaceManager) -> void:
 	pk.drift_miss.connect(func(): drift_meter.show_result(tr("HUD_MISS"), false))
 	pk.shield_blocked.connect(func(): show_message(tr("HUD_SHIELD_BLOCK"), "info"))
 	pk.item_changed.connect(_on_item_changed)
+	pk.got_hit.connect(func(_k): caption(tr("CAP_HIT")))
+	pk.shield_blocked.connect(func(): caption(tr("CAP_SHIELD")))
+	pk.boost_started.connect(_on_player_boost)
+	pk.wall_hit.connect(func(st): if st >= 0.6: caption(tr("CAP_WALL")))
+	race.items.item_used.connect(func(k, it): if k == pk and it == &"trap": caption(tr("CAP_TRAP_DROP")))
 	Settings.changed.connect(_on_settings_changed)
 	_on_settings_changed("", "")
 	reset()
@@ -320,15 +338,45 @@ func _on_state(s) -> void:
 		countdown_label.text = ""
 
 
+func _on_player_boost(src: StringName) -> void:
+	match src:
+		&"pad":
+			caption(tr("CAP_PAD"))
+		&"landing":
+			caption(tr("CAP_LANDING"))
+		&"start":
+			caption(tr("CAP_START"))
+
+
+func caption(text: String) -> void:
+	if not bool(Settings.get_value("accessibility", "subtitles", true)):
+		return
+	var l := _label(text, &"HudSmall")
+	l.add_theme_font_size_override("font_size", 22)
+	captions.add_child(l)
+	while captions.get_child_count() > 4:
+		var oldest := captions.get_child(0)
+		captions.remove_child(oldest)
+		oldest.queue_free()
+	var tw := l.create_tween()
+	tw.tween_interval(2.0)
+	tw.tween_property(l, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(l.queue_free)
+
+
 func _on_item_changed(it: StringName) -> void:
 	if it == &"?rolling":
 		item_icon.rolling = true
 		item_icon.item = &""
 	else:
+		var was_rolling := item_icon.rolling
 		item_icon.rolling = false
 		item_icon.item = it
 		if it != &"" and _last_item == &"":
 			item_panel.scale = Vector2.ONE * 1.2
+		if it != &"" and was_rolling:
+			var names := {&"turbo": "ITEM_TURBO", &"shield": "ITEM_SHIELD", &"trap": "ITEM_TRAP"}
+			caption(tr("CAP_ITEM") % tr(names.get(it, "")))
 	_last_item = it if it != &"?rolling" else _last_item
 
 
