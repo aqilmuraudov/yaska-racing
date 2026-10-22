@@ -46,6 +46,22 @@ func tri(a: Vector3, b: Vector3, c: Vector3,
 		collision.append_array([a, c, b])
 
 
+## Triangle with per-vertex colours (smooth gradients, e.g. terrain).
+func tri_colored(a: Vector3, b: Vector3, c: Vector3, ca: Color, cb: Color, cc: Color) -> void:
+	var face_n := (b - a).cross(c - a)
+	if face_n.length_squared() < 1e-12:
+		return
+	face_n = face_n.normalized()
+	verts.append_array([a, c, b])
+	normals.append_array([face_n, face_n, face_n])
+	uvs.append_array([Vector2.ZERO, Vector2.ZERO, Vector2.ZERO])
+	colors.append_array([ca, cc, cb])
+	if use_uv2:
+		uv2s.append_array([Vector2.ZERO, Vector2.ZERO, Vector2.ZERO])
+	if collect_collision:
+		collision.append_array([a, c, b])
+
+
 ## Quad a-b-c-d counter-clockwise from the front.
 func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3,
 		ua := Vector2(0, 0), ub := Vector2(1, 0), uc := Vector2(1, 1), ud := Vector2(0, 1),

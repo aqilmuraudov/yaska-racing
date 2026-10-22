@@ -24,6 +24,10 @@ float vnoise(vec2 p) {
 
 varying vec3 world_pos;
 
+vec3 srgb_to_linear(vec3 c) {
+	return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+}
+
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
@@ -34,7 +38,7 @@ void fragment() {
 	float detail = 1.0 - smoothstep(40.0, 90.0, dist);
 	float n = vnoise(p * noise_scale) * 0.65 + vnoise(p * noise_scale * 4.0) * 0.35 * detail;
 	float speck = hash12(floor(p * 6.0)) * detail;
-	vec3 col = COLOR.rgb * (1.0 - variation * 0.5 + variation * n) * (0.96 + 0.08 * speck);
+	vec3 col = srgb_to_linear(COLOR.rgb) * (1.0 - variation * 0.5 + variation * n) * (0.96 + 0.08 * speck);
 	ALBEDO = col;
 	ROUGHNESS = 0.92;
 	SPECULAR = 0.2;

@@ -30,6 +30,8 @@ var data: TrackData
 var road_body: StaticBody3D
 var wall_body: StaticBody3D
 var boost_pad_areas: Array[Area3D] = []
+## Barrier line segments for decor: {a, b, out, theme, path, side, s}
+var wall_segments: Array[Dictionary] = []
 var materials := {}
 ## Visual-only nodes that graphics presets may hide or cull.
 var decor_root: Node3D
@@ -67,10 +69,15 @@ func _make_materials() -> void:
 	materials.water = water
 	var wall := StandardMaterial3D.new()
 	wall.vertex_color_use_as_albedo = true
+	wall.vertex_color_is_srgb = true
 	wall.roughness = 0.85
 	materials.wall = wall
+	var stone := ShaderMaterial.new()
+	stone.shader = preload("res://assets/materials/limestone.gdshader")
+	materials.stone = stone
 	var pad := StandardMaterial3D.new()
 	pad.vertex_color_use_as_albedo = true
+	pad.vertex_color_is_srgb = true
 	pad.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	materials.pad = pad
 
@@ -193,6 +200,7 @@ func _inside_other_corridor(p: Vector3, self_index: int, margin: float) -> bool:
 func _build_walls() -> void:
 	wall_body = _static_body("WallBody", &"wall")
 	var wall_mb := MeshBuilder.new(false)
+	var stone_mb := MeshBuilder.new(false)
 	var col_mb := MeshBuilder.new(true)
 	for entry in _all_paths():
 		var path: TrackPath = entry.path
@@ -214,12 +222,15 @@ func _build_walls() -> void:
 					continue
 				var theme := path.themes[i]
 				var style := _wall_style(theme, r0 * side)
-				_wall_visual(wall_mb, a, b, r0 * side, r1 * side, style)
+				_wall_visual(stone_mb if style.get("kind", "") == "oldcity" else wall_mb, a, b, r0 * side, r1 * side, style)
+				wall_segments.append({"a": a, "b": b, "out": r0 * side, "theme": theme,
+					"path": entry.index, "side": side, "s": path.cum[i], "style": style.get("kind", "")})
 				# Collision: thin vertical plane, tall enough to stop jumps.
 				var lo := Vector3.DOWN * 1.0
 				var hi := Vector3.UP * WALL_HEIGHT_COLLISION
 				col_mb.quad(a + lo, b + lo, b + hi, a + hi)
 	_add_mesh("Barriers", wall_mb.commit(materials.wall), false)
+	_add_mesh("StoneBarriers", stone_mb.commit(materials.stone), false)
 	_attach_shape(wall_body, col_mb)
 
 
@@ -227,10 +238,12 @@ func _wall_style(theme: int, outward: Vector3) -> Dictionary:
 	match theme:
 		TrackData.THEME_BOULEVARD:
 			if outward.z > 0.3:
-				return {"h": 1.0, "body": Color("f2ead8"), "cap": Color("ffffff"), "stripe": Color.TRANSPARENT}
+				# Low plinth; the balustrade on top is placed by TrackDecor.
+				return {"h": 0.22, "body": Color("e8dcc0"), "cap": Color("f4ecd8"), "stripe": Color.TRANSPARENT, "kind": "balustrade"}
 			return {"h": 0.9, "body": C_CONCRETE, "cap": C_STRIPE_RED, "stripe": Color.WHITE}
 		TrackData.THEME_OLDCITY:
-			return {"h": 1.3, "body": C_LIMESTONE, "cap": Color("f5ead2"), "stripe": Color.TRANSPARENT}
+			# Tints for the limestone shader (near white keeps the stone colour).
+			return {"h": 1.2, "body": Color(1.0, 0.97, 0.93), "cap": Color(1.0, 1.0, 1.0), "stripe": Color.TRANSPARENT, "kind": "oldcity"}
 	return {"h": 0.95, "body": C_CONCRETE, "cap": C_STRIPE_BLUE, "stripe": Color.WHITE}
 
 
@@ -422,10 +435,8 @@ func _build_terrain() -> void:
 			var p10 := Vector3(x0 + (ix + 1) * cell, heights[i10], z0 + iz * cell)
 			var p01 := Vector3(x0 + ix * cell, heights[i01], z0 + (iz + 1) * cell)
 			var p11 := Vector3(x0 + (ix + 1) * cell, heights[i11], z0 + (iz + 1) * cell)
-			var c := cols[i00].lerp(cols[i11], 0.5)
-			# Up-facing: (p01, p11, p10) and (p01, p10, p00) are CCW from above.
-			mb.tri(p00, p01, p11, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, c)
-			mb.tri(p00, p11, p10, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, c)
+			mb.tri_colored(p00, p01, p11, cols[i00], cols[i01], cols[i11])
+			mb.tri_colored(p00, p11, p10, cols[i00], cols[i11], cols[i10])
 	var mi := _add_mesh("Terrain", mb.commit(materials.ground), false)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Safety floor far below: anything reaching it is recovered by RaceManager.
@@ -453,6 +464,8 @@ func _terrain_sample(hash: Dictionary, hcell: float, wx: float, wz: float) -> Ar
 				var w := 1.0 / maxf(d * d, 1.0)
 				wsum += w
 				ysum += w * p.y
+	if best_d == INF:
+		best_d = 200.0 # far from every track sample
 	var y := best_y
 	if wsum > 0.0:
 		y = ysum / wsum
@@ -476,7 +489,7 @@ func _terrain_sample(hash: Dictionary, hcell: float, wx: float, wz: float) -> Ar
 		col = C_GRASS_DARK
 	var n := sin(wx * 0.05) * cos(wz * 0.043)
 	if best_d > 60.0 and wz < data.sea_z - 16.0:
-		y += maxf(0.0, (best_d - 60.0) * 0.06) + n * 1.5 # gentle hills away from the course
+		y += minf(maxf(0.0, (best_d - 60.0) * 0.06), 6.0) + n * 1.5 # gentle hills away from the course
 	return [y, col]
 
 

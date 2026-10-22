@@ -20,6 +20,8 @@ var torso: Node3D
 var steering_wheel: Node3D
 var _base_wheel_y: Array[float] = []
 var _time := 0.0
+var _accums := {} # Node3D -> PropKit.Accum
+static var _kart_vcolor: ShaderMaterial
 
 const C_DARK := Color("2a2d36")
 const C_METAL := Color("8a8f99")
@@ -60,7 +62,7 @@ func build(style: String, paint: Color, is_player: bool) -> void:
 
 	# Floor pan (shared)
 	var floor_len := (wb_rear - wb_front) + 0.5
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(1.05, 0.14, floor_len), 0.2, 0.25), dark,
+	_add(self, ShapeKit.superellipsoid(Vector3(1.05, 0.14, floor_len), 0.2, 0.25), dark,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.27, (wb_front + wb_rear) * 0.5)))
 
 	match style:
@@ -90,14 +92,14 @@ func build(style: String, paint: Color, is_player: bool) -> void:
 		var radius: float = d[1]
 		var width: float = d[2]
 		var tire := ShapeKit.superellipsoid(Vector3(radius * 2.0, width, radius * 2.0), 0.3, 1.0, Vector2.ONE, Vector2.ONE, 6, 18)
-		ShapeKit.add_mesh(spinner, tire, tire_mat, Transform3D(Basis(Vector3.FORWARD, PI * 0.5), Vector3.ZERO))
+		_add(spinner, tire, tire_mat, Transform3D(Basis(Vector3.FORWARD, PI * 0.5), Vector3.ZERO))
 		var side := signf(d[0].x)
-		ShapeKit.add_mesh(spinner, ShapeKit.cylinder(radius * 0.55, width + 0.02, 12), rim_mat,
+		_add(spinner, ShapeKit.cylinder(radius * 0.55, width + 0.02, 12), rim_mat,
 			Transform3D(Basis(Vector3.FORWARD, PI * 0.5), Vector3(side * 0.005, 0, 0)))
-		ShapeKit.add_mesh(spinner, ShapeKit.cylinder(radius * 0.2, width + 0.06, 8), chrome,
+		_add(spinner, ShapeKit.cylinder(radius * 0.2, width + 0.06, 8), chrome,
 			Transform3D(Basis(Vector3.FORWARD, PI * 0.5), Vector3(side * 0.01, 0, 0)))
 		# Spoke bar so rotation is visible.
-		ShapeKit.add_mesh(spinner, ShapeKit.superellipsoid(Vector3(0.03, radius * 0.95, 0.07), 0.3, 0.3), dark,
+		_add(spinner, ShapeKit.superellipsoid(Vector3(0.03, radius * 0.95, 0.07), 0.3, 0.3), dark,
 			Transform3D(Basis.IDENTITY, Vector3(side * (width * 0.5 + 0.012), 0, 0)))
 		wheels.append(pivot)
 		wheel_spinners.append(spinner)
@@ -105,6 +107,27 @@ func build(style: String, paint: Color, is_player: bool) -> void:
 	rear_contact_points = [Vector3(-track_r, 0.05, wb_rear + 0.1), Vector3(track_r, 0.05, wb_rear + 0.1)]
 
 	_build_driver(paint, is_player)
+	_flush()
+
+
+## Parts are accumulated per animated node and merged into one mesh each,
+## so a whole kart renders in roughly ten draws instead of ~40.
+func _add(parent: Node3D, mesh: Mesh, material: Material, xform: Transform3D) -> void:
+	if not _accums.has(parent):
+		_accums[parent] = PropKit.Accum.new()
+	_accums[parent].add(mesh, xform, material)
+
+
+func _flush() -> void:
+	if _kart_vcolor == null:
+		_kart_vcolor = ShaderMaterial.new()
+		_kart_vcolor.shader = preload("res://assets/materials/vcolor.gdshader")
+		_kart_vcolor.set_shader_parameter("rim_amount", 0.2)
+	for node in _accums.keys():
+		var mi := MeshInstance3D.new()
+		mi.mesh = _accums[node].commit(_kart_vcolor)
+		node.add_child(mi)
+	_accums.clear()
 
 
 func _paint_material(color: Color) -> StandardMaterial3D:
@@ -120,25 +143,25 @@ func _paint_material(color: Color) -> StandardMaterial3D:
 
 
 func _build_balanced(paint: Material, accent: Material, dark: Material, metal: Material, chrome: Material) -> void:
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.98, 0.42, 1.55), 0.45, 0.45, Vector2(0.62, 0.62), Vector2(1, 1), 10, 20, -0.04), paint,
+	_add(self, ShapeKit.superellipsoid(Vector3(0.98, 0.42, 1.55), 0.45, 0.45, Vector2(0.62, 0.62), Vector2(1, 1), 10, 20, -0.04), paint,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.5, -0.05)))
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.86, 0.2, 0.5), 0.4, 0.5, Vector2(0.75, 0.8)), accent,
+	_add(self, ShapeKit.superellipsoid(Vector3(0.86, 0.2, 0.5), 0.4, 0.5, Vector2(0.75, 0.8)), accent,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.36, -0.95)))
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(1.3, 0.1, 0.16), 0.3, 0.3), dark,
+	_add(self, ShapeKit.superellipsoid(Vector3(1.3, 0.1, 0.16), 0.3, 0.3), dark,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.27, -1.12)))
 	for x in [-0.56, 0.56]:
-		ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.26, 0.26, 0.85), 0.4, 0.4, Vector2(0.7, 0.8)), paint,
+		_add(self, ShapeKit.superellipsoid(Vector3(0.26, 0.26, 0.85), 0.4, 0.4, Vector2(0.7, 0.8)), paint,
 			Transform3D(Basis.IDENTITY, Vector3(x, 0.42, 0.12)))
 	_engine_and_wing(paint, dark, metal, chrome, 0.85, 1.0, 1.12, 0.95)
 	_seat_and_wheel(dark, -0.3, 0.86)
 
 
 func _build_agile(paint: Material, accent: Material, dark: Material, metal: Material, chrome: Material) -> void:
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(1.0, 0.5, 1.32), 0.7, 0.6, Vector2(0.72, 0.75), Vector2(1, 1), 12, 20, 0.02), paint,
+	_add(self, ShapeKit.superellipsoid(Vector3(1.0, 0.5, 1.32), 0.7, 0.6, Vector2(0.72, 0.75), Vector2(1, 1), 12, 20, 0.02), paint,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.55, -0.05)))
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.7, 0.26, 0.42), 0.6, 0.6), accent,
+	_add(self, ShapeKit.superellipsoid(Vector3(0.7, 0.26, 0.42), 0.6, 0.6), accent,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.42, -0.78)))
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(1.2, 0.1, 0.14), 0.3, 0.3), dark,
+	_add(self, ShapeKit.superellipsoid(Vector3(1.2, 0.1, 0.14), 0.3, 0.3), dark,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.28, -0.95)))
 	_engine_and_wing(paint, dark, metal, chrome, 0.72, 0.9, 0.95, 0.85)
 	# Pomegranate crown on the engine cover: the kart's signature silhouette.
@@ -146,49 +169,49 @@ func _build_agile(paint: Material, accent: Material, dark: Material, metal: Mate
 	for i in 5:
 		var a := TAU * i / 5.0
 		var p := Vector3(cos(a) * 0.17, 0.98, 0.72 + sin(a) * 0.12)
-		ShapeKit.add_mesh(self, ShapeKit.cone(0.07, 0.0, 0.2, 6), crown_mat, Transform3D(Basis.IDENTITY, p))
+		_add(self, ShapeKit.cone(0.07, 0.0, 0.2, 6), crown_mat, Transform3D(Basis.IDENTITY, p))
 	_seat_and_wheel(dark, -0.26, 0.9)
 
 
 func _build_fast(paint: Material, accent: Material, dark: Material, metal: Material, chrome: Material) -> void:
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.92, 0.34, 1.95), 0.4, 0.45, Vector2(0.42, 0.5), Vector2(1, 1), 10, 22, -0.06), paint,
+	_add(self, ShapeKit.superellipsoid(Vector3(0.92, 0.34, 1.95), 0.4, 0.45, Vector2(0.42, 0.5), Vector2(1, 1), 10, 22, -0.06), paint,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.45, -0.12)))
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(1.32, 0.07, 0.4), 0.25, 0.35, Vector2(0.9, 1.0)), accent,
+	_add(self, ShapeKit.superellipsoid(Vector3(1.32, 0.07, 0.4), 0.25, 0.35, Vector2(0.9, 1.0)), accent,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.26, -1.18)))
 	for x in [-0.55, 0.55]:
-		ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.3, 0.3, 1.05), 0.35, 0.4, Vector2(0.55, 0.6)), accent,
+		_add(self, ShapeKit.superellipsoid(Vector3(0.3, 0.3, 1.05), 0.35, 0.4, Vector2(0.55, 0.6)), accent,
 			Transform3D(Basis.IDENTITY, Vector3(x, 0.4, 0.15)))
 	_engine_and_wing(paint, dark, metal, chrome, 0.92, 1.18, 1.36, 1.05)
 	_seat_and_wheel(dark, -0.36, 0.82)
 
 
 func _engine_and_wing(paint: Material, dark: Material, metal: Material, chrome: Material, engine_z: float, wing_y: float, wing_w: float, wing_z: float) -> void:
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.72, 0.34, 0.46), 0.35, 0.35), metal,
+	_add(self, ShapeKit.superellipsoid(Vector3(0.72, 0.34, 0.46), 0.35, 0.35), metal,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.58, engine_z)))
 	for x in [-0.18, 0.18]:
 		var p := Vector3(x, 0.62, engine_z + 0.3)
-		ShapeKit.add_mesh(self, ShapeKit.cylinder(0.065, 0.32, 10), chrome, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), p))
+		_add(self, ShapeKit.cylinder(0.065, 0.32, 10), chrome, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), p))
 		exhaust_points.append(p + Vector3(0, 0, 0.18))
 	# Wing struts and plate
 	for x in [-wing_w * 0.32, wing_w * 0.32]:
-		ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.05, wing_y - 0.55, 0.1), 0.3, 0.3), dark,
+		_add(self, ShapeKit.superellipsoid(Vector3(0.05, wing_y - 0.55, 0.1), 0.3, 0.3), dark,
 			Transform3D(Basis.IDENTITY, Vector3(x, (wing_y + 0.55) * 0.5, wing_z)))
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(wing_w, 0.07, 0.3), 0.25, 0.3, Vector2(1.0, 0.7)), paint,
+	_add(self, ShapeKit.superellipsoid(Vector3(wing_w, 0.07, 0.3), 0.25, 0.3, Vector2(1.0, 0.7)), paint,
 		Transform3D(Basis(Vector3.RIGHT, 0.12), Vector3(0, wing_y, wing_z)))
 	for x in [-wing_w * 0.5, wing_w * 0.5]:
-		ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.04, 0.22, 0.34), 0.3, 0.3), dark,
+		_add(self, ShapeKit.superellipsoid(Vector3(0.04, 0.22, 0.34), 0.3, 0.3), dark,
 			Transform3D(Basis.IDENTITY, Vector3(x, wing_y, wing_z)))
 
 
 func _seat_and_wheel(dark: Material, wheel_z: float, wheel_y: float) -> void:
-	ShapeKit.add_mesh(self, ShapeKit.superellipsoid(Vector3(0.52, 0.55, 0.16), 0.4, 0.4), dark,
+	_add(self, ShapeKit.superellipsoid(Vector3(0.52, 0.55, 0.16), 0.4, 0.4), dark,
 		Transform3D(Basis(Vector3.RIGHT, -0.25), Vector3(0, 0.82, 0.42)))
 	steering_wheel = Node3D.new()
 	steering_wheel.position = Vector3(0, wheel_y, wheel_z)
 	steering_wheel.rotation = Vector3(deg_to_rad(-55.0), 0, 0)
 	add_child(steering_wheel)
-	ShapeKit.add_mesh(steering_wheel, ShapeKit.torus(0.11, 0.15, 16, 6), dark, Transform3D.IDENTITY)
-	ShapeKit.add_mesh(steering_wheel, ShapeKit.superellipsoid(Vector3(0.26, 0.03, 0.05), 0.3, 0.3), ShapeKit.mat(Color("ffc93c"), 0.4), Transform3D.IDENTITY)
+	_add(steering_wheel, ShapeKit.torus(0.11, 0.15, 16, 6), dark, Transform3D.IDENTITY)
+	_add(steering_wheel, ShapeKit.superellipsoid(Vector3(0.26, 0.03, 0.05), 0.3, 0.3), ShapeKit.mat(Color("ffc93c"), 0.4), Transform3D.IDENTITY)
 
 
 func _build_driver(paint: Color, is_player: bool) -> void:
@@ -205,18 +228,18 @@ func _build_driver(paint: Color, is_player: bool) -> void:
 	torso = Node3D.new()
 	torso.position = Vector3(0, 0.78, 0.0)
 	driver_root.add_child(torso)
-	ShapeKit.add_mesh(torso, ShapeKit.superellipsoid(Vector3(0.48, 0.5, 0.34), 0.6, 0.6, Vector2(1.0, 1.0), Vector2(1.0, 1.0)), suit_mat,
+	_add(torso, ShapeKit.superellipsoid(Vector3(0.48, 0.5, 0.34), 0.6, 0.6, Vector2(1.0, 1.0), Vector2(1.0, 1.0)), suit_mat,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.22, 0)))
-	ShapeKit.add_mesh(torso, ShapeKit.superellipsoid(Vector3(0.5, 0.07, 0.36), 0.4, 0.6), stripe_mat,
+	_add(torso, ShapeKit.superellipsoid(Vector3(0.5, 0.07, 0.36), 0.4, 0.6), stripe_mat,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.3, 0)))
 	head = Node3D.new()
 	head.position = Vector3(0, 0.56, -0.02)
 	torso.add_child(head)
-	ShapeKit.add_mesh(head, ShapeKit.superellipsoid(Vector3(0.44, 0.42, 0.46), 0.85, 0.85, Vector2(1, 1), Vector2(1, 1), 12, 18), helmet_mat,
+	_add(head, ShapeKit.superellipsoid(Vector3(0.44, 0.42, 0.46), 0.85, 0.85, Vector2(1, 1), Vector2(1, 1), 12, 18), helmet_mat,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.08, 0)))
-	ShapeKit.add_mesh(head, ShapeKit.superellipsoid(Vector3(0.36, 0.15, 0.2), 0.7, 0.7), visor_mat,
+	_add(head, ShapeKit.superellipsoid(Vector3(0.36, 0.15, 0.2), 0.7, 0.7), visor_mat,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.08, -0.16)))
-	ShapeKit.add_mesh(head, ShapeKit.superellipsoid(Vector3(0.08, 0.42, 0.44), 0.85, 0.85), stripe_mat,
+	_add(head, ShapeKit.superellipsoid(Vector3(0.08, 0.42, 0.44), 0.85, 0.85), stripe_mat,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0.1, 0.01)))
 	arm_l = _make_arm(suit_mat, glove_mat, -1.0)
 	arm_r = _make_arm(suit_mat, glove_mat, 1.0)
@@ -230,9 +253,9 @@ func _make_arm(suit_mat: Material, glove_mat: Material, side: float) -> Node3D:
 	shoulder.add_child(arm)
 	# Arm reaches forward/down towards the wheel.
 	arm.rotation = Vector3(deg_to_rad(-38.0), side * deg_to_rad(-8.0), 0)
-	ShapeKit.add_mesh(arm, ShapeKit.superellipsoid(Vector3(0.13, 0.13, 0.44), 0.8, 0.8), suit_mat,
+	_add(arm, ShapeKit.superellipsoid(Vector3(0.13, 0.13, 0.44), 0.8, 0.8), suit_mat,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0, -0.2)))
-	ShapeKit.add_mesh(arm, ShapeKit.sphere(0.075, 10, 6), glove_mat,
+	_add(arm, ShapeKit.sphere(0.075, 10, 6), glove_mat,
 		Transform3D(Basis.IDENTITY, Vector3(0, 0, -0.44)))
 	return shoulder
 

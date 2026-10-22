@@ -24,6 +24,10 @@ signal item_changed(item: StringName)
 
 enum State { NORMAL, HOP, DRIFT, AIR, HIT, RECOVER }
 
+## Bump whenever handling behaviour changes; ghosts from other versions are
+## rejected because they would no longer be reproducible against.
+const PHYSICS_VERSION := 1
+
 const HIT_DURATION := 1.0
 const HIT_IMMUNITY := 1.6 ## after a hit ends; prevents stun chaining
 const RESPAWN_PROTECTION := 2.0

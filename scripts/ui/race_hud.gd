@@ -264,7 +264,9 @@ func reset() -> void:
 
 func _update_static() -> void:
 	var rec := SaveManager.get_record(race.config.track_id)
-	if rec.has("best_lap_ms"):
+	if race.ghosts and race.ghosts.best_lap_ms() > 0:
+		best_label.text = "%s %s" % [tr("BEST_LAP"), format_time(float(race.ghosts.best_lap_ms()) / 1000.0)]
+	elif rec.has("best_lap_ms"):
 		best_label.text = "%s %s" % [tr("BEST_LAP"), format_time(float(rec.best_lap_ms) / 1000.0)]
 	else:
 		best_label.text = ""
@@ -336,6 +338,9 @@ func _process(delta: float) -> void:
 	if race == null or race.player == null:
 		return
 	var p := race.player
+	var mode: String = race.config.mode
+	pos_label.get_parent().visible = mode == "quick"
+	lap_label.visible = mode != "tutorial"
 	pos_label.text = str(p.place)
 	pos_total.text = "/%d" % race.racers.size()
 	lap_label.text = "%s %d/%d" % [tr("HUD_LAP"), p.tracker.current_lap(), int(race.config.laps)]

@@ -49,7 +49,8 @@ func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void
 	dust.initial_velocity_max = 3.0
 	dust.gravity = Vector3(0, -2.0, 0)
 	for p in model.exhaust_points:
-		var e := _particles(dot, 8, 0.45, Color(0.5, 0.5, 0.55, 0.35), 0.18, 0.45)
+		var e := _particles(dot, 5, 0.35, Color(0.6, 0.6, 0.65, 0.22), 0.06, 0.14)
+		e.local_coords = true
 		e.position = p
 		e.direction = Vector3(0, 0.4, 1)
 		e.spread = 12.0
@@ -177,7 +178,8 @@ func update(delta: float) -> void:
 		sp.speed_scale = 1.6 if ready else 1.0
 	dust.emitting = grounded and fast and (kart.surface == &"offroad" or kart.surface == &"rough") and density > 0.05
 	for e in exhaust:
-		e.emitting = kart.input.throttle > 0.1 and not kart.boost.is_active() and density > 0.3
+		# Puffs only while pulling away; at speed they would veil the kart.
+		e.emitting = kart.input.throttle > 0.1 and absf(kart.speed) < 7.0 and not kart.boost.is_active() and density > 0.3
 	# Boost flames
 	var boosting := kart.boost.is_active()
 	_flame_t += delta

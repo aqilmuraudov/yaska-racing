@@ -60,6 +60,8 @@ var _results: Dictionary = {}
 var _audio_director_timer := 0.0
 var paused := false
 var headless_test := false ## set by tests to skip UI
+var tutorial: TutorialDirector
+var ghosts: GhostSystem
 
 
 func _ready() -> void:
@@ -89,6 +91,7 @@ func build_world() -> void:
 			decor.name = "Decor"
 			add_child(decor)
 			decor.build(track, environment)
+			countdown_tick.connect(decor.set_countdown_lights)
 	items = ItemSystem.new()
 	items.name = "Items"
 	add_child(items)
@@ -96,6 +99,11 @@ func build_world() -> void:
 	items.setup(track, bool(config.items) and config.mode != "time_trial", seed_value)
 	items.racers_provider = _racer_place_info
 	_spawn_racers(seed_value)
+	if config.mode == "time_trial":
+		ghosts = GhostSystem.new()
+		ghosts.name = "Ghosts"
+		add_child(ghosts)
+		ghosts.setup(self, player.kart, track.id, int(track.raw.get("version", 1)))
 	camera = ChaseCamera.new()
 	camera.name = "Camera"
 	add_child(camera)
@@ -107,6 +115,11 @@ func build_world() -> void:
 		hud.name = "HUD"
 		add_child(hud)
 		hud.setup(self)
+		if config.mode == "tutorial":
+			tutorial = TutorialDirector.new()
+			tutorial.name = "Tutorial"
+			add_child(tutorial)
+			tutorial.setup(self)
 
 
 func _spawn_racers(seed_value: int) -> void:
@@ -143,7 +156,8 @@ func _spawn_racers(seed_value: int) -> void:
 		r.paint = kart.get_meta("paint")
 		r.grid_xform = grid_transform(slot)
 		kart.respawn_provider = _respawn_transform
-		r.tracker = RaceTracker.new(track, int(config.laps))
+		# Drift School never "finishes": the tutorial ends when its steps do.
+		r.tracker = RaceTracker.new(track, 99 if config.mode == "tutorial" else int(config.laps))
 		if r.is_player:
 			r.player_input = PlayerInput.new()
 			r.player_input.name = "PlayerInput"
@@ -228,6 +242,12 @@ func restart() -> void:
 	_countdown_last = 4
 	config.event_instance_id = "%d-%d" % [Time.get_ticks_usec(), randi()]
 	items.reset()
+	if decor:
+		decor.reset_lights()
+	if tutorial:
+		tutorial.reset()
+	if ghosts:
+		ghosts.reset()
 	_reset_racers()
 	camera.follow(player.kart)
 	camera.snap()
@@ -401,12 +421,17 @@ const REWARDS := [100, 75, 60, 45, 35, 25, 20, 15]
 
 func _apply_rewards(res: Dictionary) -> void:
 	var p: Dictionary = res.player
-	if p.is_empty() or headless_test:
+	# Autopilot (debug/demo) races never touch the player's profile.
+	if p.is_empty() or headless_test or bool(config.get("debug_autopilot", false)):
 		return
 	var improved := {"lap": false, "race": false}
 	if p.finished:
 		improved = SaveManager.submit_times(res.track_id, int(round(p.time * 1000.0)), int(round(p.best_lap * 1000.0)), p.kart, res.laps)
+	if res.mode == "tutorial":
+		return
 	var amount: int = REWARDS[clampi(int(p.place) - 1, 0, REWARDS.size() - 1)] if p.finished else 10
+	if res.mode == "time_trial":
+		amount = 15 if p.finished else 0
 	if improved.lap or improved.race:
 		amount += 20
 	var granted := 0
@@ -546,12 +571,18 @@ func _unhandled_input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED:
-			if state in [RaceState.COUNTDOWN, RaceState.RACING, RaceState.FINISHING] and not paused and not headless_test:
+			if state in [RaceState.COUNTDOWN, RaceState.RACING, RaceState.FINISHING] and not paused and not headless_test and not Game.debug_race:
 				set_paused(true)
 			if player and player.player_input:
 				player.player_input.release_all()
 			if hud and hud.has_method("release_touches"):
 				hud.release_touches()
+
+
+func quit_to_mode_select() -> void:
+	get_tree().paused = false
+	AudioManager.play_music("menu", 1.0)
+	Game.goto(Game.State.MODE_SELECT)
 
 
 func quit_to_menu() -> void:
