@@ -60,6 +60,7 @@ var _results: Dictionary = {}
 var _audio_director_timer := 0.0
 var paused := false
 var headless_test := false ## set by tests to skip UI
+var auto_pause_on_focus_loss := true
 var tutorial: TutorialDirector
 var ghosts: GhostSystem
 
@@ -68,6 +69,8 @@ func _ready() -> void:
 	config = Game.race_config.duplicate(true)
 	if config.is_empty():
 		config = Game.default_race_config()
+	if Game.debug_race:
+		auto_pause_on_focus_loss = false # unattended debug/soak runs
 	build_world()
 	start_intro()
 
@@ -571,7 +574,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED:
-			if state in [RaceState.COUNTDOWN, RaceState.RACING, RaceState.FINISHING] and not paused and not headless_test and not Game.debug_race:
+			if state in [RaceState.COUNTDOWN, RaceState.RACING, RaceState.FINISHING] and not paused and auto_pause_on_focus_loss:
 				set_paused(true)
 			if player and player.player_input:
 				player.player_input.release_all()

@@ -13,6 +13,7 @@ extends Node
 ##   --quit-after=SECONDS   quit after this many real seconds
 ##   --stats                print per-second FPS / frame time / memory
 ##   --timescale=X          Engine.time_scale for fast soak runs
+##   --probe=T              print every kart's position once race time >= T
 ## Used for screenshots, soak tests and reproducible AI races.
 
 var args := {}
@@ -26,6 +27,7 @@ var _stat_timer := 0.0
 var _frame_times: Array[float] = []
 var _overview_done := false
 var _views_done := false
+var _probe_done := false
 
 
 static func parse_args() -> Dictionary:
@@ -122,6 +124,17 @@ func _process(delta: float) -> void:
 			for r in race.racers:
 				print("RACER %s place=%d lap=%d cp=%d finished=%s time=%.2f best=%.2f dist=%.1f recovers=%s" % [r.name, r.place, r.tracker.current_lap(), r.tracker.cp_count, r.tracker.finished, r.tracker.finish_time, r.tracker.best_lap, r.tracker.race_distance, r.kart.get_meta("recovers", 0)])
 		get_tree().quit()
+
+
+## Probe on the physics tick so runs at different render rates compare the
+## exact same simulation step.
+func _physics_process(_delta: float) -> void:
+	var race := get_tree().current_scene as RaceManager
+	if race != null and args.has("probe") and not _probe_done and race.race_time >= float(args.probe):
+		_probe_done = true
+		for r in race.racers:
+			var p := r.kart.global_position
+			print("PROBE %s t=%.4f pos=(%.4f, %.4f, %.4f) yaw=%.4f speed=%.4f" % [r.name, race.race_time, p.x, p.y, p.z, r.kart.yaw, r.kart.speed])
 
 
 func _print_stats(race: RaceManager) -> void:
