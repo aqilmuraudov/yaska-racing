@@ -1,0 +1,42 @@
+{
+	"_doc": "Graphics presets. Keys match Settings graphics section. Presets never change collision, checkpoints, physics or item visibility. See docs/TUNING.md.",
+	"low": {
+		"resolution_scale": 0.6,
+		"msaa": 0,
+		"fxaa": false,
+		"shadows": 0,
+		"effects_density": 0.35,
+		"decor_distance": 0,
+		"texture_detail": 0,
+		"ssao": false,
+		"bloom": false,
+		"fps_cap": 60,
+		"dynamic_resolution": false
+	},
+	"medium": {
+		"resolution_scale": 0.8,
+		"msaa": 0,
+		"fxaa": true,
+		"shadows": 1,
+		"effects_density": 0.7,
+		"decor_distance": 1,
+		"texture_detail": 1,
+		"ssao": false,
+		"bloom": true,
+		"fps_cap": 60,
+		"dynamic_resolution": false
+	},
+	"high": {
+		"resolution_scale": 1.0,
+		"msaa": 2,
+		"fxaa": false,
+		"shadows": 2,
+		"effects_density": 1.0,
+		"decor_distance": 2,
+		"texture_detail": 2,
+		"ssao": true,
+		"bloom": true,
+		"fps_cap": 60,
+		"dynamic_resolution": false
+	}
+}

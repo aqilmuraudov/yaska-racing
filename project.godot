@@ -1,0 +1,64 @@
+; Engine configuration file.
+; Supported editor/export version: Godot 4.4.1-stable (see docs/BUILD.md)
+
+config_version=5
+
+[application]
+
+config/name="BAKU TURBO"
+config/description="Arcade kart racing in a stylized Baku."
+config/version="0.3.0"
+run/main_scene="res://scenes/boot.tscn"
+config/features=PackedStringArray("4.4", "Forward Plus")
+config/icon="res://assets/icons/icon.svg"
+run/low_processor_mode=false
+
+[autoload]
+
+Settings="*res://scripts/core/settings.gd"
+SaveManager="*res://scripts/persistence/save_manager.gd"
+AudioManager="*res://scripts/audio/audio_manager.gd"
+Game="*res://scripts/core/game.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+window/vsync/vsync_mode=1
+
+[gui]
+
+theme/custom_font="res://assets/fonts/body_font.tres"
+common/snap_controls_to_pixels=true
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=false
+pointing/emulate_mouse_from_touch=true
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://localization/strings.az.translation", "res://localization/strings.en.translation")
+locale/fallback="en"
+
+[physics]
+
+common/physics_ticks_per_second=60
+common/max_physics_steps_per_frame=8
+common/physics_interpolation=true
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_3d=0
+lights_and_shadows/directional_shadow/size=2048
+lights_and_shadows/directional_shadow/size.mobile=1024
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=0
+environment/defaults/default_clear_color=Color(0.53, 0.75, 0.93, 1)

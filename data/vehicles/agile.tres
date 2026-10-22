@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="KartStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/kart_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "agile"
+name_key = "KART_AGILE"
+desc_key = "KART_AGILE_DESC"
+model_style = "agile"
+paints = Array[Color]([Color(0.784, 0.063, 0.180, 1), Color(1.000, 0.310, 0.639, 1), Color(0.235, 0.702, 0.443, 1), Color(1.000, 0.541, 0.239, 1)])
+top_speed = 25.5
+acceleration = 19.0
+accel_taper = 0.5
+steer_rate_low = 128.0
+steer_rate_high = 86.0
+lateral_grip = 10.0
+drift_turn_base = 68.0
+drift_turn_range = 36.0
+stat_speed = 2
+stat_accel = 5
+stat_handling = 5

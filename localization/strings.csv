@@ -1,0 +1,217 @@
+keys,en,az
+GAME_TITLE,BAKU TURBO,BAKU TURBO
+GAME_SUBTITLE,Arcade kart racing on the Caspian shore,Xəzər sahilində arkada kart yarışı
+MENU_PLAY,Play,Oyna
+MENU_SETTINGS,Settings,Ayarlar
+MENU_CREDITS,Credits,Müəlliflər
+MENU_QUIT,Quit,Çıxış
+MENU_BACK,Back,Geri
+MENU_CONTINUE,Continue,Davam et
+MENU_CONFIRM,Confirm,Təsdiqlə
+MENU_START_RACE,Start Race,Yarışa başla
+MENU_PRESS_START,Press any key or tap to start,Başlamaq üçün istənilən düyməyə bas və ya toxun
+MODE_TITLE,Choose a Mode,Rejim seç
+MODE_QUICK,Quick Race,Sürətli yarış
+MODE_QUICK_DESC,"Pick a kart, a track and your rules, then race five rivals.","Kart, trek və qaydaları seç, sonra beş rəqiblə yarış."
+MODE_TIME_TRIAL,Time Trial,Vaxta qarşı
+MODE_TIME_TRIAL_DESC,"No rivals, no items. Chase your best lap and your ghost.","Rəqib yoxdur, əşya yoxdur. Ən yaxşı dövrünü və kabusunu qov."
+MODE_TUTORIAL,Drift School,Drift məktəbi
+MODE_TUTORIAL_DESC,"Learn hops, drifts and boost timing step by step.","Tullanma, drift və sürətlənmə zamanlamasını addım-addım öyrən."
+KART_TITLE,Choose Your Kart,Kartını seç
+KART_BALANCED,Bulvar,Bulvar
+KART_BALANCED_DESC,Dependable all-rounder with steady speed and grip.,Sabit sürət və tutuşla etibarlı universal kart.
+KART_AGILE,Nar,Nar
+KART_AGILE_DESC,"Quick off the line and sharp in corners, lower top speed.","Startda cəld, döngələrdə iti, maksimal sürəti aşağıdır."
+KART_FAST,Külək,Külək
+KART_FAST_DESC,"Highest top speed, slower to accelerate, wider turns.","Ən yüksək maksimal sürət, gec sürətlənir, geniş dönür."
+STAT_SPEED,Speed,Sürət
+STAT_ACCEL,Acceleration,Sürətlənmə
+STAT_HANDLING,Handling,İdarəetmə
+KART_PAINT,Paint,Rəng
+KART_ROTATE_HINT,Drag to rotate,Fırlatmaq üçün sürüşdür
+TRACK_TITLE,Race Setup,Yarış ayarları
+TRACK_SEAFRONT,Baku Seafront Sprint,Bakı Sahil Sprinti
+TRACK_SEAFRONT_DESC,"Race the Boulevard by the sea, climb into the Old City and dive back to the shore.","Dəniz kənarı Bulvarda yarış, İçərişəhərə qalx və yenidən sahilə en."
+OPT_DIFFICULTY,Difficulty,Çətinlik
+OPT_LAPS,Laps,Dövrlər
+OPT_OPPONENTS,Opponents,Rəqiblər
+OPT_ITEMS,Items,Əşyalar
+OPT_ON,On,Açıq
+OPT_OFF,Off,Bağlı
+DIFF_EASY,Easy,Asan
+DIFF_MEDIUM,Medium,Orta
+DIFF_HARD,Hard,Çətin
+BEST_LAP,Best lap,Ən yaxşı dövr
+BEST_RACE,Best race,Ən yaxşı yarış
+NO_RECORD,No record yet,Hələ rekord yoxdur
+LOADING,Loading…,Yüklənir…
+LOADING_TIP_1,Hold Drift and steer to powerslide. Tap Boost when the meter glows!,Drift düyməsini saxla və dön. Göstərici parlayanda Sürət düyməsinə bas!
+LOADING_TIP_2,Chain up to three drift boosts in a single slide.,Bir driftdə üç sürətlənməni ardıcıl birləşdir.
+LOADING_TIP_3,The Old City alley is shorter but the cobbles are rough. Bring a boost.,"İçərişəhər dalanı qısadır, amma daşlar kələ-kötürdür. Sürətləndirici götür."
+LOADING_TIP_4,Press Accelerate just before GO for a starting boost.,Start sürəti üçün START-dan bir az əvvəl qaz ver.
+LOADING_TIP_5,A shield blocks one hit. Road Traps are dropped behind you.,Qalxan bir zərbəni dəf edir. Yol tələsi arxana atılır.
+HUD_LAP,Lap,Dövr
+HUD_POS_SUFFIX,,
+HUD_WRONG_WAY,WRONG WAY!,YANLIŞ İSTİQAMƏT!
+HUD_RECOVER_HOLD,Hold to recover,Bərpa üçün saxla
+HUD_RECOVERING,Recovering…,Bərpa olunur…
+HUD_FINAL_LAP,FINAL LAP!,SON DÖVR!
+HUD_GO,GO!,START!
+HUD_FINISH,FINISH!,FİNİŞ!
+HUD_START_BOOST,START BOOST!,START SÜRƏTİ!
+HUD_START_STALL,Too early!,Çox tez!
+HUD_PERFECT,PERFECT!,ƏLA!
+HUD_BOOST,BOOST!,SÜRƏT!
+HUD_MISS,Miss,Qaçırıldı
+HUD_NEW_RECORD,NEW RECORD!,YENİ REKORD!
+HUD_INCOMING,Incoming!,Diqqət!
+HUD_SHIELD_BLOCK,Blocked!,Dəf edildi!
+HUD_KMH,km/h,km/s
+ITEM_TURBO,Turbo Canister,Turbo balon
+ITEM_SHIELD,Shield,Qalxan
+ITEM_TRAP,Road Trap,Yol tələsi
+PAUSE_TITLE,Paused,Fasilə
+PAUSE_RESUME,Resume,Davam et
+PAUSE_RESTART,Restart,Yenidən başla
+PAUSE_SETTINGS,Settings,Ayarlar
+PAUSE_QUIT,Quit to Menu,Menyuya çıx
+RESULTS_TITLE,Results,Nəticələr
+RESULTS_POSITION,Position,Yer
+RESULTS_RACER,Racer,Yarışçı
+RESULTS_TIME,Time,Vaxt
+RESULTS_BEST_LAP,Best lap,Ən yaxşı dövr
+RESULTS_DNF,DNF,Bitirmədi
+RESULTS_REWARD,Reward,Mükafat
+RESULTS_COINS,coins,sikkə
+RESULTS_RETRY,Race Again,Yenidən yarış
+RESULTS_MENU,Main Menu,Əsas menyu
+RESULTS_YOU,You,Sən
+RESULTS_ALREADY_REWARDED,Reward already collected,Mükafat artıq alınıb
+RESULTS_PLACE_1,1st,1-ci
+RESULTS_PLACE_2,2nd,2-ci
+RESULTS_PLACE_3,3rd,3-cü
+RESULTS_PLACE_4,4th,4-cü
+RESULTS_PLACE_5,5th,5-ci
+RESULTS_PLACE_6,6th,6-cı
+RESULTS_PLACE_7,7th,7-ci
+RESULTS_PLACE_8,8th,8-ci
+SET_TITLE,Settings,Ayarlar
+SET_TAB_GRAPHICS,Graphics,Qrafika
+SET_TAB_AUDIO,Audio,Səs
+SET_TAB_CONTROLS,Controls,İdarəetmə
+SET_TAB_GAMEPLAY,Gameplay,Oyun
+SET_TAB_ACCESS,Accessibility,Əlçatanlıq
+SET_PRESET,Quality preset,Keyfiyyət profili
+SET_PRESET_LOW,Low,Aşağı
+SET_PRESET_MEDIUM,Medium,Orta
+SET_PRESET_HIGH,High,Yüksək
+SET_PRESET_CUSTOM,Custom,Fərdi
+SET_RES_SCALE,Resolution scale,Görüntü miqyası
+SET_FPS_CAP,Frame rate cap,Kadr limiti
+SET_FPS_UNLIMITED,Unlimited,Limitsiz
+SET_MSAA,Anti-aliasing (MSAA),Kənar hamarlama (MSAA)
+SET_FXAA,Fast anti-aliasing (FXAA),Sürətli hamarlama (FXAA)
+SET_SHADOWS,Shadows,Kölgələr
+SET_SHADOWS_OFF,Blob,Sadə
+SET_SHADOWS_LOW,Low,Aşağı
+SET_SHADOWS_MED,Medium,Orta
+SET_SHADOWS_HIGH,High,Yüksək
+SET_EFFECTS,Effects density,Effekt sıxlığı
+SET_DECOR,Scenery distance,Mənzərə məsafəsi
+SET_DECOR_0,Short,Qısa
+SET_DECOR_1,Medium,Orta
+SET_DECOR_2,Far,Uzaq
+SET_TEXTURE,Texture detail,Tekstur detalı
+SET_SSAO,Ambient occlusion,Ətraf kölgələnmə
+SET_BLOOM,Bloom,Parıltı
+SET_MOTION_BLUR,Speed blur,Sürət bulanıqlığı
+SET_DYN_RES,Dynamic resolution,Dinamik görüntü
+SET_BRIGHTNESS,Brightness,Parlaqlıq
+SET_BRIGHTNESS_HINT,Adjust until the left square is barely visible.,Sol kvadrat zorla görünənə qədər tənzimlə.
+SET_VSYNC,VSync,VSync
+SET_WINDOW_MODE,Display mode,Ekran rejimi
+SET_WINDOWED,Windowed,Pəncərə
+SET_FULLSCREEN,Fullscreen,Tam ekran
+SET_KEEP_DISPLAY,Keep these display settings?,Bu ekran ayarları saxlanılsın?
+SET_REVERTING_IN,Reverting in %d s,%d saniyəyə geri qaytarılır
+SET_KEEP,Keep,Saxla
+SET_REVERT,Revert,Geri qaytar
+SET_REASON_SSAO_RENDERER,Not available with the mobile renderer.,Mobil renderer ilə mövcud deyil.
+SET_REASON_RENDERER,Not supported by the current renderer.,Cari renderer tərəfindən dəstəklənmir.
+SET_REASON_DESKTOP_ONLY,Desktop only.,Yalnız kompüter üçün.
+SET_MASTER,Master volume,Ümumi səs
+SET_MUSIC,Music,Musiqi
+SET_ENGINE,Engines,Mühərriklər
+SET_SFX,Effects,Effektlər
+SET_UI_VOL,Interface,İnterfeys
+SET_MUTE,Mute all,Səsi bağla
+SET_BG_AUDIO,Play audio in background,Arxa fonda səsi davam etdir
+SET_TOUCH_STEER,Touch steering,Toxunma ilə idarə
+SET_TOUCH_BUTTONS,Buttons,Düymələr
+SET_TOUCH_TILT,Tilt,Əyilmə
+SET_TILT_SENS,Tilt sensitivity,Əyilmə həssaslığı
+SET_AUTO_ACCEL,Auto-accelerate (touch),Avtomatik qaz (toxunma)
+SET_TOUCH_SIZE,Touch control size,Düymə ölçüsü
+SET_TOUCH_OPACITY,Touch control opacity,Düymə şəffaflığı
+SET_TOUCH_LAYOUT,Touch layout,Düymə düzülüşü
+SET_LAYOUT_DEFAULT,Standard,Standart
+SET_LAYOUT_SWAPPED,Mirrored,Güzgü
+SET_TOUCH_OFFSET_X,Touch controls horizontal inset,Düymələrin üfüqi məsafəsi
+SET_TOUCH_OFFSET_Y,Touch controls vertical inset,Düymələrin şaquli məsafəsi
+SET_DEADZONE,Stick deadzone,Çubuq ölü zonası
+SET_STEER_SENS,Steering sensitivity,Dönmə həssaslığı
+SET_VIBRATION,Vibration,Vibrasiya
+SET_REMAP,Remap controls,Düymələri dəyiş
+SET_REMAP_PRESS,Press a key or button… (Esc to cancel),Düymə bas… (ləğv üçün Esc)
+SET_RESET_BINDINGS,Reset controls,İdarəetməni sıfırla
+SET_DIFFICULTY,Default difficulty,Standart çətinlik
+SET_STEER_ASSIST,Steering assist,Dönmə köməyi
+SET_ACCEL_ASSIST,Acceleration assist,Qaz köməyi
+SET_CAMERA_DIST,Camera distance,Kamera məsafəsi
+SET_CAM_NEAR,Near,Yaxın
+SET_CAM_NORMAL,Normal,Normal
+SET_CAM_FAR,Far,Uzaq
+SET_SPEEDO,Show speedometer,Sürətölçəni göstər
+SET_CATCHUP,Catch-up assist for rivals,Rəqiblər üçün yaxalama köməyi
+SET_LANGUAGE,Language,Dil
+SET_TUTORIAL_REPLAY,Replay drift tutorial,Drift dərsini təkrarla
+SET_UI_SCALE,Interface scale,İnterfeys miqyası
+SET_SHAKE,Camera shake,Kamera titrəməsi
+SET_REDUCED_FLASH,Reduce flashing,Parıltıları azalt
+SET_SUBTITLES,Subtitles,Altyazılar
+SET_HIGH_CONTRAST,High-contrast HUD,Yüksək kontrastlı HUD
+SET_RESTORE,Restore defaults,Standartları bərpa et
+SET_RESTORE_CONFIRM,Restore all settings to defaults?,Bütün ayarlar standarta qaytarılsın?
+SET_YES,Yes,Bəli
+SET_NO,No,Xeyr
+ACTION_accelerate,Accelerate,Qaz
+ACTION_brake,Brake / Reverse,Əyləc / Geri
+ACTION_steer_left,Steer left,Sola dön
+ACTION_steer_right,Steer right,Sağa dön
+ACTION_drift,Hop / Drift,Tullan / Drift
+ACTION_boost,Drift boost,Drift sürəti
+ACTION_use_item,Use item,Əşyadan istifadə
+ACTION_look_back,Look behind,Arxaya bax
+ACTION_recover,Recover kart,Kartı bərpa et
+ACTION_pause,Pause,Fasilə
+TOUCH_DRIFT,DRIFT,DRIFT
+TOUCH_BOOST,BOOST,SÜRƏT
+TOUCH_ITEM,ITEM,ƏŞYA
+TOUCH_BRAKE,BRAKE,ƏYLƏC
+TOUCH_GAS,GAS,QAZ
+CREDITS_TITLE,Credits,Müəlliflər
+CREDITS_BODY,"BAKU TURBO — an original arcade kart racer.\n\nDesign, code, models, sounds and music were created for this project and generated procedurally from source in the repository.\n\nFonts: Baloo 2 (EkType) and Nunito (Vernon Adams, Jacques Le Bailly), SIL Open Font License 1.1.\n\nBuilt with Godot Engine (MIT licence).\n\nInspired by the city of Baku. All characters, karts and brands are fictional.","BAKU TURBO — orijinal arkada kart yarışı.\n\nDizayn, kod, modellər, səslər və musiqi bu layihə üçün yaradılıb və repozitoriyadakı mənbədən prosedur yolla hazırlanıb.\n\nŞriftlər: Baloo 2 (EkType) və Nunito (Vernon Adams, Jacques Le Bailly), SIL Open Font License 1.1.\n\nGodot Engine ilə hazırlanıb (MIT lisenziyası).\n\nBakı şəhərindən ilhamlanıb. Bütün personajlar, kartlar və brendlər uydurmadır."
+TUT_HOP,"Tap Drift to hop.","Tullanmaq üçün Drift düyməsinə bas."
+TUT_DRIFT,"Hold Drift and steer while hopping to start a powerslide.","Tullanarkən Drift düyməsini saxla və dön — drift başlayacaq."
+TUT_BOOST,"When the meter turns gold, press Boost!","Göstərici qızılı olanda Sürət düyməsinə bas!"
+TUT_CHAIN,"Keep drifting and boost again — up to three times!","Driftə davam et və yenə sürətlən — üç dəfəyə qədər!"
+TUT_DONE,"Great! You are ready to race.","Əla! Yarışa hazırsan."
+TUT_SKIP,Skip tutorial,Dərsi keç
+RACER_NAME_0,You,Sən
+RACER_NAME_1,Leyla,Leyla
+RACER_NAME_2,Rauf,Rauf
+RACER_NAME_3,Aysel,Aysel
+RACER_NAME_4,Tural,Tural
+RACER_NAME_5,Nigar,Nigar
+RACER_NAME_6,Kamran,Kamran
+RACER_NAME_7,Günay,Günay

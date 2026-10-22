@@ -1,0 +1,15 @@
+{
+	"_doc": "Item definitions and position-based roll tables. Buckets: front = 1st place, back = last third of the field, middle = everyone else. Tables are normalised at runtime. Time Trial disables items entirely.",
+	"roll_time": 1.0,
+	"box_respawn": 2.5,
+	"items": {
+		"turbo": {"name_key": "ITEM_TURBO"},
+		"shield": {"name_key": "ITEM_SHIELD", "duration": 8.0},
+		"trap": {"name_key": "ITEM_TRAP", "lifetime": 20.0, "arm_time": 0.35, "owner_grace": 1.0, "radius": 0.95}
+	},
+	"probabilities": {
+		"front": {"trap": 0.5, "shield": 0.4, "turbo": 0.1},
+		"middle": {"trap": 0.35, "shield": 0.3, "turbo": 0.35},
+		"back": {"trap": 0.15, "shield": 0.25, "turbo": 0.6}
+	}
+}

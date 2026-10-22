@@ -1,0 +1,51 @@
+{
+	"_doc": "AI difficulty. Difficulty changes skill and decisions; speed_factor stays within a few percent of the player kart's real top speed (no rubber-band teleporting). See docs/TUNING.md.",
+	"easy": {
+		"corner_factor": 0.84,
+		"steer_gain": 2.2,
+		"steer_noise": 0.12,
+		"reaction": 0.28,
+		"drift_chance": 0.3,
+		"boost_accuracy": 0.45,
+		"perfect_chance": 0.1,
+		"item_skill": 0.3,
+		"mistake_rate": 0.035,
+		"shortcut_chance": 0.1,
+		"start_boost_chance": 0.2,
+		"speed_factor": 0.93,
+		"avoid_skill": 0.5,
+		"catchup_max": 0.03
+	},
+	"medium": {
+		"corner_factor": 0.95,
+		"steer_gain": 2.6,
+		"steer_noise": 0.05,
+		"reaction": 0.15,
+		"drift_chance": 0.65,
+		"boost_accuracy": 0.72,
+		"perfect_chance": 0.35,
+		"item_skill": 0.6,
+		"mistake_rate": 0.012,
+		"shortcut_chance": 0.35,
+		"start_boost_chance": 0.5,
+		"speed_factor": 0.975,
+		"avoid_skill": 0.75,
+		"catchup_max": 0.03
+	},
+	"hard": {
+		"corner_factor": 1.04,
+		"steer_gain": 3.0,
+		"steer_noise": 0.02,
+		"reaction": 0.07,
+		"drift_chance": 0.92,
+		"boost_accuracy": 0.92,
+		"perfect_chance": 0.7,
+		"item_skill": 0.88,
+		"mistake_rate": 0.003,
+		"shortcut_chance": 0.65,
+		"start_boost_chance": 0.85,
+		"speed_factor": 1.0,
+		"avoid_skill": 0.95,
+		"catchup_max": 0.025
+	}
+}
