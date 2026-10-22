@@ -173,6 +173,8 @@ func _spawn_racers(seed_value: int) -> void:
 		r.grid_xform = grid_transform(slot)
 		kart.respawn_provider = _respawn_transform
 		kart.respawn_started.connect(func(): r.stats.recovers += 1)
+		# A respawn is a teleport: never evaluate it as a gate crossing.
+		kart.respawned.connect(func(): r.prev_pos = kart.global_position)
 		kart.wall_hit.connect(func(strength):
 			if strength >= 0.6:
 				r.stats.hard_hits += 1

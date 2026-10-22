@@ -169,7 +169,8 @@ func _sanitize() -> void:
 	g.decor_distance = clampi(int(g.decor_distance), 0, 2)
 	g.texture_detail = clampi(int(g.texture_detail), 0, 2)
 	g.brightness = clampf(float(g.brightness), 0.6, 1.5)
-	if int(g.fps_cap) not in [30, 60, 90, 120, 0]:
+	g.fps_cap = int(g.fps_cap)
+	if g.fps_cap not in fps_options():
 		g.fps_cap = 60
 	var a: Dictionary = values.accessibility
 	a.ui_scale = clampf(float(a.ui_scale), 0.8, 1.4)
@@ -281,6 +282,18 @@ func _upscale_mode() -> Viewport.Scaling3DMode:
 	return Viewport.SCALING_3D_MODE_BILINEAR
 
 
+## Frame caps the platform can honour: phones get 30 / 60 (60 Hz target,
+## steady 30 option); desktops also get higher caps.
+static func fps_options() -> Array:
+	if is_mobile():
+		return [30, 60]
+	return [30, 60, 90, 120, 0]
+
+
+static func has_touch() -> bool:
+	return is_mobile() or DisplayServer.is_touchscreen_available() or DebugRunner.parse_args().has("touch")
+
+
 static func is_desktop() -> bool:
 	return OS.has_feature("pc") and not is_mobile()
 
@@ -306,6 +319,9 @@ func unsupported_reason(option: String) -> String:
 		"dynamic_resolution":
 			if method == "gl_compatibility":
 				return "SET_REASON_RENDERER"
+		"vibration":
+			if not is_mobile():
+				return "SET_REASON_DESKTOP_ONLY"
 	return ""
 
 

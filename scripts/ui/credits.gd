@@ -21,6 +21,7 @@ func build() -> void:
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.focus_mode = Control.FOCUS_ALL
 	panel.add_child(_scroll)
+	TouchScroll.attach(_scroll)
 	var text := Label.new()
 	text.text = tr("CREDITS_BODY")
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

@@ -62,6 +62,7 @@ func build() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.follow_focus = true
 	panel.add_child(scroll)
+	TouchScroll.attach(scroll)
 	content = VBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", 10)
@@ -117,22 +118,19 @@ func _add(c: Control) -> Control:
 func _sel(title_key: String, opts: Array, idx: int, cb: Callable, reason_option := "") -> OptionSelector:
 	var s := OptionSelector.new().setup(tr(title_key), opts, idx)
 	s.value_changed.connect(cb)
-	if reason_option != "":
-		var why := Settings.unsupported_reason(reason_option)
-		if why != "":
-			s.set_disabled_reason(tr(why))
+	# Options that cannot work on this platform/renderer are not shown.
+	if reason_option != "" and Settings.unsupported_reason(reason_option) != "":
+		s.queue_free()
+		return s
 	_add(s)
 	return s
 
 
 func _toggle(title_key: String, section: String, key: String, reason_option := "") -> CheckButton:
 	var t := make_toggle(tr(title_key), bool(Settings.get_value(section, key, false)), func(on): Settings.set_value(section, key, on))
-	if reason_option != "":
-		var why := Settings.unsupported_reason(reason_option)
-		if why != "":
-			t.disabled = true
-			t.tooltip_text = tr(why)
-			t.text = "%s — %s" % [tr(title_key), tr(why)]
+	if reason_option != "" and Settings.unsupported_reason(reason_option) != "":
+		t.queue_free()
+		return t
 	_add(t)
 	return t
 
@@ -169,8 +167,11 @@ func _graphics() -> void:
 			Settings.apply_preset(presets[i])
 			call_deferred("_show_tab", 0))
 	_slider("SET_RES_SCALE", "graphics", "resolution_scale", 0.5, 1.0, 0.05)
-	var fps_vals := [30, 60, 90, 120, 0]
-	_sel("SET_FPS_CAP", ["30", "60", "90", "120", tr("SET_FPS_UNLIMITED")], maxi(fps_vals.find(int(g.fps_cap)), 1), func(i): Settings.set_value("graphics", "fps_cap", fps_vals[i]))
+	var fps_vals: Array = Settings.fps_options()
+	var fps_names: Array = []
+	for v in fps_vals:
+		fps_names.append(tr("SET_FPS_UNLIMITED") if int(v) == 0 else str(v))
+	_sel("SET_FPS_CAP", fps_names, maxi(fps_vals.find(int(g.fps_cap)), 0), func(i): Settings.set_value("graphics", "fps_cap", fps_vals[i]))
 	_sel("SET_MSAA", [tr("OPT_OFF"), "2×", "4×"], int(g.msaa), func(i): Settings.set_value("graphics", "msaa", i), "msaa")
 	_toggle("SET_FXAA", "graphics", "fxaa")
 	_sel("SET_SHADOWS", [tr("SET_SHADOWS_OFF"), tr("SET_SHADOWS_LOW"), tr("SET_SHADOWS_MED"), tr("SET_SHADOWS_HIGH")], int(g.shadows), func(i): Settings.set_value("graphics", "shadows", i))
@@ -217,6 +218,14 @@ func _audio() -> void:
 
 func _controls() -> void:
 	var c: Dictionary = Settings.values.controls
+	if Settings.has_touch():
+		_touch_controls_rows(c)
+	_slider("SET_DEADZONE", "controls", "deadzone", 0.05, 0.6, 0.01)
+	_slider("SET_STEER_SENS", "controls", "steer_sensitivity", 0.5, 1.5, 0.05)
+	_remap_rows()
+
+
+func _touch_controls_rows(c: Dictionary) -> void:
 	_sel("SET_TOUCH_STEER", [tr("SET_TOUCH_BUTTONS"), tr("SET_TOUCH_TILT")], 1 if c.touch_steer_mode == "tilt" else 0, func(i): Settings.set_value("controls", "touch_steer_mode", "tilt" if i == 1 else "buttons"))
 	_slider("SET_TILT_SENS", "controls", "tilt_sensitivity", 0.5, 2.0, 0.1)
 	_toggle("SET_AUTO_ACCEL", "controls", "touch_auto_accelerate")
@@ -225,9 +234,10 @@ func _controls() -> void:
 	_sel("SET_TOUCH_LAYOUT", [tr("SET_LAYOUT_DEFAULT"), tr("SET_LAYOUT_SWAPPED")], 1 if c.touch_layout == "swapped" else 0, func(i): Settings.set_value("controls", "touch_layout", "swapped" if i == 1 else "default"))
 	_slider("SET_TOUCH_OFFSET_X", "controls", "touch_offset_x", -0.1, 0.1, 0.01, "%+d%%")
 	_slider("SET_TOUCH_OFFSET_Y", "controls", "touch_offset_y", -0.1, 0.1, 0.01, "%+d%%")
-	_slider("SET_DEADZONE", "controls", "deadzone", 0.05, 0.6, 0.01)
-	_slider("SET_STEER_SENS", "controls", "steer_sensitivity", 0.5, 1.5, 0.05)
 	_toggle("SET_VIBRATION", "controls", "vibration")
+
+
+func _remap_rows() -> void:
 	_heading("SET_REMAP")
 	_remap_label = Label.new()
 	_remap_label.theme_type_variation = &"Dim"

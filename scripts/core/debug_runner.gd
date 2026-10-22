@@ -59,6 +59,10 @@ func _ready() -> void:
 		Engine.time_scale = float(args.timescale)
 	if args.has("graphics"):
 		Settings.apply_preset(args.graphics, false)
+	if args.has("ui-flow"):
+		var flow := UIFlowCheck.new()
+		add_child(flow)
+		flow.call_deferred("run")
 	if args.has("screens"):
 		call_deferred("_capture_screens")
 	if args.has("race"):
