@@ -7,7 +7,7 @@ config_version=5
 
 config/name="BAKU TURBO"
 config/description="Arcade kart racing in a stylized Baku."
-config/version="0.4.0"
+config/version="0.5.0"
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://assets/icons/icon.svg"
@@ -39,6 +39,8 @@ common/snap_controls_to_pixels=true
 
 pointing/emulate_touch_from_mouse=false
 pointing/emulate_mouse_from_touch=true
+sensors/enable_accelerometer=true
+sensors/enable_gravity=true
 
 [internationalization]
 

@@ -59,12 +59,16 @@ func apply_volumes() -> void:
 	var a: Dictionary = Settings.values.get("audio", {})
 	if a.is_empty():
 		return
-	var muted: bool = a.mute or _focus_muted
+	# Three player switches: Master mutes everything but leaves the Music and
+	# Sound Effects choices untouched, so switching it back on restores them.
+	var muted: bool = not bool(a.get("master_on", true)) or bool(a.mute) or _focus_muted
+	var music_on: bool = a.get("music_on", true)
+	var sfx_on: bool = a.get("sfx_on", true)
 	_set_bus("Master", 0.0 if muted else float(a.master))
-	_set_bus("Music", float(a.music))
-	_set_bus("Engine", float(a.engine))
-	_set_bus("SFX", float(a.sfx))
-	_set_bus("UI", float(a.ui))
+	_set_bus("Music", float(a.music) if music_on else 0.0)
+	_set_bus("Engine", float(a.engine) if sfx_on else 0.0)
+	_set_bus("SFX", float(a.sfx) if sfx_on else 0.0)
+	_set_bus("UI", float(a.ui) if sfx_on else 0.0)
 
 
 func _set_bus(bus_name: String, linear: float) -> void:

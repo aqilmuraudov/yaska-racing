@@ -29,14 +29,13 @@ func _ready() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_layer.add_child(root)
 	if not use_stage:
-		var bg := ColorRect.new()
-		bg.color = UITheme.NAVY_DEEP
-		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		root.add_child(bg)
+		root.add_child(UITheme.pattern_backdrop())
+	# Soft blue wash on the left keeps text readable over the bright 3D stage
+	# without greying the scene.
 	var shade := TextureRect.new()
 	var grad := Gradient.new()
-	grad.set_color(0, Color(0.06, 0.09, 0.16, 0.75))
-	grad.set_color(1, Color(0.06, 0.09, 0.16, 0.0))
+	grad.set_color(0, Color(UITheme.BLUE_DEEP, 0.55 if use_stage else 0.0))
+	grad.set_color(1, Color(UITheme.BLUE_DEEP, 0.0))
 	var gt := GradientTexture2D.new()
 	gt.gradient = grad
 	gt.fill_from = Vector2(0, 0)
@@ -58,8 +57,13 @@ func _ready() -> void:
 	col.add_child(header)
 	if back_state >= 0:
 		back_button = Button.new()
-		back_button.text = "‹  " + tr("MENU_BACK")
-		back_button.custom_minimum_size = Vector2(170, 60)
+		back_button.text = tr("MENU_BACK")
+		back_button.name = "BackButton"
+		back_button.icon = UITheme.icon("back")
+		back_button.expand_icon = false
+		back_button.add_theme_constant_override("icon_max_width", 30)
+		back_button.custom_minimum_size = Vector2(170, 62)
+		UITheme.style_button(back_button, "turquoise", 26)
 		back_button.pressed.connect(go_back)
 		header.add_child(back_button)
 	if screen_title_key != "":
@@ -140,6 +144,7 @@ static func make_button(text: String, cb: Callable, big := false) -> Button:
 		b.custom_minimum_size = Vector2(300, 66)
 	b.pressed.connect(func():
 		AudioManager.play_ui("ui_confirm")
+		UITheme.bounce(b, 0.06)
 		cb.call())
 	b.focus_entered.connect(func(): AudioManager.play_ui("ui_move"))
 	return b
@@ -167,7 +172,7 @@ static func make_slider(title: String, value: float, min_v: float, max_v: float,
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	h.add_child(l)
-	var s := HSlider.new()
+	var s := SafeSlider.new()
 	s.min_value = min_v
 	s.max_value = max_v
 	s.step = step_v

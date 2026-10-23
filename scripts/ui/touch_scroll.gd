@@ -1,114 +1,228 @@
 class_name TouchScroll
 extends Node
-## Finger (and mouse) drag scrolling for a ScrollContainer whose rows are
-## buttons, sliders and selectors. Those rows normally swallow the touch, so
-## a drag that starts on them would never scroll. This helper watches input
-## *before* the GUI: once a press moves vertically past a small threshold it
-## becomes a scroll gesture, the control under the finger gets a cancelling
-## release (so no accidental tap/slider change), and motion scrolls the list
-## with a short inertial fling.
+## The one scrolling implementation shared by every scrollable screen.
+## Finger (and mouse) drag scrolling with momentum for a ScrollContainer whose
+## rows are buttons, switches and selectors.
+##
+## Why it exists / what it replaces:
+## * The rows swallow presses, so a drag starting on them never reached the
+##   ScrollContainer. This helper sees pointer input *before* the GUI.
+## * ScrollContainer's own touch dragging only runs on devices with a
+##   touchscreen and fought with this helper (two drag/inertia systems), so it
+##   is switched off: the container is set to MOUSE_FILTER_IGNORE and this node
+##   handles drag, fling and the mouse wheel itself.
+## * Positions are kept as floats. Drag deltas on a phone are fractions of a
+##   viewport pixel (the 1280×720 canvas is stretched), and truncating them to
+##   int made slow drags stand still and fast drags stepped.
+##
+## Input source: only mouse events are read. With
+## `pointing/emulate_mouse_from_touch` the first finger produces them, and on
+## desktop the real mouse does, so there is exactly one stream per gesture.
+## Gesture rules: a press that moves past SLOP mostly vertically becomes a
+## scroll; the control under the finger then gets a cancelling release, so no
+## button fires and nothing toggles. A press while the list is still gliding
+## only stops the glide (no tap). Mostly-horizontal motion is left to the row.
 
-const THRESHOLD := 14.0
-const FRICTION := 5.0
+const SLOP := 12.0 ## px of movement before a press becomes a drag
+const FRICTION := 3.2 ## 1/s exponential velocity decay of a fling
+const MIN_FLING := 60.0 ## px/s below which a release does not glide
+const STOP_SPEED := 18.0 ## px/s at which a glide ends
+const MAX_SPEED := 6000.0
+const SAMPLE_WINDOW_US := 100000 ## velocity is averaged over the last 0.1 s
 const CANCEL_POS := Vector2(-10000, -10000)
 
 var scroll: ScrollContainer
+var pos := 0.0 ## current scroll offset (float, authoritative while active)
+var velocity := 0.0 ## px/s, positive = content moves up (offset grows)
+var dragging := false
 var _pressed := false
-var _dragging := false
+var _caught_glide := false
+var _decided := false
 var _start := Vector2.ZERO
-var _velocity := 0.0
-var _last_time := 0
+var _last_y := 0.0
+var _samples: Array[Vector2] = [] # (time_us, offset delta)
+var _wheel_target := -1.0
 
 
 static func attach(sc: ScrollContainer) -> TouchScroll:
 	var ts := TouchScroll.new()
+	ts.name = "TouchScroll"
 	ts.scroll = sc
-	ts.process_mode = Node.PROCESS_MODE_ALWAYS
+	ts.process_mode = Node.PROCESS_MODE_ALWAYS # works while the race is paused
+	# Disable the container's built-in drag/wheel handling (see header).
+	sc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sc.add_child(ts)
 	return ts
+
+
+func max_offset() -> float:
+	if scroll == null:
+		return 0.0
+	var bar := scroll.get_v_scroll_bar()
+	return maxf(bar.max_value - bar.page, 0.0)
+
+
+func is_gliding() -> bool:
+	return not dragging and absf(velocity) > STOP_SPEED
+
+
+func _set_offset(v: float) -> void:
+	pos = clampf(v, 0.0, max_offset())
+	var bar := scroll.get_v_scroll_bar()
+	bar.step = 0.0 # fractional offsets; children are snapped to pixels when drawn
+	bar.value = pos
 
 
 func _input(event: InputEvent) -> void:
 	if scroll == null or not scroll.is_visible_in_tree():
 		return
-	var pos := Vector2.ZERO
-	var kind := ""
-	if event is InputEventScreenTouch:
-		if event.index != 0:
-			return
-		pos = event.position
-		kind = "press" if event.pressed else "release"
-	elif event is InputEventScreenDrag:
-		if event.index != 0:
-			return
-		pos = event.position
-		kind = "move"
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+	if event is InputEventMouseButton:
 		if event.position == CANCEL_POS:
-			return # our own cancelling release: let the GUI have it
-		if event.device == InputEvent.DEVICE_ID_EMULATION:
-			# Mouse emulated from touch: swallow it while we own the gesture.
-			if _dragging:
-				get_viewport().set_input_as_handled()
+			return # our own cancelling release
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					_on_press(event)
+				else:
+					_on_release(event)
+			MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN:
+				if event.pressed and _inside(event.position):
+					var dir := -1.0 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0
+					var base := _wheel_target if _wheel_target >= 0.0 else scroll.get_v_scroll_bar().value
+					_wheel_target = clampf(base + dir * 90.0 * maxf(event.factor, 1.0), 0.0, max_offset())
+					velocity = 0.0
+					get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion and _pressed:
+		if event.position == CANCEL_POS:
 			return
-		pos = event.position
-		kind = "press" if event.pressed else "release"
-	elif event is InputEventMouseMotion:
-		if event.device == InputEvent.DEVICE_ID_EMULATION:
-			if _dragging:
-				get_viewport().set_input_as_handled()
-			return
-		if not _pressed:
-			return
-		pos = event.position
-		kind = "move"
-	else:
+		_on_motion(event)
+	elif event is InputEventPanGesture and _inside(event.position):
+		_wheel_target = -1.0
+		velocity = 0.0
+		_set_offset(scroll.get_v_scroll_bar().value + event.delta.y * 24.0)
+		get_viewport().set_input_as_handled()
+
+
+func _inside(p: Vector2) -> bool:
+	var local := scroll.get_global_transform_with_canvas().affine_inverse() * p
+	return Rect2(Vector2.ZERO, scroll.size).has_point(local)
+
+
+func _on_press(event: InputEventMouseButton) -> void:
+	if not _inside(event.position):
 		return
-	var local := scroll.get_global_transform_with_canvas().affine_inverse() * pos
-	match kind:
-		"press":
-			if Rect2(Vector2.ZERO, scroll.size).has_point(local):
-				_pressed = true
-				_dragging = false
-				_start = pos
-				_velocity = 0.0
-				_last_time = Time.get_ticks_msec()
-		"move":
-			if not _pressed:
-				return
-			if not _dragging and absf(pos.y - _start.y) > THRESHOLD and absf(pos.y - _start.y) > absf(pos.x - _start.x):
-				_dragging = true
-				_start = pos
+	_pressed = true
+	dragging = false
+	_decided = false
+	_caught_glide = is_gliding() or _wheel_target >= 0.0
+	velocity = 0.0 # touching moving content stops it at once
+	_wheel_target = -1.0
+	pos = scroll.get_v_scroll_bar().value # pick up scrollbar / focus changes
+	_start = event.position
+	_last_y = event.position.y
+	_samples.clear()
+
+
+func _on_motion(event: InputEventMouseMotion) -> void:
+	var p: Vector2 = event.position
+	if not dragging:
+		var d := p - _start
+		if not _decided and d.length() > SLOP:
+			_decided = true
+			if absf(d.y) >= absf(d.x):
+				dragging = true
+				_last_y = p.y # start from here: no jump by the slop distance
 				_cancel_gui_press()
-			if _dragging:
-				var dy: float = event.relative.y if "relative" in event else 0.0
-				scroll.scroll_vertical -= int(dy)
-				var now := Time.get_ticks_msec()
-				var dt := maxf((now - _last_time) / 1000.0, 0.001)
-				_velocity = lerpf(_velocity, -dy / dt, 0.4)
-				_last_time = now
-				get_viewport().set_input_as_handled()
-		"release":
-			if _dragging:
-				get_viewport().set_input_as_handled()
-			_pressed = false
-			_dragging = false
+		if not dragging:
+			return
+	var dy := p.y - _last_y
+	_last_y = p.y
+	_set_offset(pos - dy)
+	var now := Time.get_ticks_usec()
+	_samples.append(Vector2(now, -dy))
+	while _samples.size() > 1 and now - int(_samples[0].x) > SAMPLE_WINDOW_US:
+		_samples.pop_front()
+	get_viewport().set_input_as_handled()
 
 
-## The control that received the initial press gets a release far outside
-## its rect: buttons do not fire and sliders stop grabbing.
+func _on_release(event: InputEventMouseButton) -> void:
+	if not _pressed:
+		return
+	_pressed = false
+	if dragging:
+		dragging = false
+		velocity = _release_velocity()
+		get_viewport().set_input_as_handled()
+	elif _caught_glide:
+		# The touch only stopped a glide: move the press off the control,
+		# then let this release arrive off it as well, so nothing fires.
+		_push_motion_off()
+		event.position = CANCEL_POS
+		event.global_position = CANCEL_POS
+	_caught_glide = false
+
+
+## Average speed over the last SAMPLE_WINDOW_US; zero if the finger rested
+## before lifting (so a slow, careful drag never glides on).
+func _release_velocity() -> float:
+	if _samples.size() < 2:
+		return 0.0
+	var now := Time.get_ticks_usec()
+	var last_t := int(_samples[-1].x)
+	if now - last_t > 60000:
+		return 0.0
+	var first_t := int(_samples[0].x)
+	var dist := 0.0
+	for i in range(1, _samples.size()):
+		dist += _samples[i].y
+	var dt := float(last_t - first_t) / 1000000.0
+	if dt < 0.008:
+		return 0.0
+	var v := clampf(dist / dt, -MAX_SPEED, MAX_SPEED)
+	return v if absf(v) >= MIN_FLING else 0.0
+
+
+## The control that received the press gets a motion and then a release far
+## outside its rect: buttons do not fire, switches do not toggle, sliders stop
+## grabbing. (BaseButton decides on release from `pressing_inside`, which
+## only motion events update, so a release alone would still fire it.)
+## Pushed straight into the viewport so it arrives before further motion.
 func _cancel_gui_press() -> void:
+	_push_motion_off()
 	var up := InputEventMouseButton.new()
 	up.button_index = MOUSE_BUTTON_LEFT
 	up.pressed = false
 	up.position = CANCEL_POS
-	up.global_position = up.position
-	Input.parse_input_event(up)
+	up.global_position = CANCEL_POS
+	scroll.get_viewport().push_input(up)
 	scroll.get_viewport().gui_release_focus()
 
 
+func _push_motion_off() -> void:
+	var mm := InputEventMouseMotion.new()
+	mm.button_mask = MOUSE_BUTTON_MASK_LEFT
+	mm.position = CANCEL_POS
+	mm.global_position = CANCEL_POS
+	scroll.get_viewport().push_input(mm)
+
+
 func _process(delta: float) -> void:
-	if _dragging or absf(_velocity) < 5.0 or scroll == null:
+	if scroll == null or dragging:
 		return
-	scroll.scroll_vertical += int(_velocity * delta)
-	_velocity = lerpf(_velocity, 0.0, 1.0 - exp(-FRICTION * delta))
+	if _wheel_target >= 0.0:
+		var cur := scroll.get_v_scroll_bar().value
+		var nxt := lerpf(cur, _wheel_target, 1.0 - exp(-18.0 * delta))
+		if absf(nxt - _wheel_target) < 0.5:
+			nxt = _wheel_target
+			_wheel_target = -1.0
+		_set_offset(nxt)
+		return
+	if absf(velocity) <= STOP_SPEED:
+		velocity = 0.0
+		return
+	var before := pos
+	_set_offset(pos + velocity * delta)
+	if is_equal_approx(before, pos):
+		velocity = 0.0 # reached a bound: stop instead of pushing against it
+		return
+	velocity *= exp(-FRICTION * delta)

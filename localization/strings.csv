@@ -36,8 +36,8 @@ OPT_DIFFICULTY,Difficulty,Çətinlik
 OPT_LAPS,Laps,Dövrlər
 OPT_OPPONENTS,Opponents,Rəqiblər
 OPT_ITEMS,Items,Əşyalar
-OPT_ON,On,Açıq
-OPT_OFF,Off,Bağlı
+OPT_ON,On,Aktiv
+OPT_OFF,Off,Deaktiv
 DIFF_EASY,Easy,Asan
 DIFF_MEDIUM,Medium,Orta
 DIFF_HARD,Hard,Çətin
@@ -201,11 +201,11 @@ TOUCH_BRAKE,BRAKE,ƏYLƏC
 TOUCH_GAS,GAS,QAZ
 CREDITS_TITLE,Credits,Müəlliflər
 CREDITS_BODY,"BAKU TURBO — an original arcade kart racer.\n\nDesign, code, models, sounds and music were created for this project and generated procedurally from source in the repository.\n\nFonts: Baloo 2 (EkType) and Nunito (Vernon Adams, Jacques Le Bailly), SIL Open Font License 1.1.\n\nBuilt with Godot Engine (MIT licence).\n\nInspired by the city of Baku. All characters, karts and brands are fictional.","BAKU TURBO — orijinal arkada kart yarışı.\n\nDizayn, kod, modellər, səslər və musiqi bu layihə üçün yaradılıb və repozitoriyadakı mənbədən prosedur yolla hazırlanıb.\n\nŞriftlər: Baloo 2 (EkType) və Nunito (Vernon Adams, Jacques Le Bailly), SIL Open Font License 1.1.\n\nGodot Engine ilə hazırlanıb (MIT lisenziyası).\n\nBakı şəhərindən ilhamlanıb. Bütün personajlar, kartlar və brendlər uydurmadır."
-TUT_HOP,"Tap Drift to hop.","Tullanmaq üçün Drift düyməsinə bas."
-TUT_DRIFT,"Hold Drift and steer while hopping to start a powerslide.","Tullanarkən Drift düyməsini saxla və dön — drift başlayacaq."
-TUT_BOOST,"When the meter turns gold, press Boost!","Göstərici qızılı olanda Sürət düyməsinə bas!"
-TUT_CHAIN,"Keep drifting and boost again — up to three times!","Driftə davam et və yenə sürətlən — üç dəfəyə qədər!"
-TUT_DONE,"Great! You are ready to race.","Əla! Yarışa hazırsan."
+TUT_HOP,Tap Drift to hop.,Tullanmaq üçün Drift düyməsinə bas.
+TUT_DRIFT,Hold Drift and steer while hopping to start a powerslide.,Tullanarkən Drift düyməsini saxla və dön — drift başlayacaq.
+TUT_BOOST,"When the meter turns gold, press Boost!",Göstərici qızılı olanda Sürət düyməsinə bas!
+TUT_CHAIN,Keep drifting and boost again — up to three times!,Driftə davam et və yenə sürətlən — üç dəfəyə qədər!
+TUT_DONE,Great! You are ready to race.,Əla! Yarışa hazırsan.
 TUT_SKIP,Skip tutorial,Dərsi keç
 RACER_NAME_0,You,Sən
 RACER_NAME_1,Leyla,Leyla
@@ -243,3 +243,48 @@ RACER_SPECIALTY,Specialty,Xüsusiyyət
 RACER_KART,Kart,Kart
 RACER_YOU_SUFFIX,(You),(Sən)
 HUD_TRAP_AHEAD,Trap ahead!,Qarşıda tələ!
+SET_TAB_LANGUAGE,Language,Dil
+SET2_TEXTURE,Texture Quality,Tekstura keyfiyyəti
+SET2_TEXTURE_HINT,Sharper surfaces. Low saves memory.,Səthlərin aydınlığı. Zəif yaddaşa qənaət edir.
+OPT_Q_LOW,Low,Zəif
+OPT_Q_NORMAL,Normal,Normal
+OPT_Q_HIGH,High,Yüksək
+SET2_FPS,Frame Rate,Kadr tezliyi
+SET2_FPS_HINT,Upper limit. Higher is smoother but uses more battery.,"Yuxarı hədd. Yüksək daha axıcıdır, amma batareyanı çox işlədir."
+SET2_FPS_UNSUPPORTED,"Your screen runs at %d Hz, so %d FPS is not available.","Ekranınız %d Hz-də işləyir, ona görə %d FPS mümkün deyil."
+SET2_FPS_UNKNOWN,This screen cannot show more than 60 FPS here.,Bu ekran burada 60 FPS-dən çox göstərə bilmir.
+SET2_SHADOWS,Shadows,Kölgələr
+SET2_SHADOWS_HINT,"Shadows under karts, trees and buildings.","Kart, ağac və binaların kölgələri."
+SET2_MASTER,Master Sound,Ümumi səs
+SET2_MASTER_HINT,Every sound in the game.,Oyundakı bütün səslər.
+SET2_MUSIC,Music,Musiqi
+SET2_MUSIC_HINT,Menu and race songs.,Menyu və yarış mahnıları.
+SET2_SFX,Sound Effects,Səs effektləri
+SET2_SFX_HINT,"Engines, boosts and buttons.","Mühərrik, sürətlənmə və düymə səsləri."
+SET2_MASTER_OFF_NOTE,Master Sound is off.,Ümumi səs deaktivdir.
+SET2_CONTROL_TYPE,Control Type,İdarəetmə növü
+SET2_CONTROL_TYPE_HINT,Steer with screen buttons or by tilting the phone.,Ekran düymələri ilə və ya telefonu əyərək idarə et.
+OPT_BUTTONS,Buttons,Düymə
+OPT_TILT,Tilt,Sensor
+SET2_BUTTON_SIZE,Button Size,Düymə ölçüsü
+SET2_BUTTON_SIZE_HINT,Size of the on-screen buttons.,Ekran düymələrinin ölçüsü.
+OPT_SMALL,Small,Kiçik
+OPT_MEDIUM,Medium,Orta
+OPT_LARGE,Large,Böyük
+SET2_AUTO_ACCEL,Automatic Acceleration,Avtomatik qaz
+SET2_AUTO_ACCEL_HINT,The kart drives forward by itself.,Kart özü irəli gedir.
+SET2_STEER_SENS,Steering Sensitivity,Sükan həssaslığı
+SET2_STEER_SENS_HINT_BUTTONS,How quickly the kart turns when you press a button.,Düyməyə basanda kartın nə qədər tez döndüyü.
+SET2_STEER_SENS_HINT_TILT,How far you tilt the phone for a full turn.,Tam dönmə üçün telefonu nə qədər əymək lazımdır.
+OPT_S_LOW,Low,Aşağı
+OPT_S_NORMAL,Normal,Normal
+OPT_S_HIGH,High,Yüksək
+SET2_CALIBRATE,Calibrate,Kalibrasiya et
+SET2_CALIBRATE_HINT,"Hold the phone the way you drive, then tap Calibrate.","Telefonu sürdüyün kimi tut, sonra «Kalibrasiya et» düyməsinə toxun."
+SET2_CALIBRATED,Done! This is now straight ahead.,Hazırdır! İndi bu vəziyyət düz istiqamətdir.
+SET2_TILT_LIVE,Tilt now,İndiki əyilmə
+SET_REASON_NO_SENSOR,This device has no tilt sensor.,Bu cihazda əyilmə sensoru yoxdur.
+TILT_NO_SENSOR,No tilt sensor found. Buttons are on.,Sensor tapılmadı. Düymələr aktivdir.
+SET2_LANGUAGE_HINT,Choose the game language.,Oyunun dilini seç.
+SET2_RESTORE,Restore Defaults,Standarta qaytar
+SET2_RESTORE_CONFIRM,Restore all settings to defaults?,Bütün ayarlar standarta qaytarılsın?

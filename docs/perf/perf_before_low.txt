@@ -1,0 +1,5 @@
+preset=low samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=83.3  frames>20ms(sec-buckets)=1
+draw_calls med=124 p95=168  prims med=172k
+gpu_ms med=1.12 p95=2.84  cpu proc=2.42 phys=3.33
+static mem 152-154 MB  vmem med=75 MB  objects=3936

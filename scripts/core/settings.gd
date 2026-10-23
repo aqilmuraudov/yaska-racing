@@ -5,9 +5,10 @@ extends Node
 signal changed(section: String, key: String)
 signal graphics_changed
 
-const SETTINGS_VERSION := 1
+const SETTINGS_VERSION := 2
 const DEFAULT_PATH := "user://settings.json"
 const PRESET_PATH := "res://data/graphics/presets.json"
+const BUTTON_SCALES := [0.85, 1.0, 1.2]
 const PRESET_KEYS := ["resolution_scale", "msaa", "fxaa", "shadows", "effects_density",
 	"decor_distance", "texture_detail", "ssao", "bloom", "fps_cap", "dynamic_resolution"]
 
@@ -45,24 +46,30 @@ func defaults() -> Dictionary:
 		"resolution_scale": 0.8, "msaa": 0, "fxaa": true, "shadows": 1, "effects_density": 0.7,
 		"decor_distance": 1, "texture_detail": 1, "ssao": false, "bloom": true, "fps_cap": 60,
 		"dynamic_resolution": false, "motion_blur": false, "brightness": 1.0, "vsync": true,
-		"window_mode": "windowed",
+		"window_mode": "windowed", "dev_overlay": false, "tilt_debug": false,
 	})
 	return {
 		"version": SETTINGS_VERSION,
 		"graphics": g,
-		"audio": {"master": 0.9, "music": 0.6, "engine": 0.7, "sfx": 0.8, "ui": 0.7,
+		# Player-facing: three switches. The levels are fixed mix values
+		# (developer panel only); switches never overwrite them.
+		"audio": {"master_on": true, "music_on": true, "sfx_on": true,
+			"master": 0.9, "music": 0.6, "engine": 0.7, "sfx": 0.8, "ui": 0.7,
 			"mute": false, "background_audio": false},
 		"controls": {
 			"touch_steer_mode": "buttons", # buttons | tilt
 			"touch_auto_accelerate": true,
-			"touch_scale": 1.0,
+			"touch_scale": 1.0, # derived from button_size
+			"button_size": 1, # 0 small, 1 medium, 2 large
 			"touch_opacity": 0.65,
 			"touch_layout": "default", # default | swapped
 			"touch_offset_x": 0.0,
 			"touch_offset_y": 0.0,
-			"tilt_sensitivity": 1.0,
+			"tilt_sensitivity": 1.0, # legacy (v1), migrated into steer_level
+			"tilt_neutral_deg": 0.0,
+			"steer_level": 1, # 0 low, 1 normal, 2 high (buttons and tilt)
 			"deadzone": InputActions.DEFAULT_DEADZONE,
-			"steer_sensitivity": 1.0,
+			"steer_sensitivity": 1.0, # legacy (v1), migrated into steer_level
 			"vibration": true,
 			"bindings": {},
 		},
@@ -95,6 +102,7 @@ func load_settings() -> void:
 	if result.source == "none":
 		return
 	var loaded: Dictionary = result.data
+	var from_version := int(loaded.get("version", 1))
 	for section in values.keys():
 		if typeof(values[section]) != TYPE_DICTIONARY or not loaded.has(section):
 			continue
@@ -110,7 +118,28 @@ func load_settings() -> void:
 					values[section][key] = int(lv)
 				elif typeof(dv) == TYPE_FLOAT and typeof(lv) == TYPE_INT:
 					values[section][key] = float(lv)
+	if from_version < 2:
+		_migrate_v1(loaded)
 	_sanitize()
+
+
+## v1 → v2: volumes/mute become switches, the free sensitivity and button
+## scale become three levels. Old numeric values are kept, nothing is reset.
+func _migrate_v1(loaded: Dictionary) -> void:
+	var a: Dictionary = values.audio
+	a.master_on = not bool(a.mute) and float(a.master) > 0.01
+	a.music_on = float(a.music) > 0.01
+	a.sfx_on = float(a.sfx) > 0.01 or float(a.engine) > 0.01
+	a.mute = false
+	for k in ["master", "music", "sfx", "engine", "ui"]:
+		if float(a[k]) <= 0.01:
+			a[k] = float(defaults().audio[k]) # level kept for when the switch is on
+	var c: Dictionary = values.controls
+	var lc: Dictionary = loaded.get("controls", {}) if typeof(loaded.get("controls")) == TYPE_DICTIONARY else {}
+	var sens := float(lc.get("tilt_sensitivity", 1.0)) if String(c.touch_steer_mode) == "tilt" else float(c.steer_sensitivity)
+	c.steer_level = 0 if sens < 0.85 else (2 if sens > 1.15 else 1)
+	var ts := float(c.touch_scale)
+	c.button_size = 0 if ts < 0.92 else (2 if ts > 1.1 else 1)
 
 
 func save_settings() -> void:
@@ -176,7 +205,12 @@ func _sanitize() -> void:
 	a.ui_scale = clampf(float(a.ui_scale), 0.8, 1.4)
 	a.camera_shake = clampf(float(a.camera_shake), 0.0, 1.0)
 	var c: Dictionary = values.controls
-	c.touch_scale = clampf(float(c.touch_scale), 0.7, 1.5)
+	c.button_size = clampi(int(c.button_size), 0, 2)
+	c.touch_scale = BUTTON_SCALES[c.button_size]
+	c.steer_level = clampi(int(c.steer_level), 0, 2)
+	c.tilt_neutral_deg = clampf(float(c.tilt_neutral_deg), -45.0, 45.0)
+	if c.touch_steer_mode not in ["buttons", "tilt"]:
+		c.touch_steer_mode = "buttons"
 	c.touch_opacity = clampf(float(c.touch_opacity), 0.2, 1.0)
 	c.deadzone = clampf(float(c.deadzone), 0.05, 0.6)
 	c.steer_sensitivity = clampf(float(c.steer_sensitivity), 0.5, 1.5)
@@ -239,7 +273,12 @@ func apply_graphics() -> void:
 	vp.scaling_3d_scale = clampf(float(g.resolution_scale) * dynamic_scale, 0.5, 1.0)
 	vp.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][int(g.msaa)]
 	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if g.fxaa else Viewport.SCREEN_SPACE_AA_DISABLED
-	vp.texture_mipmap_bias = [0.75, 0.0, -0.25][int(g.texture_detail)]
+	# Texture quality: asset tier (TextureLibrary: 256 / 512 / 1024 px sets),
+	# mip bias and anisotropic filtering.
+	var tq := int(g.texture_detail)
+	vp.texture_mipmap_bias = [0.5, 0.0, -0.25][tq]
+	vp.anisotropic_filtering_level = [Viewport.ANISOTROPY_DISABLED, Viewport.ANISOTROPY_2X, Viewport.ANISOTROPY_4X][tq]
+	TextureLibrary.set_tier(tq)
 	Engine.max_fps = int(g.fps_cap)
 	if is_desktop():
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if g.vsync else DisplayServer.VSYNC_DISABLED)
@@ -282,12 +321,34 @@ func _upscale_mode() -> Viewport.Scaling3DMode:
 	return Viewport.SCALING_3D_MODE_BILINEAR
 
 
-## Frame caps the platform can honour: phones get 30 / 60 (60 Hz target,
-## steady 30 option); desktops also get higher caps.
+## Frame-rate caps offered to the player. A cap is a ceiling, not a promise:
+## the simulation always ticks at 60 Hz with interpolation, so the cap never
+## changes driving, timers or sensor filtering. Desktop builds also keep
+## "unlimited" (0) for development.
 static func fps_options() -> Array:
 	if is_mobile():
-		return [30, 60]
+		return [30, 60, 90, 120]
 	return [30, 60, 90, 120, 0]
+
+
+## Display refresh rate in Hz, or 0 when the platform cannot tell.
+static func display_refresh_rate() -> float:
+	if DisplayServer.get_name() == "headless":
+		return 0.0
+	return maxf(DisplayServer.screen_get_refresh_rate(), 0.0)
+
+
+## With vsync (always on for Android) a cap above the panel's current refresh
+## rate cannot be reached, so such caps are shown disabled.
+static func fps_supported(cap: int) -> bool:
+	if cap <= 60:
+		return true
+	var hz := display_refresh_rate()
+	if hz <= 0.0:
+		return not is_mobile()
+	if is_desktop() and not bool(Settings.values.get("graphics", {}).get("vsync", true)):
+		return true
+	return cap <= int(round(hz)) + 1
 
 
 static func has_touch() -> bool:
@@ -319,6 +380,9 @@ func unsupported_reason(option: String) -> String:
 		"dynamic_resolution":
 			if method == "gl_compatibility":
 				return "SET_REASON_RENDERER"
+		"tilt":
+			if not is_mobile() and not DebugRunner.parse_args().has("fake-tilt"):
+				return "SET_REASON_NO_SENSOR"
 		"vibration":
 			if not is_mobile():
 				return "SET_REASON_DESKTOP_ONLY"

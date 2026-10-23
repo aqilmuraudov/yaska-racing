@@ -24,6 +24,8 @@ var buttons: Array[TouchButton] = []
 var _finger_button := {} # touch index -> TouchButton
 var _opacity := 0.65
 var _scale := 1.0
+var _tilt_layout := false
+var _notice_time := 0.0
 
 
 func setup(p_input: PlayerInput) -> void:
@@ -77,7 +79,9 @@ func _layout() -> void:
 	if sz.x <= 0.0:
 		sz = get_viewport_rect().size
 	var swapped: bool = Settings.get_value("controls", "touch_layout", "default") == "swapped"
-	var tilt: bool = Settings.get_value("controls", "touch_steer_mode", "buttons") == "tilt"
+	# Steer buttons hide only while tilt really steers (sensor data present).
+	var tilt: bool = player_input != null and player_input.steer_mode() == "tilt"
+	_tilt_layout = tilt
 	var auto_gas: bool = Settings.get_value("controls", "touch_auto_accelerate", true)
 	var ox: float = float(Settings.get_value("controls", "touch_offset_x", 0.0)) * sz.x
 	var oy: float = float(Settings.get_value("controls", "touch_offset_y", 0.0)) * sz.y
@@ -190,6 +194,8 @@ func _release(b: TouchButton) -> void:
 
 
 func release_all() -> void:
+	if player_input:
+		player_input.release_all()
 	for b in buttons:
 		if b.pressed:
 			Input.action_release(b.action)
@@ -199,17 +205,27 @@ func release_all() -> void:
 	queue_redraw()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not visible or player_input == null:
 		return
-	if Settings.get_value("controls", "touch_steer_mode", "buttons") == "tilt":
-		var acc := Input.get_accelerometer()
-		var orient := DisplayServer.screen_get_orientation()
-		var lateral := acc.y if orient != DisplayServer.SCREEN_REVERSE_LANDSCAPE else -acc.y
-		var sens := float(Settings.get_value("controls", "tilt_sensitivity", 1.0))
-		player_input.tilt_steer = clampf(lateral / (9.81 * 0.42) * sens, -1.0, 1.0)
-	else:
-		player_input.tilt_steer = 0.0
+	# Tilt reading and filtering live in PlayerInput (fixed tick). Here the
+	# layout follows the effective mode: if Tilt is selected but the device
+	# sends no sensor data, the steer buttons come back with a short notice.
+	var tilt_now := player_input.steer_mode() == "tilt"
+	if tilt_now != _tilt_layout:
+		if not tilt_now and player_input.tilt_unavailable:
+			_notice_time = 4.0
+		release_all()
+		_layout()
+	if _notice_time > 0.0:
+		_notice_time -= delta
+		queue_redraw()
+	if _debug_overlay():
+		queue_redraw()
+
+
+static func _debug_overlay() -> bool:
+	return OS.is_debug_build() and bool(Settings.get_value("graphics", "tilt_debug", false))
 
 
 func _notification(what: int) -> void:
@@ -219,6 +235,21 @@ func _notification(what: int) -> void:
 
 func _draw() -> void:
 	var font := UITheme.bold_font()
+	if _notice_time > 0.0:
+		var msg := tr("TILT_NO_SENSOR")
+		var fs := 26
+		var tsz := font.get_string_size(msg, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+		var c := Vector2(size.x * 0.5, size.y * 0.24)
+		var a := clampf(_notice_time, 0.0, 1.0)
+		draw_rect(Rect2(c - Vector2(tsz.x * 0.5 + 24, 30), Vector2(tsz.x + 48, 52)), Color(UITheme.NAVY_DEEP, 0.85 * a))
+		draw_string(font, c + Vector2(-tsz.x * 0.5, 8), msg, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(UITheme.GOLD, a))
+	if _debug_overlay() and player_input:
+		var lines := (player_input.tilt.debug_text() + "
+mode=%s unavailable=%s kart_steer=%+.2f" % [player_input.steer_mode(), player_input.tilt_unavailable, player_input.kart.input.steer if player_input.kart else 0.0]).split("
+")
+		draw_rect(Rect2(Vector2(size.x * 0.5 - 330, 96), Vector2(660, 26 * lines.size() + 14)), Color(0, 0, 0, 0.7))
+		for i in lines.size():
+			draw_string(font, Vector2(size.x * 0.5 - 318, 120 + i * 26), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color(0.6, 1.0, 0.7))
 	for b in buttons:
 		if not b.visible:
 			continue
