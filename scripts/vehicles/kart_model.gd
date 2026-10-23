@@ -75,6 +75,8 @@ func _flush() -> void:
 		_kart_vcolor = ShaderMaterial.new()
 		_kart_vcolor.shader = preload("res://assets/materials/vcolor.gdshader")
 		_kart_vcolor.set_shader_parameter("rim_amount", 0.25)
+		_kart_vcolor.set_shader_parameter("gloss", 0.9)
+		_kart_vcolor.set_shader_parameter("saturation", 1.12)
 	for node in _accums.keys():
 		var mi := MeshInstance3D.new()
 		mi.mesh = _accums[node].commit(_kart_vcolor)

@@ -19,8 +19,9 @@ func build() -> void:
 	world_env = WorldEnvironment.new()
 	env = Environment.new()
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.17, 0.46, 0.86)
-	sky_mat.sky_horizon_color = Color(0.78, 0.88, 0.96)
+	# Clear Caspian afternoon: saturated zenith, warm pale horizon.
+	sky_mat.sky_top_color = Color(0.12, 0.42, 0.88)
+	sky_mat.sky_horizon_color = Color(0.74, 0.87, 0.98)
 	sky_mat.sky_energy_multiplier = 1.05
 	sky_mat.sky_curve = 0.12
 	sky_mat.ground_bottom_color = Color(0.36, 0.42, 0.42)
@@ -34,15 +35,16 @@ func build() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.85
-	env.ambient_light_sky_contribution = 0.75
-	env.ambient_light_color = Color(0.9, 0.88, 0.85)
+	# Ambient a little lower than the sun so forms keep light and shade.
+	env.ambient_light_energy = 0.78
+	env.ambient_light_sky_contribution = 0.7
+	env.ambient_light_color = Color(0.92, 0.9, 0.86)
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 1.0
 	env.tonemap_white = 6.0
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.78, 0.86, 0.94)
+	env.fog_light_color = Color(0.72, 0.85, 0.98) # blue haze, never grey
 	env.fog_density = 0.0016
 	env.fog_sky_affect = 0.15
 	env.fog_aerial_perspective = 0.35
@@ -52,8 +54,8 @@ func build() -> void:
 	env.glow_hdr_threshold = 1.15
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.16
-	env.adjustment_contrast = 1.04
+	env.adjustment_saturation = 1.14
+	env.adjustment_contrast = 1.07
 	env.ssao_radius = 1.2
 	env.ssao_intensity = 1.4
 	world_env.environment = env
@@ -61,8 +63,8 @@ func build() -> void:
 
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.light_color = Color(1.0, 0.93, 0.8)
-	sun.light_energy = 1.45
+	sun.light_color = Color(1.0, 0.9, 0.74) # warm late-afternoon sun
+	sun.light_energy = 1.6
 	# Afternoon sun from the south-west so the seafront faces are lit.
 	sun.rotation = Vector3(deg_to_rad(-48.0), deg_to_rad(-140.0), 0.0)
 	sun.shadow_bias = 0.04

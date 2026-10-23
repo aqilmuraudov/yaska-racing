@@ -5,14 +5,12 @@ var bar: ProgressBar
 var _started := false
 var _min_time := 0.6
 var _time := 0.0
+var _icon: Control
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var bg := ColorRect.new()
-	bg.color = UITheme.NAVY_DEEP
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	add_child(UITheme.pattern_backdrop())
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
@@ -20,6 +18,11 @@ func _ready() -> void:
 	v.add_theme_constant_override("separation", 22)
 	v.custom_minimum_size = Vector2(720, 0)
 	center.add_child(v)
+	# The chosen racer bounces happily while the track loads.
+	_icon = RacerIcon.new()
+	_icon.def = RacerRoster.get_def(String(Game.race_config.get("kart_id", SaveManager.get_selected_kart())))
+	_icon.custom_minimum_size = Vector2(0, 150)
+	v.add_child(_icon)
 	var title := Label.new()
 	title.text = tr(_track_name_key())
 	title.theme_type_variation = &"Heading"
@@ -37,8 +40,8 @@ func _ready() -> void:
 	bar = ProgressBar.new()
 	bar.custom_minimum_size = Vector2(720, 28)
 	bar.show_percentage = false
-	bar.add_theme_stylebox_override("background", UITheme.rounded(Color(1, 1, 1, 0.1), 14, 0, Color.TRANSPARENT, 0))
-	bar.add_theme_stylebox_override("fill", UITheme.rounded(UITheme.TURQUOISE, 14, 0, Color.TRANSPARENT, 0))
+	bar.add_theme_stylebox_override("background", UITheme.rounded(Color(UITheme.INK, 0.55), 16, 3, UITheme.INK, 0))
+	bar.add_theme_stylebox_override("fill", UITheme.rounded(UITheme.YELLOW, 14, 3, UITheme.ORANGE, 0))
 	v.add_child(bar)
 	var l := Label.new()
 	l.text = tr("LOADING")
@@ -56,6 +59,9 @@ func _track_name_key() -> String:
 
 func _process(delta: float) -> void:
 	_time += delta
+	if _icon:
+		_icon.pivot_offset = _icon.size * 0.5
+		_icon.scale = Vector2.ONE * (1.0 + absf(sin(_time * 5.0)) * 0.06)
 	if not _started:
 		_started = true
 		ResourceLoader.load_threaded_request(Game.RACE_SCENE, "PackedScene", true)

@@ -27,9 +27,9 @@ func build() -> void:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(620, 150)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.add_theme_stylebox_override("normal", UITheme.rounded(Color(UITheme.NAVY, 0.88), 24, 4, Color(mode.color, 0.6), 16))
-		b.add_theme_stylebox_override("hover", UITheme.rounded(Color(UITheme.NAVY_LIGHT, 0.95), 24, 5, mode.color, 16))
-		b.add_theme_stylebox_override("pressed", UITheme.rounded(Color(mode.color, 0.9), 24, 5, Color.WHITE, 16))
+		b.add_theme_stylebox_override("normal", UITheme.art_box("panel_card", 24, 14))
+		b.add_theme_stylebox_override("hover", UITheme.art_box("panel_card", 24, 14))
+		b.add_theme_stylebox_override("pressed", UITheme.art_box("panel_card_selected", 24, 14))
 		var v := VBoxContainer.new()
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

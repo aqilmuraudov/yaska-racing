@@ -350,10 +350,194 @@ def render_music(bpm, bars, root, seed, energy):
     return mix
 
 
+# --- Cheerful music (0.5.0) ----------------------------------------------------------
+# Major key, bouncy bass, marimba off-beat chords, bell / whistle melody and
+# light percussion. Original material; loops are seamless by construction.
+
+MAJOR = [0, 2, 4, 5, 7, 9, 11]
+
+
+def major_note(root, degree):
+    octave, idx = divmod(degree, 7)
+    return root + 12 * octave + MAJOR[idx]
+
+
+def marimba(f, dur, bright=1.0):
+    tt = t_axis(dur)
+    sig = np.sin(2 * np.pi * f * tt) + 0.22 * bright * np.sin(2 * np.pi * f * 3.93 * tt) * env_exp(len(tt), 0.03)
+    return sig * env_exp(len(tt), 0.22) * env_adsr(len(tt), 0.002, 0.02, 1.0, 0.02)
+
+
+def bell(f, dur):
+    tt = t_axis(dur)
+    sig = (np.sin(2 * np.pi * f * tt) + 0.45 * np.sin(2 * np.pi * f * 2.76 * tt) * env_exp(len(tt), 0.18)
+           + 0.2 * np.sin(2 * np.pi * f * 5.4 * tt) * env_exp(len(tt), 0.06))
+    return sig * env_exp(len(tt), 0.5) * env_adsr(len(tt), 0.002, 0.02, 1.0, 0.05)
+
+
+def whistle(f, dur):
+    tt = t_axis(dur)
+    vib = 1 + 0.008 * np.sin(2 * np.pi * 5.5 * tt) * np.clip(tt * 5, 0, 1)
+    ph = np.cumsum(f * vib) / SR
+    sig = np.sin(2 * np.pi * ph) + 0.12 * np.sin(4 * np.pi * ph) + lp_fast(noise(len(tt)), 3000) * 0.02
+    return sig * env_adsr(len(tt), 0.03, 0.08, 0.75, 0.08)
+
+
+def render_happy(bpm, bars, root, seed, energy):
+    r = np.random.default_rng(seed)
+    beat = 60.0 / bpm
+    n = int(bars * 4 * beat * SR)
+    tail = int(2.5 * SR)
+    L = np.zeros(n + tail)
+    R = np.zeros(n + tail)
+
+    def addst(sig, start, gain, pan=0.0):
+        i0 = int(start * SR)
+        if i0 >= n:
+            return
+        i1 = min(n + tail, i0 + len(sig))
+        L[i0:i1] += sig[: i1 - i0] * gain * (1 - max(pan, 0))
+        R[i0:i1] += sig[: i1 - i0] * gain * (1 + min(pan, 0))
+
+    kick_t = t_axis(0.3)
+    kick = np.sin(2 * np.pi * np.cumsum(50 + 100 * np.exp(-kick_t * 35)) / SR) * env_exp(len(kick_t), 0.1)
+    clap = bandpass(noise(int(0.2 * SR)), 1000, 6000) * (env_exp(int(0.2 * SR), 0.05) + 0.5 * np.roll(env_exp(int(0.2 * SR), 0.02), int(0.012 * SR)))
+    shaker = hp_fast(noise(int(0.05 * SR)), 7000) * env_adsr(int(0.05 * SR), 0.01, 0.01, 0.5, 0.03)
+    # I - V - vi - IV, then I - IV - V - I
+    prog = [0, 4, 5, 3, 0, 3, 4, 0]
+    for bar in range(bars):
+        b0 = bar * 4 * beat
+        deg = prog[bar % len(prog)]
+        for q in range(4):
+            tq = b0 + q * beat
+            if energy > 0.7 or q in (0, 2):
+                addst(kick, tq, 0.8)
+            if q in (1, 3):
+                addst(clap, tq, 0.22 + 0.18 * energy, 0.1)
+            for k in range(4 if energy > 0.7 else 2):
+                addst(shaker, tq + k * beat / (4 if energy > 0.7 else 2), 0.10 + (0.06 if k % 2 else 0.0), -0.3)
+        # Bouncy bass: root / octave / fifth
+        pattern = [0, 7, 4, 7] if energy < 0.7 else [0, 0, 7, 0, 4, 0, 7, 4]
+        step = 4 * beat / len(pattern)
+        for i, iv in enumerate(pattern):
+            f = midi_to_hz(major_note(root - 24, deg) + (12 if iv == 7 else (7 if iv == 4 else 0)))
+            tt = t_axis(step * 0.85)
+            sig = (np.sin(2 * np.pi * f * tt) * 0.8 + tri(f * tt) * 0.4) * env_adsr(len(tt), 0.004, 0.06, 0.55, 0.04)
+            addst(sig, b0 + i * step, 0.5)
+        # Marimba chord stabs on the off-beats
+        for e8 in range(8):
+            if e8 % 2 == 1:
+                for k, pan in ((0, -0.35), (2, 0.0), (4, 0.35)):
+                    f = midi_to_hz(major_note(root, deg + k))
+                    addst(marimba(f, 0.35), b0 + e8 * beat / 2, 0.12, pan)
+    # Melody: two four-bar phrases (call / answer) in major pentatonic.
+    penta = [0, 1, 2, 4, 5, 7, 8, 9]  # degrees: 1 2 3 5 6 (+octave)
+    phrases = [
+        [(2, 0.5), (4, 0.5), (5, 1.0), (4, 0.5), (2, 0.5), (4, 1.0)],
+        [(5, 0.5), (7, 0.5), (8, 0.75), (7, 0.25), (5, 0.5), (4, 1.5)],
+        [(4, 0.5), (5, 0.5), (4, 0.5), (2, 0.5), (1, 1.0), (2, 1.0)],
+        [(2, 0.5), (1, 0.5), (0, 1.0), (1, 0.5), (2, 0.5), (0, 1.0)],
+    ]
+    voice = whistle if energy < 0.7 else bell
+    for bar in range(bars):
+        if energy < 0.7 and bar % 8 >= 6:
+            continue  # breathing space in the menu theme
+        b0 = bar * 4 * beat
+        ph = phrases[bar % 4]
+        tcur = b0
+        for i, (d, dur) in enumerate(ph):
+            jitter = int(r.integers(-1, 2)) if (i == 3 and bar >= 8) else 0
+            f = midi_to_hz(major_note(root + 12, penta[min(max(d + jitter, 0), len(penta) - 1)]))
+            dsec = dur * beat
+            addst(voice(f, dsec * 0.95), tcur, 0.17 if voice is bell else 0.14, 0.12)
+            addst(voice(f, dsec * 0.95), tcur + beat * 0.75, 0.04, -0.3)  # light echo
+            tcur += dsec
+        if bar % 4 == 3:  # glockenspiel sparkle at the phrase end
+            for k, d in enumerate((7, 9, 11, 14)):
+                addst(bell(midi_to_hz(major_note(root + 24, d)), 0.4), b0 + 3 * beat + k * beat / 4, 0.06, 0.4)
+    L[:tail] += L[n:]
+    R[:tail] += R[n:]
+    mix = np.stack([L[:n], R[:n]], axis=1)
+    return np.tanh(mix * 1.05) * 0.8
+
+
+def victory_jingle(root=60):
+    """Short (~3 s) celebratory fanfare: rising arpeggio, roll, final chord."""
+    dur = 3.4
+    n = int(dur * SR)
+    L = np.zeros(n)
+    R = np.zeros(n)
+
+    def add(sig, start, gain, pan=0.0):
+        i0 = int(start * SR)
+        i1 = min(n, i0 + len(sig))
+        L[i0:i1] += sig[: i1 - i0] * gain * (1 - max(pan, 0))
+        R[i0:i1] += sig[: i1 - i0] * gain * (1 + min(pan, 0))
+
+    notes = [0, 2, 4, 7, 9, 11, 14]
+    for i, d in enumerate(notes):
+        add(bell(midi_to_hz(major_note(root, d)), 0.5), i * 0.11, 0.3, -0.3 + i * 0.1)
+    roll = hp_fast(noise(int(0.6 * SR)), 1500) * np.linspace(0.1, 1.0, int(0.6 * SR)) * 0.25
+    add(roll, 0.55, 0.6)
+    for k in (0, 2, 4, 7):
+        f = midi_to_hz(major_note(root, k))
+        tt = t_axis(2.2)
+        chord = (saw(f * tt) * 0.25 + np.sin(2 * np.pi * f * tt) * 0.6) * env_adsr(len(tt), 0.01, 0.3, 0.6, 1.2)
+        add(lp_fast(chord, 2600), 1.15, 0.22, -0.2 + k * 0.05)
+        add(bell(f * 2, 1.2), 1.15, 0.12, 0.2)
+    crash = hp_fast(noise(int(1.5 * SR)), 5000) * env_exp(int(1.5 * SR), 0.4) * 0.35
+    add(crash, 1.15, 0.6)
+    return np.tanh(np.stack([L, R], axis=1) * 1.1) * 0.85
+
+
+def sea_ambience(dur=8.0):
+    """Soft waves and the odd distant gull; seamless loop."""
+    n = int(dur * SR)
+    t = t_axis(dur)
+    swell = 0.55 + 0.45 * np.sin(2 * np.pi * t / dur * 2) ** 2
+    waves = lp_fast(noise(n), 700) * swell * 0.5 + bandpass(noise(n), 1500, 5000) * swell ** 3 * 0.06
+    for c in (1.3, 5.1):
+        tt = t_axis(0.35)
+        f = 1500 + 500 * np.sin(np.pi * tt / 0.35)
+        gull = np.sin(2 * np.pi * np.cumsum(f) / SR) * env_adsr(len(tt), 0.03, 0.1, 0.5, 0.15) * 0.05
+        i0 = int(c * SR)
+        waves[i0:i0 + len(gull)] += gull
+    return crossfade_loop(waves, int(0.5 * SR))
+
+
+def friendly_sfx():
+    out = {}
+    # Selection: two bright marimba notes, a happy "pop-pop".
+    a = marimba(midi_to_hz(76), 0.16, 1.2)
+    b = marimba(midi_to_hz(83), 0.3, 1.2)
+    sel = np.zeros(int(0.07 * SR) + len(b))
+    sel[:len(a)] += a
+    sel[int(0.07 * SR):int(0.07 * SR) + len(b)] += b
+    out["ui_select"] = sel * 0.35
+    out["ui_move"] = marimba(midi_to_hz(84), 0.09, 0.8) * 0.22
+    out["ui_confirm"] = np.concatenate([marimba(midi_to_hz(79), 0.07), marimba(midi_to_hz(86), 0.2)]) * 0.32
+    out["ui_back"] = np.concatenate([marimba(midi_to_hz(79), 0.07), marimba(midi_to_hz(72), 0.2)]) * 0.28
+    # Countdown: clear bell beeps (C5) and a bright major chord for GO.
+    beep = bell(midi_to_hz(72), 0.35)
+    out["count_beep"] = beep * 0.45
+    go = sum(bell(midi_to_hz(84 + k), 0.8) for k in (0, 4, 7)) / 2.0
+    out["count_go"] = go * 0.5
+    # Overtake: quick upward whoosh with a chime on top.
+    p = sweep_phase(500, 1400, 0.28, 0.7)
+    out["overtake"] = (bandpass(noise(len(p)), 800, 5000) * env_adsr(len(p), 0.01, 0.08, 0.4, 0.15) * 0.5
+                       + np.sin(2 * np.pi * p) * env_adsr(len(p), 0.01, 0.1, 0.3, 0.12) * 0.25)
+    chime = bell(midi_to_hz(91), 0.3)
+    out["overtake"] = np.concatenate([out["overtake"], np.zeros(int(0.02 * SR))])
+    out["overtake"][int(0.12 * SR):int(0.12 * SR) + len(chime)] += chime[: len(out["overtake"]) - int(0.12 * SR)] * 0.25
+    return out
+
+
 def main():
     os.makedirs(SFX, exist_ok=True)
     os.makedirs(MUS, exist_ok=True)
-    for name, sig in sfx_all().items():
+    sfx = sfx_all()
+    sfx.update(friendly_sfx())  # 0.5.0: friendlier UI, countdown and overtake cues
+    for name, sig in sfx.items():
         sig = np.asarray(sig, dtype=np.float64).copy()
         # 1 ms fade-in / 8 ms fade-out: no clicks when one-shots start or end.
         fi, fo = int(0.001 * SR), min(int(0.008 * SR), len(sig) // 2)
@@ -364,10 +548,14 @@ def main():
     write_wav(os.path.join(SFX, "engine_loop.wav"), eng, loop=(0, len(eng)))
     dr = drift_loop()
     write_wav(os.path.join(SFX, "drift_loop.wav"), dr, loop=(0, len(dr)))
-    menu = render_music(104, 16, 64, 11, 0.45)
+    # 0.5.0: cheerful major-key themes replace the earlier modal loops.
+    menu = render_happy(112, 16, 62, 11, 0.45)
     write_wav(os.path.join(MUS, "menu.wav"), menu, sr=SR, loop=(0, len(menu)))
-    race = render_music(132, 24, 64, 23, 0.9)
+    race = render_happy(138, 24, 64, 23, 0.9)
     write_wav(os.path.join(MUS, "race.wav"), race, sr=SR, loop=(0, len(race)))
+    write_wav(os.path.join(MUS, "victory.wav"), victory_jingle(62), sr=SR)
+    amb = sea_ambience()
+    write_wav(os.path.join(SFX, "ambience_sea.wav"), amb, loop=(0, len(amb)))
     print("audio written:", len(os.listdir(SFX)), "sfx,", len(os.listdir(MUS)), "music")
 
 

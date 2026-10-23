@@ -18,7 +18,7 @@ func setup(p_race: RaceManager) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	visible = false
 	var dim := ColorRect.new()
-	dim.color = Color(0.03, 0.05, 0.1, 0.25)
+	dim.color = Color(UITheme.INK, 0.2)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	# Docked right so the winner's celebration stays visible on the left.
@@ -49,7 +49,10 @@ func setup(p_race: RaceManager) -> void:
 	v.add_child(title)
 	summary = Label.new()
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	summary.add_theme_font_size_override("font_size", 28)
+	summary.add_theme_font_override("font", UITheme.heading_font())
+	summary.add_theme_font_size_override("font_size", 40)
+	summary.add_theme_constant_override("outline_size", 12)
+	summary.add_theme_color_override("font_outline_color", UITheme.INK)
 	v.add_child(summary)
 	table = GridContainer.new()
 	table.columns = 4
@@ -66,14 +69,19 @@ func setup(p_race: RaceManager) -> void:
 	v.add_child(row)
 	retry_btn = Button.new()
 	retry_btn.text = tr("RESULTS_RETRY")
-	retry_btn.custom_minimum_size = Vector2(260, 66)
+	retry_btn.custom_minimum_size = Vector2(280, 74)
+	UITheme.style_button(retry_btn, "yellow", 30)
+	retry_btn.icon = UITheme.icon("restore")
+	retry_btn.expand_icon = false
+	retry_btn.add_theme_constant_override("icon_max_width", 34)
 	retry_btn.pressed.connect(func():
 		AudioManager.play_ui("ui_confirm")
 		race.restart())
 	row.add_child(retry_btn)
 	var menu_btn := Button.new()
 	menu_btn.text = tr("RESULTS_MENU")
-	menu_btn.custom_minimum_size = Vector2(260, 66)
+	menu_btn.custom_minimum_size = Vector2(260, 74)
+	UITheme.style_button(menu_btn, "blue", 26)
 	menu_btn.pressed.connect(func():
 		AudioManager.play_ui("ui_back")
 		race.quit_to_menu())
@@ -118,9 +126,20 @@ func show_results(res: Dictionary) -> void:
 	elif res.get("already_rewarded", false):
 		parts.append(tr("RESULTS_ALREADY_REWARDED"))
 	reward_label.text = "   ".join(parts)
+	if not p.is_empty() and int(p.place) <= 3:
+		summary.add_theme_color_override("font_color", [UITheme.YELLOW, Color("e3ecf7"), Color("ffad6b")][int(p.place) - 1])
+	else:
+		summary.add_theme_color_override("font_color", UITheme.TEXT)
 	visible = true
 	modulate.a = 0.0
-	create_tween().tween_property(self, "modulate:a", 1.0, 0.4)
+	var tw := create_tween()
+	tw.tween_property(self, "modulate:a", 1.0, 0.4)
+	# Finishing celebration: a short confetti of sparkles (not continuous).
+	if not p.is_empty() and p.get("finished", true) and not bool(Settings.get_value("accessibility", "reduced_flashing", false)):
+		tw.tween_callback(func():
+			for k in 3:
+				var at := summary.get_global_rect().get_center() + Vector2(randf_range(-200, 200), randf_range(-10, 30))
+				UITheme.sparkle_burst(self, at, 7, [UITheme.YELLOW, UITheme.CORAL, UITheme.LIME][k]))
 	retry_btn.grab_focus()
 
 

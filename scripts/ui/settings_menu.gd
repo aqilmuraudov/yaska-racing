@@ -157,6 +157,9 @@ func _process(delta: float) -> void:
 
 func _show_tab(i: int) -> void:
 	tab = i
+	var focus_owner := get_viewport().gui_get_focus_owner()
+	if focus_owner in tab_buttons and i < tab_buttons.size():
+		tab_buttons[i].grab_focus() # the focus ring follows the chosen tab
 	for k in tab_buttons.size():
 		var color := "yellow" if k == i else ("violet" if k == DEV_TAB else "blue")
 		UITheme.style_button(tab_buttons[k], color, 24 if k < TABS.size() else 20)

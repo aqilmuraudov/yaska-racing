@@ -32,15 +32,15 @@ func setup(p_input: PlayerInput) -> void:
 	player_input = p_input
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_add("steer_left", InputActions.STEER_LEFT, "", Color("25c2c2"))
-	_add("steer_right", InputActions.STEER_RIGHT, "", Color("25c2c2"))
-	_add("drift", InputActions.DRIFT, "TOUCH_DRIFT", Color("e0344b"))
-	_add("boost", InputActions.BOOST, "TOUCH_BOOST", Color("ffc93c"))
-	_add("item", InputActions.USE_ITEM, "TOUCH_ITEM", Color("4b5bd6"))
-	_add("brake", InputActions.BRAKE, "TOUCH_BRAKE", Color("8a8f99"))
-	_add("gas", InputActions.ACCELERATE, "TOUCH_GAS", Color("5cc46a"))
-	_add("look", InputActions.LOOK_BACK, "", Color("8a8f99"))
-	_add("recover", InputActions.RECOVER, "", Color("8a8f99"))
+	_add("steer_left", InputActions.STEER_LEFT, "", Color("2f9ce8"))
+	_add("steer_right", InputActions.STEER_RIGHT, "", Color("2f9ce8"))
+	_add("drift", InputActions.DRIFT, "TOUCH_DRIFT", Color("ff5f6d"))
+	_add("boost", InputActions.BOOST, "TOUCH_BOOST", Color("ff8a1f"))
+	_add("item", InputActions.USE_ITEM, "TOUCH_ITEM", Color("8b5cf6"))
+	_add("brake", InputActions.BRAKE, "TOUCH_BRAKE", Color("6f7fa0"))
+	_add("gas", InputActions.ACCELERATE, "TOUCH_GAS", Color("6fcf3c"))
+	_add("look", InputActions.LOOK_BACK, "", Color("6f7fa0"))
+	_add("recover", InputActions.RECOVER, "", Color("6f7fa0"))
 	resized.connect(_layout)
 	visibility_changed.connect(func():
 		if player_input:
@@ -253,17 +253,26 @@ mode=%s unavailable=%s kart_steer=%+.2f" % [player_input.steer_mode(), player_in
 	for b in buttons:
 		if not b.visible:
 			continue
-		var a := _opacity * (1.0 if b.pressed else 0.75)
-		var fill := Color(b.color, 0.35 * a + (0.3 if b.pressed else 0.0))
-		draw_circle(b.center, b.radius, Color(UITheme.NAVY_DEEP, 0.45 * a))
-		draw_circle(b.center, b.radius * 0.9, fill)
-		draw_arc(b.center, b.radius * 0.92, 0, TAU, 40, Color(1, 1, 1, 0.75 * a), 3.0 + (2.0 if b.pressed else 0.0), true)
-		var col := Color(1, 1, 1, minf(1.0, a + 0.2))
+		var a := clampf(_opacity * (1.15 if b.pressed else 1.0), 0.0, 1.0)
+		var press := 3.0 if b.pressed else 0.0
+		var c := b.center + Vector2(0, press)
+		var fill := b.color.lightened(0.12) if b.pressed else b.color
+		# Drop shadow, ink rim, glossy coloured body, top highlight.
+		if not b.pressed:
+			draw_circle(b.center + Vector2(0, 5), b.radius, Color(UITheme.INK, 0.35 * a))
+		draw_circle(c, b.radius, Color(UITheme.INK, 0.85 * a))
+		draw_circle(c, b.radius * 0.93, Color(fill, 0.78 * a))
+		draw_circle(c + Vector2(0, -b.radius * 0.28), b.radius * 0.62, Color(1, 1, 1, 0.16 * a))
+		draw_arc(c, b.radius * 0.86, PI * 1.15, PI * 1.85, 24, Color(1, 1, 1, 0.55 * a), maxf(3.0, b.radius * 0.07), true)
+		if b.pressed:
+			draw_arc(c, b.radius * 1.04, 0, TAU, 40, Color(UITheme.YELLOW, 0.9), 4.0, true)
+		var col := Color(1, 1, 1, minf(1.0, a + 0.25))
 		match b.id:
 			"steer_left", "steer_right":
 				var dir := -1.0 if b.id == "steer_left" else 1.0
 				var r := b.radius * 0.42
-				var pts := PackedVector2Array([b.center + Vector2(dir * r, 0), b.center + Vector2(-dir * r * 0.6, -r), b.center + Vector2(-dir * r * 0.6, r)])
+				var pts := PackedVector2Array([c + Vector2(dir * r, 0), c + Vector2(-dir * r * 0.6, -r), c + Vector2(-dir * r * 0.6, r)])
+				draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), Color(UITheme.INK, 0.8 * a), 6.0, true)
 				draw_colored_polygon(pts, col)
 			"look":
 				draw_arc(b.center, b.radius * 0.45, PI * 0.2, PI * 1.8, 16, col, 4.0)

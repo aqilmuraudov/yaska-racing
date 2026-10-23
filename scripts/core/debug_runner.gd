@@ -68,6 +68,8 @@ func _ready() -> void:
 		Engine.time_scale = float(args.timescale)
 	if args.has("graphics"):
 		Settings.apply_preset(args.graphics, false)
+	if args.has("lang"):
+		Settings.set_value("gameplay", "language", String(args.lang), false) # this run only
 	if args.has("ui-flow"):
 		var flow := UIFlowCheck.new()
 		add_child(flow)

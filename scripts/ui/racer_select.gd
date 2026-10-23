@@ -3,6 +3,8 @@ extends MenuScreen
 ## card updates the 3D preview (one model at a time), names, colour theme,
 ## five stat bars, speciality text and the handling used in the race.
 
+## One readable colour per stat (bars also show a number, never colour-only).
+const STAT_COLORS := [Color("ff5f6d"), Color("ff8a1f"), Color("17b9c9"), Color("8b5cf6"), Color("ffc21a")]
 const STAT_KEYS := [["top_speed", "STAT_TOP"], ["acceleration", "STAT_ACCEL"], ["handling", "STAT_HANDLING"], ["drift", "STAT_DRIFT"], ["boost", "STAT_BOOST"]]
 
 var defs: Array[RacerDefinition] = []
@@ -42,13 +44,13 @@ func build() -> void:
 	for i in defs.size():
 		var d := defs[i]
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(196, 150)
+		b.custom_minimum_size = Vector2(196, 158)
 		b.focus_mode = Control.FOCUS_ALL
 		b.clip_contents = true
 		var v := VBoxContainer.new()
 		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.add_theme_constant_override("separation", -4)
+		v.add_theme_constant_override("separation", -6)
 		b.add_child(v)
 		var icon := RacerIcon.new()
 		icon.def = d
@@ -60,15 +62,16 @@ func build() -> void:
 		nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nl.add_theme_font_override("font", UITheme.heading_font())
 		nl.add_theme_font_size_override("font_size", 26)
-		nl.add_theme_constant_override("outline_size", 6)
-		nl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.5))
+		nl.add_theme_constant_override("outline_size", 8)
+		nl.name = "Name"
 		nl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(nl)
 		var kl := Label.new()
 		kl.text = d.kart_name
 		kl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		kl.add_theme_font_size_override("font_size", 16)
-		kl.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
+		kl.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
+		kl.name = "Kart"
 		kl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(kl)
 		var idx := i
@@ -78,6 +81,7 @@ func build() -> void:
 		cards.append(b)
 	# Info panel (right)
 	info_panel = PanelContainer.new()
+	info_panel.add_theme_stylebox_override("panel", UITheme.art_box("panel_blue", 24, 18))
 	info_panel.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 	info_panel.offset_left = -470
 	info_panel.custom_minimum_size = Vector2(470, 0)
@@ -87,7 +91,7 @@ func build() -> void:
 	info_panel.add_child(iv)
 	name_label = Label.new()
 	name_label.theme_type_variation = &"Heading"
-	name_label.add_theme_font_size_override("font_size", 44)
+	name_label.add_theme_font_size_override("font_size", 50)
 	iv.add_child(name_label)
 	kart_label = Label.new()
 	kart_label.add_theme_font_override("font", UITheme.bold_font())
@@ -107,6 +111,7 @@ func build() -> void:
 		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		row.add_child(l)
 		var bar := StatBar10.new()
+		bar.color = STAT_COLORS[STAT_KEYS.find(sk)]
 		bar.custom_minimum_size = Vector2(210, 24)
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(bar)
@@ -131,10 +136,14 @@ func build() -> void:
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	iv.add_child(sp)
 	start_btn = make_button(tr("MENU_START_RACE"), _start, true)
-	start_btn.custom_minimum_size = Vector2(420, 74)
+	start_btn.icon = UITheme.icon("play")
+	start_btn.expand_icon = false
+	start_btn.add_theme_constant_override("icon_max_width", 34)
+	start_btn.custom_minimum_size = Vector2(420, 78)
 	iv.add_child(start_btn)
 	setup_btn = make_button(tr("TRACK_TITLE"), _setup)
-	setup_btn.custom_minimum_size = Vector2(420, 48)
+	setup_btn.custom_minimum_size = Vector2(420, 54)
+	UITheme.style_button(setup_btn, "blue", 22)
 	iv.add_child(setup_btn)
 	_select(current, true)
 
@@ -146,17 +155,29 @@ func _select(i: int, force := false) -> void:
 	var d := defs[i]
 	for k in cards.size():
 		var on := k == i
-		var c := defs[k].accent
-		cards[k].add_theme_stylebox_override("normal", UITheme.rounded(Color(c.darkened(0.45), 0.92) if not on else c.darkened(0.1), 22, 5 if on else 2, UITheme.GOLD if on else Color(c, 0.6), 6))
-		cards[k].add_theme_stylebox_override("hover", UITheme.rounded(c.darkened(0.2), 22, 4, UITheme.TURQUOISE, 6))
-		cards[k].add_theme_stylebox_override("pressed", UITheme.rounded(c, 22, 5, Color.WHITE, 6))
+		var sb := UITheme.art_box("panel_card_selected" if on else "panel_card", 10, 6)
+		cards[k].add_theme_stylebox_override("normal", sb)
+		cards[k].add_theme_stylebox_override("hover", sb)
+		cards[k].add_theme_stylebox_override("pressed", UITheme.art_box("panel_card_selected", 10, 6))
+		cards[k].add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		var nl: Label = cards[k].find_child("Name", true, false)
+		var kl: Label = cards[k].find_child("Kart", true, false)
+		if nl:
+			nl.add_theme_color_override("font_color", UITheme.INK if on else UITheme.TEXT)
+			nl.add_theme_constant_override("outline_size", 0 if on else 8)
+		if kl:
+			kl.add_theme_color_override("font_color", Color(UITheme.INK, 0.8) if on else Color(1, 1, 1, 0.9))
 		cards[k].scale = Vector2.ONE
+	if not force:
+		UITheme.sparkle_burst(cards[i], cards[i].get_global_rect().get_center(), 8)
+		stage.celebrate()
 	cards[i].pivot_offset = cards[i].size * 0.5
 	var tw := create_tween()
-	cards[i].scale = Vector2.ONE * 1.08
-	tw.tween_property(cards[i], "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	cards[i].scale = Vector2.ONE * 1.1
+	tw.tween_property(cards[i], "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	name_label.text = d.display_name
-	name_label.add_theme_color_override("font_color", d.accent.lightened(0.25))
+	name_label.add_theme_color_override("font_color", d.accent.lightened(0.45))
+	UITheme.bounce(name_label, 0.12)
 	kart_label.text = "%s: %s" % [tr("RACER_KART"), d.kart_name]
 	pers_label.text = tr(d.personality_key)
 	spec_label.text = tr(d.specialty_key)
@@ -164,13 +185,9 @@ func _select(i: int, force := false) -> void:
 	for key in stat_rows.keys():
 		var pair: Array = stat_rows[key]
 		pair[0].value = int(r[key])
-		pair[0].color = d.accent.lightened(0.15)
 		pair[1].text = "%d/10" % int(r[key])
-	info_panel.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY, 0.92), 26, 4, Color(d.accent, 0.8), 18))
-	start_btn.add_theme_stylebox_override("normal", UITheme.rounded(d.accent.darkened(0.05), 26, 4, Color(1, 1, 1, 0.3), 16))
-	start_btn.add_theme_stylebox_override("hover", UITheme.rounded(d.accent.lightened(0.12), 26, 5, UITheme.GOLD, 16))
 	stage.show_racer(d.id)
-	AudioManager.play_ui("ui_confirm" if not force else "ui_move")
+	AudioManager.play_ui("ui_select" if not force else "ui_move")
 
 
 func _commit() -> void:
@@ -199,15 +216,12 @@ func first_focus() -> Control:
 
 func _unhandled_input(event: InputEvent) -> void:
 	super(event)
+	# Mouse events only: with emulate_mouse_from_touch a finger also sends
+	# them, so handling ScreenDrag as well would rotate twice per movement.
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		_dragging = event.pressed
 		stage.auto_rotate = not event.pressed
-	elif event is InputEventScreenTouch:
-		_dragging = event.pressed
-		stage.auto_rotate = not event.pressed
 	elif event is InputEventMouseMotion and _dragging:
-		stage.drag(event.relative.x * 0.01)
-	elif event is InputEventScreenDrag:
 		stage.drag(event.relative.x * 0.01)
 
 
@@ -229,4 +243,8 @@ class StatBar10:
 		var w := (size.x - gap * (n - 1)) / n
 		for i in n:
 			var r := Rect2(Vector2(i * (w + gap), 0), Vector2(w, size.y))
-			draw_style_box(UITheme.rounded(color if i < value else Color(1, 1, 1, 0.13), 5, 0, Color.TRANSPARENT, 0), r)
+			var on := i < value
+			draw_style_box(UITheme.rounded(UITheme.INK if on else Color(UITheme.INK, 0.35), 6, 0, Color.TRANSPARENT, 0), r.grow(1.5))
+			draw_style_box(UITheme.rounded(color if on else Color(1, 1, 1, 0.16), 5, 0, Color.TRANSPARENT, 0), r)
+			if on:
+				draw_rect(Rect2(r.position + Vector2(2, 2), Vector2(r.size.x - 4, r.size.y * 0.3)), Color(1, 1, 1, 0.35))

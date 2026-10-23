@@ -15,6 +15,8 @@ var _music_a: AudioStreamPlayer
 var _music_b: AudioStreamPlayer
 var _music_current := ""
 var _focus_muted := false
+var _ambience: AudioStreamPlayer
+var _jingle: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -50,6 +52,14 @@ func _ready() -> void:
 		m.bus = "Music"
 		m.volume_db = -80.0
 		add_child(m)
+	# Seaside ambience pauses with the race; the jingle plays on the Music bus.
+	_ambience = AudioStreamPlayer.new()
+	_ambience.bus = "SFX"
+	_ambience.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(_ambience)
+	_jingle = AudioStreamPlayer.new()
+	_jingle.bus = "Music"
+	add_child(_jingle)
 	apply_volumes()
 
 
@@ -155,6 +165,36 @@ func play_music(track: String, fade_time: float = 1.0) -> void:
 	if outgoing.playing:
 		tw.tween_property(outgoing, "volume_db", -60.0, fade_time)
 		tw.chain().tween_callback(outgoing.stop)
+
+
+func play_ambience(clip: String, volume_db := -15.0) -> void:
+	var stream := get_stream(clip)
+	if stream == null or (_ambience.playing and _ambience.stream == stream):
+		return
+	_ambience.stream = stream
+	_ambience.volume_db = volume_db
+	_ambience.play()
+
+
+func stop_ambience() -> void:
+	if _ambience:
+		_ambience.stop()
+
+
+## One-shot musical sting: ducks out the current loop, plays the jingle,
+## then fades `after` back in.
+func play_jingle(clip: String, after := "menu") -> void:
+	var stream := get_stream(clip, MUSIC_DIR)
+	if stream == null:
+		return
+	stop_music(0.25)
+	_jingle.stream = stream
+	_jingle.volume_db = -1.0
+	_jingle.play()
+	var t := get_tree().create_timer(stream.get_length() + 0.2, true, false, true)
+	t.timeout.connect(func():
+		if _music_current == "":
+			play_music(after, 1.5))
 
 
 func stop_music(fade_time: float = 0.6) -> void:

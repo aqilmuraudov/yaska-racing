@@ -259,6 +259,7 @@ func start_intro() -> void:
 	camera.orbit = true
 	camera.snap()
 	AudioManager.play_music("race", 1.5)
+	AudioManager.play_ambience("ambience_sea")
 
 
 func _set_state(s: RaceState) -> void:
@@ -436,6 +437,9 @@ func _handle_event(r: Racer, e: Array) -> void:
 func _on_player_finished() -> void:
 	player_message.emit("HUD_FINISH", "good")
 	AudioManager.play("finish", 0.0)
+	# Short victory jingle on the Music bus (obeys the Music switch), then the
+	# calm menu theme returns under the results.
+	AudioManager.play_jingle("victory")
 	player.player_input.enabled = false
 	player.player_input.release_all()
 	player.ai.autopilot = true
@@ -652,11 +656,13 @@ func _on_joy_connection_changed(_device: int, connected: bool) -> void:
 
 func quit_to_mode_select() -> void:
 	get_tree().paused = false
+	AudioManager.stop_ambience()
 	AudioManager.play_music("menu", 1.0)
 	Game.goto(Game.State.MODE_SELECT)
 
 
 func quit_to_menu() -> void:
 	get_tree().paused = false
+	AudioManager.stop_ambience()
 	AudioManager.play_music("menu", 1.0)
 	Game.goto(Game.State.MAIN_MENU)

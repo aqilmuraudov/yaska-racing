@@ -72,13 +72,14 @@ func setup(p_race: RaceManager) -> void:
 	# Upper left: race position badge (strong hierarchy, colour by place)
 	pos_badge = PanelContainer.new()
 	pos_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pos_badge.add_theme_stylebox_override("panel", UITheme.art_box("panel_hud", 18, 4, 30))
 	frame.add_child(pos_badge)
 	var pos_row := HBoxContainer.new()
 	pos_row.add_theme_constant_override("separation", 2)
 	pos_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pos_badge.add_child(pos_row)
 	pos_label = _label("1", &"HudBig")
-	pos_label.add_theme_font_size_override("font_size", 70)
+	pos_label.add_theme_font_size_override("font_size", 78)
 	pos_row.add_child(pos_label)
 	var total_box := MarginContainer.new()
 	total_box.add_theme_constant_override("margin_top", 30)
@@ -105,14 +106,14 @@ func setup(p_race: RaceManager) -> void:
 	tr_box.add_child(top_row)
 	lap_pill = PanelContainer.new()
 	lap_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lap_pill.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.78), 20, 3, Color(accent, 0.9), 8))
+	lap_pill.add_theme_stylebox_override("panel", UITheme.art_box("panel_hud", 18, 6, 30))
 	top_row.add_child(lap_pill)
 	lap_label = _label("", &"HudSmall")
 	lap_label.add_theme_font_size_override("font_size", 28)
 	lap_pill.add_child(lap_label)
 	var timer_pill := PanelContainer.new()
 	timer_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	timer_pill.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.7), 20, 0, Color.TRANSPARENT, 8))
+	timer_pill.add_theme_stylebox_override("panel", UITheme.art_box("panel_hud", 18, 6, 30))
 	top_row.add_child(timer_pill)
 	timer_label = _label("0:00.000", &"HudSmall")
 	timer_label.add_theme_font_size_override("font_size", 26)
@@ -121,15 +122,15 @@ func setup(p_race: RaceManager) -> void:
 	timer_pill.add_child(timer_label)
 	pause_button = Button.new()
 	pause_button.text = "II"
-	pause_button.custom_minimum_size = Vector2(68, 60)
+	pause_button.custom_minimum_size = Vector2(72, 66)
 	pause_button.focus_mode = Control.FOCUS_NONE
-	pause_button.add_theme_stylebox_override("normal", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.85), 18, 3, Color(1, 1, 1, 0.5), 8))
+	UITheme.style_button(pause_button, "orange", 30)
 	pause_button.pressed.connect(func(): race.set_paused(true))
 	top_row.add_child(pause_button)
 	best_label = _label("", &"Dim")
 	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	tr_box.add_child(best_label)
-	trap_warning = _label("⚠ " + tr("HUD_TRAP_AHEAD"), &"HudSmall")
+	trap_warning = _label("! " + tr("HUD_TRAP_AHEAD"), &"HudSmall")
 	trap_warning.add_theme_color_override("font_color", Color("ff6b6b"))
 	trap_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	trap_warning.visible = false
@@ -137,7 +138,7 @@ func setup(p_race: RaceManager) -> void:
 
 	# Item slot: next to the driving controls (right side), racer accent ring.
 	item_panel = PanelContainer.new()
-	item_panel.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.78), 26, 4, Color(accent, 0.95), 8))
+	item_panel.add_theme_stylebox_override("panel", UITheme.art_box("panel_hud", 12, 8, 30))
 	item_panel.custom_minimum_size = Vector2(100, 100)
 	item_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	item_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -253,7 +254,10 @@ func setup(p_race: RaceManager) -> void:
 		results.show_results(res))
 	race.state_changed.connect(_on_state)
 	var pk := race.player.kart
-	pk.drift_boost.connect(func(tier, perfect): drift_meter.show_result(tr("HUD_PERFECT") if perfect else tr("HUD_BOOST"), true))
+	pk.drift_boost.connect(func(tier, perfect):
+		drift_meter.show_result(tr("HUD_PERFECT") if perfect else tr("HUD_BOOST"), true)
+		if not bool(Settings.get_value("accessibility", "reduced_flashing", false)):
+			UITheme.sparkle_burst(drift_meter, drift_meter.get_global_rect().get_center(), 9 if perfect else 5, UITheme.YELLOW if perfect else UITheme.TURQUOISE))
 	pk.drift_miss.connect(func(): drift_meter.show_result(tr("HUD_MISS"), false))
 	pk.shield_blocked.connect(func(): show_message(tr("HUD_SHIELD_BLOCK"), "info"))
 	pk.item_changed.connect(_on_item_changed)
@@ -263,6 +267,11 @@ func setup(p_race: RaceManager) -> void:
 	pk.wall_hit.connect(func(st): if st >= 0.6: caption(tr("CAP_WALL")))
 	race.items.item_used.connect(func(k, it): if k == pk and it == &"trap": caption(tr("CAP_TRAP_DROP")))
 	Settings.changed.connect(_on_settings_changed)
+	Settings.changed.connect(func(section, key):
+		if section == "gameplay" and key == "language":
+			wrong_way_label.text = tr("HUD_WRONG_WAY")
+			trap_warning.text = "! " + tr("HUD_TRAP_AHEAD")
+			_update_static())
 	_on_settings_changed("", "")
 	reset()
 
@@ -345,7 +354,9 @@ func show_message(text: String, kind: String = "info") -> void:
 	message_label.text = text
 	var col := Color.WHITE
 	match kind:
-		"good": col = UITheme.GOLD
+		"good":
+			col = UITheme.YELLOW
+			UITheme.sparkle_burst(message_label, message_label.get_global_rect().get_center(), 8)
 		"bad": col = Color("ff8a8a")
 	message_label.add_theme_color_override("font_color", col)
 	_msg_time = 1.8
@@ -355,7 +366,11 @@ func show_message(text: String, kind: String = "info") -> void:
 
 func _on_countdown(value: int) -> void:
 	countdown_label.text = str(value) if value > 0 else tr("HUD_GO")
-	countdown_label.add_theme_color_override("font_color", UITheme.GOLD if value == 0 else Color.WHITE)
+	var cols := [UITheme.LIME, UITheme.YELLOW, UITheme.ORANGE, UITheme.CORAL]
+	countdown_label.add_theme_color_override("font_color", cols[clampi(value, 0, 3)])
+	countdown_label.add_theme_constant_override("outline_size", 24)
+	if value == 0:
+		UITheme.sparkle_burst(countdown_label, countdown_label.get_global_rect().get_center(), 10, UITheme.LIME)
 	countdown_label.scale = Vector2.ONE * 1.5
 	countdown_label.pivot_offset = countdown_label.size * 0.5
 	_count_time = 0.9 if value > 0 else 0.8
@@ -441,11 +456,14 @@ func _process(delta: float) -> void:
 			_place_flash = 1.2
 			pos_badge.pivot_offset = pos_badge.size * 0.5
 			pos_badge.scale = Vector2.ONE * 1.25
+			if up:
+				UITheme.sparkle_burst(pos_badge, pos_badge.get_global_rect().get_center(), 7, UITheme.YELLOW)
+				AudioManager.play("overtake", -4.0)
 		_last_place = p.place
-		var place_cols := [Color("ffc93c"), Color("cfd8e3"), Color("e0965a")]
-		var pc: Color = place_cols[p.place - 1] if p.place <= 3 else Color(race.player.kart.get_meta("paint", UITheme.TURQUOISE))
-		pos_badge.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.NAVY_DEEP, 0.8), 24, 4, pc, 10))
-		pos_label.add_theme_color_override("font_color", pc.lightened(0.35))
+		# Gold / silver / bronze numerals for the podium, white otherwise.
+		var place_cols := [UITheme.YELLOW, Color("e3ecf7"), Color("ffad6b")]
+		var pc: Color = place_cols[p.place - 1] if p.place <= 3 else Color.WHITE
+		pos_label.add_theme_color_override("font_color", pc)
 	if _place_flash > 0.0:
 		_place_flash -= delta
 		if _place_flash <= 0.0:

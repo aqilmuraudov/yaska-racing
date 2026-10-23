@@ -331,15 +331,16 @@ static func sparkle_burst(parent: Control, pos: Vector2, count := 6, color := YE
 		s.texture = tex
 		s.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		s.modulate = color.lerp(Color.WHITE, randf() * 0.5)
-		s.size = Vector2(28, 28)
+		s.size = Vector2(22, 22)
 		s.pivot_offset = s.size * 0.5
-		s.position = local - s.size * 0.5
+		var dir := Vector2.from_angle(TAU * float(i) / count + randf() * 0.5)
+		# Start on a ring around the point so the burst frames, never hides, it.
+		s.position = local - s.size * 0.5 + dir * 34.0
 		s.scale = Vector2.ONE * 0.3
 		parent.add_child(s)
-		var dir := Vector2.from_angle(TAU * float(i) / count + randf() * 0.5)
 		var tw := s.create_tween().set_parallel(true)
-		tw.tween_property(s, "position", s.position + dir * randf_range(40.0, 70.0), 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tw.tween_property(s, "scale", Vector2.ONE * randf_range(0.7, 1.1), 0.2)
+		tw.tween_property(s, "position", s.position + dir * randf_range(30.0, 55.0), 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(s, "scale", Vector2.ONE * randf_range(0.6, 1.0), 0.2)
 		tw.tween_property(s, "rotation", randf_range(-1.5, 1.5), 0.45)
 		tw.tween_property(s, "modulate:a", 0.0, 0.25).set_delay(0.2)
 		tw.chain().tween_callback(s.queue_free)

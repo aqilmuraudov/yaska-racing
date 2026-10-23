@@ -15,7 +15,7 @@ func setup(p_race: RaceManager) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	visible = false
 	var dim := ColorRect.new()
-	dim.color = Color(0.03, 0.05, 0.1, 0.6)
+	dim.color = Color(UITheme.INK, 0.55)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	var center := CenterContainer.new()
@@ -28,22 +28,37 @@ func setup(p_race: RaceManager) -> void:
 	v.add_theme_constant_override("separation", 14)
 	panel.add_child(v)
 	var title := Label.new()
+	title.name = "Title"
 	title.text = tr("PAUSE_TITLE")
 	title.theme_type_variation = &"Heading"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
-	resume_btn = _btn(v, "PAUSE_RESUME", func(): race.set_paused(false))
+	resume_btn = _btn(v, "PAUSE_RESUME", func(): race.set_paused(false), "yellow", "play")
+	resume_btn.custom_minimum_size = Vector2(0, 84)
 	_btn(v, "PAUSE_RESTART", func():
 		open(false)
-		race.restart())
-	_btn(v, "PAUSE_SETTINGS", _open_settings)
-	_btn(v, "PAUSE_QUIT", func(): race.quit_to_menu())
+		race.restart(), "blue", "restore")
+	_btn(v, "PAUSE_SETTINGS", _open_settings, "blue", "gear")
+	_btn(v, "PAUSE_QUIT", func(): race.quit_to_menu(), "coral", "back")
+	# Language can change inside the Settings overlay: relabel at once.
+	Settings.changed.connect(func(section, key):
+		if section == "gameplay" and key == "language" and is_instance_valid(title):
+			title.text = tr("PAUSE_TITLE")
+			for b in v.get_children():
+				if b is Button and b.has_meta("key"):
+					b.text = tr(b.get_meta("key")))
 
 
-func _btn(parent: Control, key: String, cb: Callable) -> Button:
+func _btn(parent: Control, key: String, cb: Callable, color := "blue", icon_name := "") -> Button:
 	var b := Button.new()
 	b.text = tr(key)
-	b.custom_minimum_size = Vector2(0, 68)
+	b.set_meta("key", key)
+	b.custom_minimum_size = Vector2(0, 70)
+	UITheme.style_button(b, color, 30 if color == "yellow" else 26)
+	if icon_name != "":
+		b.icon = UITheme.icon(icon_name)
+		b.expand_icon = false
+		b.add_theme_constant_override("icon_max_width", 34)
 	b.pressed.connect(func():
 		AudioManager.play_ui("ui_confirm")
 		cb.call())
@@ -55,6 +70,9 @@ func open(on: bool) -> void:
 	visible = on
 	if on:
 		AudioManager.play_ui("ui_open")
+		panel.pivot_offset = panel.size * 0.5
+		panel.scale = Vector2.ONE * 0.9
+		panel.create_tween().tween_property(panel, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		resume_btn.call_deferred("grab_focus")
 	elif settings_overlay:
 		settings_overlay.queue_free()

@@ -66,7 +66,9 @@ func _flush() -> void:
 	if _vcolor == null:
 		_vcolor = ShaderMaterial.new()
 		_vcolor.shader = preload("res://assets/materials/vcolor.gdshader")
-		_vcolor.set_shader_parameter("rim_amount", 0.35)
+		_vcolor.set_shader_parameter("rim_amount", 0.45)
+		_vcolor.set_shader_parameter("gloss", 0.35) # eyes / noses / helmets shine, fur stays soft
+		_vcolor.set_shader_parameter("saturation", 1.08)
 	for n in _accums.keys():
 		var mi := MeshInstance3D.new()
 		mi.mesh = _accums[n].commit(_vcolor)
