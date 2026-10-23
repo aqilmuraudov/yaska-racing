@@ -57,12 +57,16 @@ func build(td: TrackData) -> void:
 func _make_materials() -> void:
 	var road := ShaderMaterial.new()
 	road.shader = ROAD_SHADER
+	TextureLibrary.bind(road, "asphalt_tex", "road")
+	TextureLibrary.bind(road, "cobble_tex", "cobbles")
 	materials.road = road
 	var curb := ShaderMaterial.new()
 	curb.shader = CURB_SHADER
 	materials.curb = curb
 	var ground := ShaderMaterial.new()
 	ground.shader = GROUND_SHADER
+	TextureLibrary.bind(ground, "grass_tex", "grass")
+	TextureLibrary.bind(ground, "paving_tex", "paving")
 	materials.ground = ground
 	var water := ShaderMaterial.new()
 	water.shader = WATER_SHADER
@@ -74,6 +78,7 @@ func _make_materials() -> void:
 	materials.wall = wall
 	var stone := ShaderMaterial.new()
 	stone.shader = preload("res://assets/materials/limestone.gdshader")
+	TextureLibrary.bind(stone, "stone_tex", "limestone")
 	materials.stone = stone
 	var pad := StandardMaterial3D.new()
 	pad.vertex_color_use_as_albedo = true

@@ -170,6 +170,9 @@ func _process(delta: float) -> void:
 		if args.has("overview") and not _overview_done and _elapsed > 1.0:
 			_overview_done = true
 			_capture_overview(race)
+		if args.has("landmark-views") and not _landmarks_done and _elapsed > 1.5:
+			_landmarks_done = true
+			_capture_landmarks(race)
 		if args.has("views") and not _views_done and _elapsed > 1.5 and _overview_done == args.has("overview"):
 			_views_done = true
 			_capture_views(race)
@@ -276,6 +279,55 @@ func _save_shot(file_name: String) -> void:
 	var path := _capture_dir.path_join(file_name)
 	img.save_png(path)
 	print("CAPTURED ", path)
+
+
+var _landmarks_done := false
+
+
+## For each Baku landmark, finds the main-route distance where it sits most
+## squarely ahead of the normal chase camera (40–450 m away) and captures
+## that gameplay view: proof each landmark reads from the racing line.
+func _capture_landmarks(race: RaceManager) -> void:
+	var decor: TrackDecor = race.decor as TrackDecor
+	if decor == null:
+		print("LANDMARKS no decor")
+		return
+	var tp: TrackPath = race.track.main
+	var cam := Camera3D.new()
+	cam.fov = 70.0
+	cam.far = 1500.0
+	race.add_child(cam)
+	cam.current = true
+	for id in decor.landmarks.keys():
+		var node: Node3D = decor.landmarks[id]
+		if node == null:
+			continue
+		var target := node.global_position + Vector3.UP * (12.0 if id != "maiden_tower" else 10.0)
+		var best_s := 0.0
+		var best := INF
+		var s := 0.0
+		while s < tp.length:
+			var p := tp.position_at(s)
+			var t := tp.tangent_at(s)
+			var d := target - p
+			var dist := Vector2(d.x, d.z).length()
+			var ang := Vector2(t.x, t.z).normalized().angle_to(Vector2(d.x, d.z).normalized())
+			var score := absf(ang) + (0.0 if dist > 40.0 and dist < 450.0 else 10.0) + dist * 0.0004
+			if score < best:
+				best = score
+				best_s = s
+			s += 4.0
+		var p2 := tp.position_at(best_s)
+		var t2 := tp.tangent_at(best_s)
+		cam.global_position = p2 - Vector3(t2.x, 0, t2.z).normalized() * 6.0 + Vector3.UP * 2.6
+		cam.look_at(tp.position_at(best_s + 22.0) + Vector3.UP * 1.2, Vector3.UP)
+		for i in 6:
+			await get_tree().process_frame
+		print("LANDMARK %s s=%.0f dist=%.0f" % [id, best_s, p2.distance_to(target)])
+		await _save_shot("landmark_%s.png" % id)
+	cam.current = false
+	race.camera.current = true
+	cam.queue_free()
 
 
 func _capture_views(race: RaceManager) -> void:

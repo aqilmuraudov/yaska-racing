@@ -21,11 +21,13 @@ static func m(id: String) -> Material:
 		"limestone":
 			var sm := ShaderMaterial.new()
 			sm.shader = LIMESTONE_SHADER
+			TextureLibrary.bind(sm, "stone_tex", "limestone")
 			mat = sm
 		"limestone_warm":
 			var sm2 := ShaderMaterial.new()
 			sm2.shader = LIMESTONE_SHADER
 			sm2.set_shader_parameter("stone", Color(0.95, 0.80, 0.62))
+			TextureLibrary.bind(sm2, "stone_tex", "limestone")
 			mat = sm2
 		"palm_leaf":
 			var pl := _std(Color("4e9a3a"), 0.75)
@@ -89,6 +91,11 @@ static func m(id: String) -> Material:
 				"crowd_c": [Color("ffc93c"), 0.8],
 				"crowd_d": [Color("4b5bd6"), 0.8],
 				"skin": [Color("e0ac83"), 0.8],
+				"flower_pink": [Color("ff4fa3"), 0.7],
+				"flower_magenta": [Color("d93a8c"), 0.7],
+				"flower_yellow": [Color("ffd23f"), 0.7],
+				"flower_white": [Color("fff6ea"), 0.7],
+				"hedge": [Color("3f9a3a"), 0.85],
 			}
 			var def: Array = colors.get(id, [Color.MAGENTA, 0.5])
 			mat = _std(def[0], def[1], def[2] if def.size() > 2 else 0.0)
@@ -282,6 +289,8 @@ static func get_mesh(id: String) -> ArrayMesh:
 		"boat": _boat(a)
 		"banner_pole": _banner_pole(a)
 		"fountain": _fountain(a)
+		"flower_bed": _flower_bed(a, 0)
+		"flower_bed_b": _flower_bed(a, 1)
 		"wheel_frame": _wheel_frame(a)
 		"wheel_ring": _wheel_ring(a)
 		"kiosk": _kiosk(a)
@@ -482,24 +491,36 @@ static func _modern(a: Accum, v: int) -> void:
 
 
 static func _maiden_tower(a: Accum) -> void:
-	var r := 7.5
-	var h := 27.0
-	a.add(ShapeKit.cone(r * 1.04, r * 0.96, h, 32), T(Vector3(0, h * 0.5, 0)), m("limestone_warm"))
-	# Buttress on the east side
-	a.add(ShapeKit.superellipsoid(Vector3(6.0, h * 0.92, 9.0), 0.2, 0.6, Vector2(0.9, 1.0), Vector2(1.0, 1.0)), T(Vector3(r * 0.9, h * 0.46, 0)), m("limestone_warm"))
-	# Stepped crown and crenellations
-	a.add(ShapeKit.cylinder(r * 1.05, 0.6, 32), T(Vector3(0, h + 0.3, 0)), m("limestone"))
-	for i in 20:
-		var ang := TAU * i / 20.0
-		a.add(box(Vector3(1.2, 1.1, 0.8)), T(Vector3(cos(ang) * r * 0.98, h + 1.15, sin(ang) * r * 0.98), Vector3(0, -ang, 0)), m("limestone"))
-	# Narrow slit windows
+	# Qız Qalası: a plain, slightly tapering limestone cylinder with the
+	# characteristic ribbed buttress projecting on one side, a flat top with a
+	# low parapet (no fairy-tale crenellations) and a few narrow openings.
+	var r := 8.2
+	var h := 29.0
+	a.add(ShapeKit.cylinder(r * 1.25, 1.2, 36), T(Vector3(0, 0.6, 0)), m("stone_dark")) # rock base
+	a.add(ShapeKit.cone(r * 1.05, r * 0.95, h, 36), T(Vector3(0, h * 0.5 + 1.0, 0)), m("limestone_warm"))
+	# Buttress: a long rounded projection, full height, with vertical ribs.
+	var bx := r * 0.95
+	a.add(ShapeKit.superellipsoid(Vector3(7.0, h * 0.96, 8.6), 0.15, 0.55, Vector2(0.92, 1.0), Vector2(1.0, 1.0)), T(Vector3(bx, h * 0.48 + 1.0, 0)), m("limestone_warm"))
+	for k in 5:
+		var z := -3.2 + k * 1.6
+		a.add(box(Vector3(0.7, h * 0.86, 0.6)), T(Vector3(bx + 3.25 - absf(z) * 0.18, h * 0.45 + 1.0, z)), m("limestone"))
+	# Stone courses: three subtle bands that read at distance.
+	for y in [h * 0.33, h * 0.62, h * 0.9]:
+		a.add(ShapeKit.cylinder(r * 1.0 + 0.25, 0.45, 36), T(Vector3(0, y + 1.0, 0)), m("limestone"))
+	# Flat top with a low plain parapet.
+	a.add(ShapeKit.cylinder(r * 0.98, 1.4, 36), T(Vector3(0, h + 1.7, 0)), m("limestone"))
+	a.add(ShapeKit.cylinder(r * 0.7, 0.3, 24), T(Vector3(0, h + 2.45, 0)), m("stone_dark"))
+	# Narrow openings
 	for k in 4:
-		var ang2 := TAU * k / 4.0 + 0.4
+		var ang2 := TAU * k / 4.0 + 0.9
 		for f in 3:
-			a.add(box(Vector3(0.5, 1.6, 0.3)), T(Vector3(cos(ang2) * r, 7.0 + f * 6.0, sin(ang2) * r), Vector3(0, -ang2 + PI * 0.5, 0)), m("navy"))
-	# Flag on top
-	a.add(ShapeKit.cylinder(0.08, 5.0, 6), T(Vector3(0, h + 3.5, 0)), m("metal_grey"))
-	a.add(box(Vector3(2.0, 1.2, 0.05)), T(Vector3(1.0, h + 5.2, 0)), m("turquoise"))
+			a.add(box(Vector3(0.5, 1.8, 0.4)), T(Vector3(cos(ang2) * r * 0.97, 8.0 + f * 7.0, sin(ang2) * r * 0.97), Vector3(0, -ang2 + PI * 0.5, 0)), m("navy"))
+	a.add(rbox(Vector3(1.8, 3.2, 0.6), 0.4), T(Vector3(0, 2.6, r * 1.02)), m("wood"))
+	# Small national flag on the roof
+	a.add(ShapeKit.cylinder(0.08, 6.0, 6), T(Vector3(-2.0, h + 5.0, 0)), m("metal_grey"))
+	a.add(box(Vector3(0.05, 0.5, 2.4)), T(Vector3(-2.0, h + 7.6, 1.2)), m("blue"))
+	a.add(box(Vector3(0.05, 0.5, 2.4)), T(Vector3(-2.0, h + 7.1, 1.2)), m("red"))
+	a.add(box(Vector3(0.05, 0.5, 2.4)), T(Vector3(-2.0, h + 6.6, 1.2)), m("green"))
 
 
 static func _flame_tower(a: Accum, height: float, v: int) -> void:
@@ -552,6 +573,18 @@ static func _banner_pole(a: Accum) -> void:
 	a.add(box(Vector3(0.05, 2.8, 1.1)), T(Vector3(0, 4.2, 0.6)), m("fabric_white"))
 	a.add(box(Vector3(0.06, 0.6, 1.1)), T(Vector3(0, 5.35, 0.6)), m("red"))
 	a.add(box(Vector3(0.06, 0.4, 1.1)), T(Vector3(0, 3.0, 0.6)), m("turquoise"))
+
+
+## Low limestone planter overflowing with flowers (Boulevard rhythm).
+static func _flower_bed(a: Accum, v: int) -> void:
+	var w := 5.0
+	a.add(rbox(Vector3(w, 0.7, 1.8), 0.15), T(Vector3(0, 0.35, 0)), m("limestone"))
+	a.add(ShapeKit.superellipsoid(Vector3(w - 0.4, 0.9, 1.5), 0.7, 0.5, Vector2.ONE, Vector2.ONE, 4, 8), T(Vector3(0, 0.8, 0)), m("hedge"))
+	var cols: Array = ["flower_pink", "flower_magenta", "flower_white"] if v == 0 else ["flower_yellow", "flower_pink", "flower_white"]
+	for i in 11:
+		var x := -w * 0.5 + 0.5 + i * (w - 1.0) / 10.0
+		var z := 0.35 if i % 2 == 0 else -0.35
+		a.add(ShapeKit.sphere(0.32, 6, 4), T(Vector3(x, 1.25 + 0.08 * (i % 3), z)), m(cols[i % cols.size()]))
 
 
 static func _fountain(a: Accum) -> void:

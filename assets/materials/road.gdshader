@@ -11,6 +11,11 @@ uniform vec3 cobble_dark : source_color = vec3(0.45, 0.39, 0.32);
 uniform vec3 line_color : source_color = vec3(0.97, 0.96, 0.92);
 uniform vec3 accent_color : source_color = vec3(1.0, 0.78, 0.22);
 uniform float lane_count = 3.0;
+// Painted texture tiers (TextureLibrary): asphalt tiles every 4 m, setts
+// tile 3.3 × 3.36 m. Markings stay procedural so they are always crisp.
+uniform sampler2D asphalt_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D cobble_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec3 asphalt_tint = vec3(1.12, 1.07, 1.0);
 uniform float detail_fade_distance = 60.0;
 
 float hash12(vec2 p) {
@@ -42,22 +47,14 @@ void fragment() {
 
 	// Asphalt: soft mottling plus fine grain that fades with distance.
 	vec2 wp = vec2(lat, s);
-	float n = vnoise(wp * 0.35) * 0.6 + vnoise(wp * 1.7) * 0.4;
-	float grain = mix(0.5, hash12(floor(wp * 18.0)), detail);
-	vec3 asphalt = mix(asphalt_color, asphalt_light, n * 0.7 + grain * 0.15);
+	float n = vnoise(wp * 0.05);
+	vec3 asphalt = texture(asphalt_tex, wp * 0.25).rgb * asphalt_tint * (0.94 + 0.12 * n);
 	// Darker racing line in the middle from tyre wear.
 	asphalt *= 1.0 - 0.07 * (1.0 - smoothstep(0.0, hw * 0.6, abs(lat)));
 
 	// Cobbles: staggered rectangular setts with mortar.
-	vec2 cp = vec2(lat / 0.55, s / 0.42);
-	cp.x += mod(floor(cp.y), 2.0) * 0.5;
-	vec2 cell = floor(cp);
-	vec2 cf = fract(cp);
-	float edge = min(min(cf.x, 1.0 - cf.x) * 0.55, min(cf.y, 1.0 - cf.y) * 0.42);
-	float mortar = 1.0 - smoothstep(0.015, 0.05, edge);
-	mortar *= detail;
-	float stone_var = hash12(cell);
-	vec3 cobble = mix(cobble_color * (0.86 + 0.22 * stone_var), cobble_dark, mortar * 0.8);
+	vec3 cobble = texture(cobble_tex, vec2(lat / 3.3, s / 3.36)).rgb;
+	float mortar = 0.0;
 
 	float cob = clamp(COLOR.r, 0.0, 1.0);
 	vec3 base = mix(asphalt, cobble, cob);
@@ -76,6 +73,8 @@ void fragment() {
 	lane_line *= dash * detail * (1.0 - cob);
 	float marks = clamp(edge_line * (1.0 - cob * 0.4) + lane_line, 0.0, 1.0);
 	vec3 col = mix(base, line_color, marks * 0.92);
+	// Soft darker gutter along both edges frames the driving surface.
+	col *= 1.0 - 0.18 * smoothstep(hw - 1.4, hw - 0.1, abs(lat)) * (1.0 - edge_line);
 
 	ALBEDO = col;
 	ROUGHNESS = mix(0.82, 0.65, cob) - marks * 0.1;

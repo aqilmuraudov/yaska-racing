@@ -24,12 +24,28 @@ var wheel_ring: Node3D
 var gantry_lights: Array[MeshInstance3D] = []
 var _light_on_mat: StandardMaterial3D
 var _light_off_mat: StandardMaterial3D
+## Landmark footprints: [centre, radius]; scatter and buildings keep out.
+var _reserved: Array = []
+## Placed Baku landmarks by id (tests and screenshot views use these).
+var landmarks := {}
+const WHEEL_SITE := Vector3(-40.0, 0.0, 22.0)
+const LANDMARK_SITES := {
+	# id: [x, z, footprint radius, yaw]
+	"flag_square": [338.0, -14.0, 36.0, 0.0],
+	"heydar_aliyev": [170.0, -252.0, 66.0, 0.45],
+	"flame_towers": [-150.0, -398.0, 52.0, 0.35],
+	"crescent": [-236.0, 150.0, 44.0, 0.2],
+}
 
 
 func build(td: TrackData, env: RaceEnvironment) -> void:
 	data = td
 	builder = get_parent().get_node_or_null("Track")
 	rng.seed = 20251022
+	for id in LANDMARK_SITES.keys():
+		var site: Array = LANDMARK_SITES[id]
+		_reserved.append([Vector3(site[0], 0.0, site[1]), float(site[2])])
+	_reserved.append([WHEEL_SITE, 34.0])
 	_place_wall_props()
 	_place_promenade()
 	_place_boulevard_inland()
@@ -57,6 +73,9 @@ func _paths() -> Array:
 
 ## True when point p (with radius r) is clear of every driving corridor.
 func clear_of_track(p: Vector3, r: float, margin: float = 1.0) -> bool:
+	for z in _reserved:
+		if Vector2(p.x - z[0].x, p.z - z[0].z).length() < z[1] + r:
+			return false
 	for e in _paths():
 		var path: TrackPath = e.path
 		var c := path.closest(p)
@@ -183,6 +202,9 @@ func _place_promenade() -> void:
 			else:
 				add_instance("lamp", Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(x, -0.05, sea - 3.2)))
 				add_instance("bench", _face(Vector3(x + 4.0, -0.05, sea - 2.0), Vector3(0, 0, -1)))
+			var fb := Vector3(x - 5.5, -0.05, sea - 10.5)
+			if clear_of_track(fb, 2.6, 0.3):
+				add_instance("flower_bed" if k % 4 < 2 else "flower_bed_b", Transform3D(Basis.IDENTITY, fb))
 		x += 11.0
 		k += 1
 	# Café clusters with umbrellas and kiosks.
@@ -380,17 +402,72 @@ func _place_landmarks() -> void:
 		_landmark(PropKit.get_mesh("maiden_tower"), Transform3D(Basis(Vector3.UP, 0.4), Vector3(tp.x, tp.y - 0.05, tp.z)), "OldTower")
 	_build_gate()
 	_build_gantry()
+	_place_baku_landmarks()
 	# Observation wheel on the promenade near the east hairpin.
-	var wp := Vector3(196.0, -0.05, data.sea_z - 8.0)
-	var frame := _landmark(PropKit.get_mesh("wheel_frame"), Transform3D(Basis(Vector3.UP, PI * 0.5), wp), "WheelFrame")
+	# (west of the Flag Square sight line along the Boulevard straight)
+	# The ring faces the road (XY plane) so it never hangs over the track.
+	var wp := WHEEL_SITE + Vector3(0, -0.05, 0)
+	var frame := _landmark(PropKit.get_mesh("wheel_frame"), Transform3D(Basis.IDENTITY, wp), "WheelFrame")
 	wheel_ring = Node3D.new()
 	wheel_ring.name = "WheelRing"
-	wheel_ring.transform = Transform3D(Basis(Vector3.UP, PI * 0.5), wp + Vector3(0, 34.0, 0))
+	wheel_ring.transform = Transform3D(Basis.IDENTITY, wp + Vector3(0, 34.0, 0))
 	add_child(wheel_ring)
 	var ring_mi := MeshInstance3D.new()
 	ring_mi.mesh = PropKit.get_mesh("wheel_ring")
 	wheel_ring.add_child(ring_mi)
 	frame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+
+
+## The requested Baku landmarks, spread around the lap so each owns a view:
+## Flag Square dead ahead at the end of the Boulevard straight; the Crescent
+## out in the bay straight ahead on the return leg down to the sea; Heydar Aliyev Center beside
+## the modern connector; the Flame Towers on a hill straight ahead on the
+## westbound connector, rising above the Old City walls; the Maiden Tower
+## inside the Old City (placed above). Far LODs swap in beyond 380 m.
+func _place_baku_landmarks() -> void:
+	for id in LANDMARK_SITES.keys():
+		var site: Array = LANDMARK_SITES[id]
+		var p := Vector3(site[0], 0.0, site[1])
+		var y := ground_y(p)
+		if id == "crescent":
+			y = data.sea_level - 0.5
+		elif id == "flame_towers":
+			y = ground_y(p) + 5.0
+			var hill := MeshInstance3D.new()
+			hill.name = "FlameHill"
+			hill.mesh = ShapeKit.superellipsoid(Vector3(150, 26, 130), 0.9, 0.9, Vector2.ONE, Vector2.ONE, 8, 14)
+			hill.material_override = ShapeKit.mat(Color("6fbf4a"), 0.95)
+			hill.position = Vector3(p.x, y - 9.0, p.z)
+			hill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(hill)
+		var xf := Transform3D(Basis(Vector3.UP, float(site[3])), Vector3(p.x, y, p.z))
+		var root := Node3D.new()
+		root.name = "Landmark_" + id
+		root.transform = xf
+		add_child(root)
+		var near := MeshInstance3D.new()
+		near.name = "Near"
+		near.mesh = LandmarkKit.get_mesh(id)
+		root.add_child(near)
+		var far_id: String = id + "_far"
+		if id != "flag_square":
+			near.visibility_range_end = 380.0
+			var far := MeshInstance3D.new()
+			far.name = "Far"
+			far.mesh = LandmarkKit.get_mesh(far_id)
+			far.visibility_range_begin = 380.0
+			far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			root.add_child(far)
+		if id in ["crescent", "flame_towers"]:
+			near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if id == "flag_square":
+			# Wind blows towards the sea (+z): seen from the Boulevard the
+			# hoist is on the left and the flag reads the right way round.
+			LandmarkKit.attach_flag(root)
+		landmarks[id] = root
+	var tp := _tower_position()
+	if tp != Vector3.INF:
+		landmarks["maiden_tower"] = get_node_or_null("OldTower")
 
 
 func _build_gate() -> void:
@@ -554,11 +631,7 @@ func _place_backdrop() -> void:
 		a.add(ShapeKit.superellipsoid(sz, 1.0, 1.0, Vector2.ONE, Vector2.ONE, 8, 12), Transform3D(Basis(Vector3.UP, rng.randf() * TAU), hp), hill_mat if i % 3 else hill_mat2)
 	var hills := _landmark(a.commit(), Transform3D.IDENTITY, "Hills")
 	hills.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# Flame-like towers on the hill to the north-west, glass towers north-east.
-	var flames := [["flame_a", Vector3(-560, 22, -560)], ["flame_b", Vector3(-610, 22, -520)], ["flame_c", Vector3(-600, 22, -610)]]
-	for f in flames:
-		var mi := _landmark(PropKit.get_mesh(f[0]), Transform3D(Basis(Vector3.UP, 0.6), f[1]), f[0])
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Modern glass towers north-east (the Flame Towers are a placed landmark).
 	var towers := [["tower_a", Vector3(430, 0, -420)], ["tower_b", Vector3(470, 0, -360)], ["tower_c", Vector3(520, 0, -440)],
 		["tower_b", Vector3(380, 0, -480)], ["tower_a", Vector3(560, 0, -330)], ["modern_b", Vector3(330, 0, -380)]]
 	for tw in towers:

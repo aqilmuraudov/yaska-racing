@@ -9,6 +9,8 @@ uniform vec3 mortar : source_color = vec3(0.74, 0.66, 0.52);
 uniform float block_w = 0.9;
 uniform float block_h = 0.42;
 uniform float detail_fade = 70.0;
+// Painted wall texture (TextureLibrary tiers): 2 blocks × 4 courses.
+uniform sampler2D stone_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -38,18 +40,11 @@ void fragment() {
 	} else {
 		p = vec2(wpos.x, wpos.y);
 	}
-	vec2 bp = vec2(p.x / block_w, p.y / block_h);
-	bp.x += mod(floor(bp.y), 2.0) * 0.5;
-	vec2 cell = floor(bp);
-	vec2 f = fract(bp);
-	float e = min(min(f.x, 1.0 - f.x) * block_w, min(f.y, 1.0 - f.y) * block_h);
-	float dist = length(VERTEX);
-	float detail = 1.0 - smoothstep(detail_fade * 0.5, detail_fade, dist);
-	float m = (1.0 - smoothstep(0.012, 0.035, e)) * detail;
-	float v = hash12(cell) * 0.12 - 0.06;
 	vec3 tint = srgb_to_linear(COLOR.rgb);
-	vec3 base = stone * tint * (1.0 + v * detail);
-	ALBEDO = mix(base, mortar * tint, m * 0.6);
+	vec3 tex = texture(stone_tex, vec2(p.x / (block_w * 4.0), -p.y / (block_h * 4.0))).rgb;
+	// Gentle warm-to-cool variation over large areas so walls do not tile.
+	float big = hash12(floor(p / 7.0));
+	ALBEDO = tex * tint * (stone / vec3(0.92, 0.84, 0.68)) * (1.08 + big * 0.06);
 	ROUGHNESS = 0.88;
 	SPECULAR = 0.25;
 }

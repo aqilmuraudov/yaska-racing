@@ -99,7 +99,7 @@ func apply_graphics() -> void:
 	env.adjustment_brightness = float(g.brightness)
 	# Distant fog hides the decor cut-off on shorter draw distances.
 	var decor: float = DECOR_DISTANCES[int(g.decor_distance)]
-	env.fog_density = [0.0032, 0.0018, 0.0011][int(g.decor_distance)]
+	env.fog_density = [0.0022, 0.0011, 0.0007][int(g.decor_distance)]
 	decor_distance_changed.emit(decor)
 	for v in get_tree().get_nodes_in_group("blob_shadow"):
 		var kv := v.get_parent()
