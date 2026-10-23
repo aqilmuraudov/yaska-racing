@@ -5,9 +5,7 @@ render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 
 uniform float rim_amount = 0.0;
 uniform float metallic_amount = 0.0;
-// Painted-toy gloss: smooth parts (low roughness in vertex alpha) get a
-// clear-coat highlight, rough parts (fur, tyres, fabric) stay matte.
-uniform float gloss = 0.0;
+uniform float gloss = 0.0; // used by vcolor_gloss.gdshader (karts) only
 uniform float saturation = 1.0;
 
 vec3 srgb_to_linear(vec3 c) {
@@ -20,10 +18,7 @@ void fragment() {
 	ALBEDO = max(mix(vec3(l), c, saturation), vec3(0.0));
 	float r = clamp(COLOR.a, 0.05, 1.0);
 	ROUGHNESS = r;
-	float smooth_part = 1.0 - smoothstep(0.3, 0.6, r);
-	CLEARCOAT = gloss * smooth_part;
-	CLEARCOAT_ROUGHNESS = 0.12;
-	SPECULAR = 0.5 + 0.3 * smooth_part;
+	SPECULAR = 0.5 + 0.3 * (1.0 - smoothstep(0.3, 0.6, r));
 	METALLIC = metallic_amount;
 	RIM = rim_amount;
 	RIM_TINT = 0.5;

@@ -65,7 +65,7 @@ func _add(parent: Node3D, mesh: Mesh, color: Color, xform: Transform3D, rough :=
 func _flush() -> void:
 	if _vcolor == null:
 		_vcolor = ShaderMaterial.new()
-		_vcolor.shader = preload("res://assets/materials/vcolor.gdshader")
+		_vcolor.shader = preload("res://assets/materials/vcolor_gloss.gdshader")
 		_vcolor.set_shader_parameter("rim_amount", 0.45)
 		_vcolor.set_shader_parameter("gloss", 0.35) # eyes / noses / helmets shine, fur stays soft
 		_vcolor.set_shader_parameter("saturation", 1.08)

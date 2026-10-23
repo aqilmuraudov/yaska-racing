@@ -3,8 +3,9 @@
 Original arcade kart racer set in a colourful, stylised Baku. Godot 4.4.1,
 GDScript, Android-first (landscape) with Windows builds for development.
 
-**Status (0.4.0): vertical slice plus animal racers, implemented and verified on
-desktop. Not yet tested on the target phone** — see
+**Status (0.5.0): Android scrolling and tilt fixes, compact Settings, cheerful
+UI, six Baku landmarks; implemented and verified on desktop. Not yet tested
+on the target phone** — see
 [docs/STATUS.md](docs/STATUS.md).
 
 ## What's in the vertical slice

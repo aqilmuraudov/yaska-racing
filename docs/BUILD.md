@@ -52,6 +52,16 @@ Arguments after `--` (see `scripts/core/debug_runner.gd`):
 | `--stats` | per-second FPS, worst frame, memory, objects, draw calls, primitives |
 | `--probe=T` | print every kart's state on the physics tick where race time ≥ T |
 | `--quit-after=S`, `--quit-on-results`, `--soak`, `--timescale=X`, `--touch`, `--log-hits` | soak / balancing helpers |
+| `--landmark-views` | for each Baku landmark, capture the chase-camera view on the racing line where it sits most squarely ahead |
+| `--lang=az\|en` | language for this run only (not saved) |
+| `--ui-flow` | injected-touch checks incl. the scroll gesture suite and a live language switch in a paused race |
+| `--fake-tilt` | desktop only: enables the Tilt option for UI testing (no real sensor) |
+
+Other tools: `python tools/perf_run.py <low|medium|high> [seconds]`
+(seeded autopilot lap, Mobile renderer, 1600×720, summarised `--stats`),
+`godot --path . -s tools/preview_landmark.gd -- <id> <out.png> [dist] [yaw]`
+(art preview), and the generators `tools/gen_textures.py`,
+`tools/gen_ui_art.py`, `tools/gen_icons.py`, `tools/audio/generate_audio.py`.
 
 Frame-rate independence check (identical output expected):
 

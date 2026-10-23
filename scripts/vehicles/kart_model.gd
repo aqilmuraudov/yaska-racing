@@ -73,7 +73,7 @@ func _add(parent: Node3D, mesh: Mesh, color: Color, xform: Transform3D, rough :=
 func _flush() -> void:
 	if _kart_vcolor == null:
 		_kart_vcolor = ShaderMaterial.new()
-		_kart_vcolor.shader = preload("res://assets/materials/vcolor.gdshader")
+		_kart_vcolor.shader = preload("res://assets/materials/vcolor_gloss.gdshader")
 		_kart_vcolor.set_shader_parameter("rim_amount", 0.25)
 		_kart_vcolor.set_shader_parameter("gloss", 0.9)
 		_kart_vcolor.set_shader_parameter("saturation", 1.12)

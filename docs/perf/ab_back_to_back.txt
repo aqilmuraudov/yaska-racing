@@ -1,0 +1,54 @@
+Back-to-back A/B, same machine state (RTX 3070, Mobile renderer, 1600x720, seed 5, 75 s autopilot). Desktop proxy, not a phone.
+## medium before (checkpoint-pre-0.5.0)
+preset=medium samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=170 p95=216  prims med=303k
+gpu_ms med=2.58 p95=3.02  cpu proc=1.98 phys=2.49
+static mem 168-170 MB  vmem med=92 MB  objects=3935
+## medium after (0.5.0)
+preset=medium samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=175 p95=223  prims med=316k
+gpu_ms med=2.86 p95=4.78  cpu proc=1.98 phys=2.50
+static mem 156-158 MB  vmem med=101 MB  objects=4072
+## low before (checkpoint-pre-0.5.0)
+preset=low samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=124 p95=168  prims med=172k
+gpu_ms med=1.22 p95=1.38  cpu proc=1.81 phys=2.38
+static mem 168-170 MB  vmem med=75 MB  objects=3935
+## low after (0.5.0)
+preset=low samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=126 p95=172  prims med=173k
+gpu_ms med=1.27 p95=1.45  cpu proc=1.80 phys=2.40
+static mem 155-157 MB  vmem med=80 MB  objects=4072
+## high before (checkpoint-pre-0.5.0)
+preset=high samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=207 p95=272  prims med=478k
+gpu_ms med=4.03 p95=5.86  cpu proc=2.08 phys=2.53
+static mem 168-171 MB  vmem med=144 MB  objects=3935
+## high after (0.5.0)
+preset=high samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=213 p95=284  prims med=483k
+gpu_ms med=3.32 p95=6.64  cpu proc=2.10 phys=2.69
+static mem 156-158 MB  vmem med=172 MB  objects=4072
+
+## FINAL after texture fix (VRAM-compressed + mipmaps), same conditions
+preset=medium samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=175 p95=223  prims med=316k
+gpu_ms med=2.59 p95=3.23  cpu proc=2.01 phys=2.59
+static mem 156-158 MB  vmem med=97 MB  objects=4072
+preset=low samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=126 p95=172  prims med=173k
+gpu_ms med=1.22 p95=1.67  cpu proc=1.81 phys=2.49
+static mem 155-157 MB  vmem med=79 MB  objects=4072
+preset=high samples=68
+fps med=60  avg_ms med=16.67  worst_ms max=16.7  frames>20ms(sec-buckets)=0
+draw_calls med=213 p95=284  prims med=482k
+gpu_ms med=4.01 p95=5.52  cpu proc=2.13 phys=2.62
+static mem 156-158 MB  vmem med=151 MB  objects=4072

@@ -68,6 +68,18 @@ func _ready() -> void:
 		Engine.time_scale = float(args.timescale)
 	if args.has("graphics"):
 		Settings.apply_preset(args.graphics, false)
+	if args.has("set"):
+		# --set=graphics.texture_detail=0;graphics.bloom=false (this run only)
+		for item in String(args.set).split(";"):
+			var kv := item.split("=")
+			var sk := kv[0].split(".")
+			if kv.size() == 2 and sk.size() == 2:
+				var cur = Settings.get_value(sk[0], sk[1])
+				var v: Variant = kv[1]
+				if cur is bool: v = kv[1] == "true"
+				elif cur is int: v = int(kv[1])
+				elif cur is float: v = float(kv[1])
+				Settings.set_value(sk[0], sk[1], v, false)
 	if args.has("lang"):
 		Settings.set_value("gameplay", "language", String(args.lang), false) # this run only
 	if args.has("ui-flow"):
