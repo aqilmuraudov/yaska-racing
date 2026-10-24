@@ -56,6 +56,12 @@ Arguments after `--` (see `scripts/core/debug_runner.gd`):
 | `--lang=az\|en` | language for this run only (not saved) |
 | `--ui-flow` | injected-touch checks incl. the scroll gesture suite and a live language switch in a paused race |
 | `--fake-tilt` | desktop only: enables the Tilt option for UI testing (no real sensor) |
+| `--via-loading` | with `--race`: go through the loading screen and staged build (prints `LOAD_TIMINGS` with `--stats`) |
+| `--startup-trace [--trace-secs=S]` | every 0.1 s print scene + frame brightness (black-frame check); frames saved with `--capture` |
+| `--nitro-at=T`, `--give-item=ID` | fire the player's nitro at race time T / give an item at the start (captures) |
+| `--fake-load-ms=N` | add N ms of CPU work per frame (weak-device simulation for the steady-30 fallback) |
+
+Art: `python tools/gen_splash.py` (splash + launcher icons), `python tools/gen_icons.py`.
 
 Other tools: `python tools/perf_run.py <low|medium|high> [seconds]`
 (seeded autopilot lap, Mobile renderer, 1600×720, summarised `--stats`),

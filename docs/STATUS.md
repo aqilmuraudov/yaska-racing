@@ -1,6 +1,79 @@
 # Status, verification evidence and known issues
 
-Date: 2026-10-23 · Build: 0.5.0 · Engine: Godot 4.4.1-stable
+Date: 2026-10-24 · Build: 0.6.0 · Engine: Godot 4.4.1-stable
+
+## Update 0.6.0 — child-friendly polish from the phone recording review
+
+**No Android device was attached** (`adb devices` empty) and the recording
+itself was not available on this PC, so the review worked from the written
+timestamp notes. Everything below is verified on desktop (Mobile renderer,
+1600×720 = 20:9 phone ratio, 1280×720 and 1280×960 = 16:9 / 4:3, injected
+touches, headless tests). Real FPS, input latency, thermals, frame pacing on
+the 90 Hz panel and the black portrait borders (likely the screen recorder)
+are **not** established and need a device check.
+
+### Root causes and fixes
+
+| Recording note | Root cause (evidence) | Fix |
+|---|---|---|
+| 00:02–00:09 fragmented startup | No launcher icons → Android 12 system splash showed the rounded-square `icon.svg` masked to a circle on the template background; no boot splash set → Godot's default; `boot.gd` drew a second, different title card for 0.6 s; then `Game.goto` faded to dark while the menu built its 3D stage. Startup trace of the old build: title card lum 0.145 → dip to 0.094 → menu | One picture everywhere: `tools/gen_splash.py` writes the splash and adaptive icon (fg/bg on the same navy `#123f9a`, edges verified equal to `boot_splash/bg_color`); `boot.gd` shows the same image with a progress bar while the menu loads on a thread; `Game.leave_splash` keeps it on top for the first rendered menu frames, then dissolves. New trace: splash lum 0.28 continuous → crossfade → menu, no dark frame (`--startup-trace`) |
+| 00:16, 00:40–00:56 cut-off cards / Start Race | Fixed-size content: mode cards 150 px with wrapping text; racer info panel stacked name, stats, specialty **and** two buttons in one column taller than the body (setup button touched y = 720 at 20:9) | Mode cards share the measured available height inside a scroll fallback; racer details scroll inside the panel while Start (+ race-setup gear) is pinned; bottom safe margin 26 px; checked at 20:9, 21:9 and 4:3 |
+| 00:20–00:33 dense Settings | All options in one level with small hints | Controls tab first, Graphics last as "For grown-ups"; 32 px titles, fewer hints; `ScrollHint` (thick yellow scrollbar, edge fade, bouncing chevron) on every scroll list; new rows: Easy Drift, Steering Help, Camera Shake, Vibration, Steady 30 FPS |
+| 00:57–01:03 loading stall near the end | The bar stopped at 90 % and the whole world (track, decor, 6 karts, HUD) was built synchronously in the race scene's `_ready`, then shaders compiled on the first race frames | Staged build: 21 steps, one per frame, bar weighted by measured step cost (`LOAD_TIMINGS`, desktop total ≈ 1.6 s; heaviest: racers 329 ms, terrain 267 ms), 4 warm-up frames rendered under the loading screen, stage text ("Building the road…") |
+| 01:09–01:16 kart small, camera far | The camera smoothed its **world** position at 14/s, so it trailed by speed/14: ≈ 2 m extra at 97 km/h, 2.6 m on nitro, on top of 5.0 m + 0.6 m distance and FOV up to 82° | Smooths a kart-relative offset; 3.9 m / 1.65 m, FOV 64 (+5 to top speed); only real overspeed widens FOV / stretches slightly |
+| 01:18–01:20 SÜRƏT does nothing | `BOOST` only acted as the drift-timing press **during** a drift; outside a drift it did nothing, and with auto-acceleration it looked like a gas pedal | Easy Drift (default): letting go of DRIFT while charged boosts; charge level 1→3 with hold time, no overheat. The TURBO timing button is shown only when Easy Drift is off, GAS only when auto-acceleration is off. Nitro is the item, shown on the ITEM button |
+| 01:22–01:44 drift looks like normal driving | A drift started only if steer ≥ 0.3 at the moment of the hop; otherwise just a hop. Unexplained to the player | Threshold 0.2 and a 0.35 s late-steer grace after landing; `drift_denied(steer/speed)` shows "Turn while holding DRIFT!" / "Go faster to drift!" and greys/shakes the button; charge ring on DRIFT, soft textured sparks coloured by level (the old untextured quads looked like white bars), "LET GO!" label, restrained smoke |
+| 01:27, 01:36 rivals cover the player | The fade for rivals set `GeometryInstance3D.transparency`, which has no visible effect on the karts' opaque custom shader (`vcolor_gloss`) — the fade never worked | Ordered-dither fade (`occlusion_fade` instance uniform, opaque pass) for rivals near the lens or on the line of sight; oriented soft contact footprint from measured kart size (1.74 × 2.35–2.7 m → 1.8 × 2.55) instead of a 1.75 m circle; player no longer blinks after hits — a soft bubble shows the protection window, "Safe for a moment!" after recovery |
+| 01:32–01:52 wall scraping | Glancing contact removed `glance_loss × ratio` of the speed **every tick** (~50 %/s) and steering into the wall fought the alignment | First-touch loss, then 4 m/s², sideways nudge, steering into the barrier damped while scraping; grass slowdown 1.6× instead of 2.5×; heading-aware edge help (on by default, capped at 0.6 of full lock). Test (steering into the wall 1.5 s): old 27.3 → 16.7 m/s and stays; new min 19.3, recovers to 25.8 m/s |
+| 01:54–02:24 item UI split, notices over the minimap | Separate item slot + ITEM button; captions grew upward from y≈376 over the minimap | The ITEM button is the slot: real icon (nitro/shield/trap), roll, dimmed "?" when empty, glow when ready, pop on use; captions top-centre (max 2) |
+| 02:01–02:24 nitro does not feel fast | Real speed did rise (measured below) but feedback was a 6° FOV step, small flames and +0.15 pitch while the trailing camera hid the gain | FOV/stretch, flames, speed lines (2D, edges only), engine pitch all follow **real overspeed**. Measured on a flat test: **27.3 m/s cruising → 36.7 m/s on nitro (×1.34 ground covered per second)**, readout 98 → 132 km/h |
+| Text speedometer | — | `SpeedGauge`: coloured semicircle (red zone = above top speed), critically damped needle, small readout pill, boost-time ring; driven by `KartController.speed` |
+
+### Child appeal added
+Collectible stars on the racing line (player only, one MultiMesh, pooled
+sparkles, rising chime, respawn each lap, HUD counter), saved once per race;
+four kart paints unlock at 15/40/80/140 stars (racer-select swatches, results
+announce unlocks; cosmetic only); first quick race shows three prompts (steer,
+drift, item); races default to 2 laps (~1:50); Drift School text follows Easy
+Drift; illustrated icons for modes and HUD buttons; camera shake 0.6 by
+default with Off/Low/Normal in Controls.
+
+### Performance
+- `PerfMonitor`: steady-30 fallback (if > 25 % of race frames exceed 20 ms
+  over 4 s at the 60 cap → even 30 FPS for the session; setting, on by
+  default). Simulated weak device (`--fake-load-ms=19`): 41–45 FPS jittery →
+  30.0 FPS, 33.33 ms avg; normal run stays at 60 with no fallback.
+- Developer → Performance overlay is now implemented (FPS, 1 % low, CPU/GPU
+  ms, slow-frame share, refresh rate, cap, draws, memory) and writes
+  `user://logs/perf_<time>.csv` once per second for 10–15 min soak/thermal
+  sessions on the phone (`adb shell run-as az.bakuturbo.game cat files/logs/perf_….csv`).
+- Back-to-back desktop proxy (RTX 3070, Mobile renderer, Medium, 1600×720,
+  seed 5, 60 s): old 0.5.0 GPU 2.66 ms / 184 draws / CPU proc 1.83 ms →
+  0.6.0 GPU 2.65 ms / 185 draws / CPU proc 2.12 ms; both 60 FPS, 0 slow frames.
+- Frame pacing: the project found no Android frame-pacing (Swappy) setting
+  in Godot 4.4.1 to enable; whether a newer engine version adds one was not
+  checked here, and the engine was not upgraded. The Mi 12 Lite panel is
+  90 Hz: a 60 FPS cap may pace unevenly there — check with the overlay.
+
+### Verified (desktop)
+- Tests: **67 methods, 2386 checks, 0 failures** (new `test_kid_driving.gd`:
+  nitro ground speed, Easy Drift charge/release, late-steer drift and denial,
+  edge help, wall scrape, star field; v2→v3 settings migration; stars ledger
+  and paints; touch layout across 12 option combinations × 4 screens incl.
+  speedometer clearance — this caught and fixed real overlaps on 16:9/4:3).
+- `--ui-flow` 0 failures; chaos fuzz: max stuck 1.1–1.2 s (old 1.1 s);
+  full 2-lap AI race: all six finish, 0 recoveries, 0 hard hits.
+- Screenshots: `docs/screenshots/0.6.0/`.
+
+### Not verified / needs the phone
+Real FPS and thermals over 10+ minutes, 90 Hz pacing, touch feel of the new
+layout and Easy Drift, safe area with the punch-hole camera, the Android 12
+system splash with the new adaptive icon, audio balance, whether the black
+portrait borders are an app or recorder issue (immersive mode is on).
+
+Settings v3 migrates v1/v2 files (steering help on and camera shake 0.6 were
+developer-only values, so they move to the new defaults; player choices are
+kept). `PHYSICS_VERSION` 2 rejects 0.5.0 ghosts.
 
 ## Update 0.5.0 — Android interaction fixes, compact Settings, cheerful Baku
 
