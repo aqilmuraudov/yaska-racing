@@ -67,6 +67,9 @@ var auto_pause_on_focus_loss := true
 var tutorial: TutorialDirector
 var ghosts: GhostSystem
 var skid_marks: SkidMarks
+## Set by the loading screen before adding the scene: build over several frames.
+var staged_build := false
+var build_timings: Array = [] ## [step name, ms] from build_world_staged
 
 
 func _ready() -> void:
@@ -75,31 +78,84 @@ func _ready() -> void:
 		config = Game.default_race_config()
 	if Game.debug_race:
 		auto_pause_on_focus_loss = false # unattended debug/soak runs
+	if staged_build:
+		# The loading screen drives build_world_staged() and then begin().
+		set_physics_process(false)
+		return
 	build_world()
+	begin()
+
+
+## Starts the race once the world exists (immediately, or after a staged build).
+func begin() -> void:
+	set_physics_process(true)
+	if hud:
+		hud.visible = true
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	start_intro()
 
 
 func build_world() -> void:
-	environment = RaceEnvironment.new()
-	environment.name = "Environment"
-	add_child(environment)
-	environment.build()
-	track = TrackData.load_from_file("res://data/tracks/%s.json" % config.track_id)
-	builder = TrackBuilder.new()
-	builder.name = "Track"
-	add_child(builder)
-	builder.build(track)
-	for area in builder.boost_pad_areas:
-		area.body_entered.connect(_on_boost_pad)
-	if ClassDB.class_exists("TrackDecor") or ResourceLoader.exists("res://scripts/track/track_decor.gd"):
-		var decor_script: Script = load("res://scripts/track/track_decor.gd")
-		if decor_script:
-			decor = decor_script.new()
-			decor.name = "Decor"
-			add_child(decor)
-			decor.build(track, environment)
-			countdown_tick.connect(decor.set_countdown_lights)
+	for step in build_steps():
+		(step[1] as Callable).call()
+
+
+## Builds the world one step per frame so the loading screen stays animated and
+## its bar reports real work. `progress` receives (fraction, step name).
+## Step durations are recorded in build_timings (ms) for profiling.
+func build_world_staged(progress: Callable) -> void:
+	var steps := build_steps()
+	var total := 0.0
+	for s in steps:
+		total += float(s[0])
+	var done := 0.0
+	for s in steps:
+		var t0 := Time.get_ticks_usec()
+		(s[1] as Callable).call()
+		build_timings.append([String(s[2]), (Time.get_ticks_usec() - t0) / 1000.0])
+		done += float(s[0])
+		progress.call(done / total, String(s[2]))
+		await get_tree().process_frame
+
+
+## Relative cost of each build step in ms (desktop, 2026-10-24, LOAD_TIMINGS
+## from --via-loading --stats). They only shape the bar; every step runs.
+const TRACK_STEP_MS := [26.0, 36.0, 129.0, 2.0, 267.0, 1.0]
+const DECOR_STEP_MS := [1.0, 2.0, 17.0, 72.0, 131.0, 93.0, 8.0, 78.0, 88.0, 147.0, 85.0, 4.0]
+
+
+## [relative weight, step, name].
+func build_steps() -> Array:
+	var steps: Array = []
+	steps.append([12.0, func():
+		environment = RaceEnvironment.new()
+		environment.name = "Environment"
+		add_child(environment)
+		environment.build()
+		track = TrackData.load_from_file("res://data/tracks/%s.json" % config.track_id)
+		builder = TrackBuilder.new()
+		builder.name = "Track"
+		add_child(builder), "environment"])
+	var track_steps := func() -> Array: return builder.build_steps(track)
+	# Builder steps are created lazily (the builder exists only after step 1).
+	for i in 6:
+		var idx := i
+		steps.append([TRACK_STEP_MS[i], func(): (track_steps.call()[idx] as Callable).call(), "track_%d" % i])
+	steps.append([1.0, func():
+		for area in builder.boost_pad_areas:
+			area.body_entered.connect(_on_boost_pad)
+		decor = TrackDecor.new()
+		decor.name = "Decor"
+		add_child(decor)
+		countdown_tick.connect(decor.set_countdown_lights), "decor_begin"])
+	for i in 12:
+		var idx := i
+		steps.append([DECOR_STEP_MS[i], func(): (decor.build_steps(track, environment)[idx] as Callable).call(), "decor_%d" % i])
+	steps.append([330.0, _build_racers, "racers"])
+	return steps
+
+
+func _build_racers() -> void:
 	items = ItemSystem.new()
 	items.name = "Items"
 	add_child(items)
@@ -130,6 +186,7 @@ func build_world() -> void:
 		hud.name = "HUD"
 		add_child(hud)
 		hud.setup(self)
+		hud.visible = not staged_build # shown by begin(), above the loading screen otherwise
 		if config.mode == "tutorial":
 			tutorial = TutorialDirector.new()
 			tutorial.name = "Tutorial"

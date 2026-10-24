@@ -38,6 +38,23 @@ var decor_root: Node3D
 
 
 func build(td: TrackData) -> void:
+	for step in build_steps(td):
+		step.call()
+
+
+## The build as separate steps (see TrackDecor.build_steps).
+func build_steps(td: TrackData) -> Array[Callable]:
+	return [
+		func(): _begin(td),
+		_build_surfaces,
+		_build_walls,
+		_build_details,
+		_build_terrain,
+		_build_water,
+	]
+
+
+func _begin(td: TrackData) -> void:
 	data = td
 	for c in get_children():
 		c.queue_free()
@@ -45,13 +62,12 @@ func build(td: TrackData) -> void:
 	decor_root = Node3D.new()
 	decor_root.name = "Decor"
 	add_child(decor_root)
-	_build_surfaces()
-	_build_walls()
+
+
+func _build_details() -> void:
 	_build_ramps()
 	_build_boost_pads()
 	_build_finish_line()
-	_build_terrain()
-	_build_water()
 
 
 func _make_materials() -> void:

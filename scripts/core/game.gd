@@ -92,6 +92,18 @@ func enter_race(scene: PackedScene) -> void:
 	state_changed.emit(state)
 
 
+## Called by the loading screen after a staged build: the race (already in the
+## tree behind the loading screen) becomes the current scene and starts, while
+## the loading screen dissolves over its first frames.
+func adopt_race(race: Node, loading: Node) -> void:
+	state = State.RACE
+	get_tree().paused = false
+	get_tree().current_scene = race
+	race.begin()
+	state_changed.emit(state)
+	loading.dissolve()
+
+
 func restart_race() -> void:
 	# Fresh event id so a restarted race is a new reward event.
 	start_loading_race()
@@ -117,6 +129,36 @@ func _change_scene(path: String, new_state: State) -> void:
 	var tw2 := create_tween()
 	tw2.tween_property(_fade, "color:a", 0.0, 0.2)
 	await tw2.finished
+	_changing = false
+
+
+## Boot hand-over: the splash stays on top (same picture, same colour) while
+## the main menu builds its 3D stage and renders its first frames, then
+## dissolves into it. Startup is one continuous picture: no black frame, no
+## second title card, no fade through dark.
+func leave_splash(scene: PackedScene) -> void:
+	_changing = true
+	var cover := ColorRect.new()
+	cover.color = UITheme.BLUE_DEEP
+	cover.mouse_filter = Control.MOUSE_FILTER_STOP
+	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var pic := TextureRect.new()
+	pic.texture = load("res://assets/splash/splash.png")
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cover.add_child(pic)
+	_fade_layer.add_child(cover)
+	get_tree().change_scene_to_packed(scene)
+	state = State.MAIN_MENU
+	state_changed.emit(state)
+	# A few rendered frames: the menu stage shaders compile under the cover.
+	for i in 3:
+		await get_tree().process_frame
+	var tw := create_tween()
+	tw.tween_property(cover, "modulate:a", 0.0, 0.4).set_trans(Tween.TRANS_SINE)
+	await tw.finished
+	cover.queue_free()
 	_changing = false
 
 

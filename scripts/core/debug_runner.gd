@@ -18,6 +18,8 @@ extends Node
 ##   --quit-on-results      print the race summary and quit when results show
 ##   --soak                 restart the race 3 s after every results screen
 ##   --ui-shots             capture pause, pause→settings and results screens
+##   --via-loading          with --race: go through the loading screen (staged build)
+##   --startup-trace        print scene + frame brightness every 0.1 s (black-frame check)
 ##   --chaos                player kart driven erratically (wall rams, reversing,
 ##                          drift spam) to expose snags, falls and stuck states
 ## Used for screenshots, soak tests and reproducible AI races.
@@ -174,11 +176,42 @@ func _capture_screens() -> void:
 
 
 func _enter_race() -> void:
-	Game.enter_race(load(Game.RACE_SCENE))
+	if args.has("via-loading"):
+		Game.start_loading_race() # the player's path: loading screen + staged build
+	else:
+		Game.enter_race(load(Game.RACE_SCENE))
+
+
+## --startup-trace: every 0.1 s for the first seconds, print the current scene
+## and the mean brightness of the rendered frame (a black frame shows as ~0),
+## and save the frames when --capture is given.
+var _trace_t := 0.0
+var _trace_n := 0
+
+
+func _startup_trace(delta: float) -> void:
+	_trace_t += delta
+	if _trace_t < 0.1 or _elapsed > float(args.get("trace-secs", "6")):
+		return
+	_trace_t = 0.0
+	_trace_n += 1
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	if _capture_dir != "" and _trace_n % 3 == 0:
+		img.save_png(_capture_dir.path_join("trace_%03d.png" % _trace_n))
+	img.resize(32, 18, Image.INTERPOLATE_BILINEAR)
+	var lum := 0.0
+	for y in 18:
+		for x in 32:
+			lum += img.get_pixel(x, y).get_luminance()
+	var scn := get_tree().current_scene
+	print("TRACE t=%.2f scene=%s lum=%.3f fps=%d" % [_elapsed, scn.name if scn else "-", lum / 576.0, Engine.get_frames_per_second()])
 
 
 func _process(delta: float) -> void:
 	_elapsed += delta / maxf(Engine.time_scale, 0.001)
+	if args.has("startup-trace"):
+		_startup_trace(delta)
 	var race := get_tree().current_scene as RaceManager
 	if race != null and _capture_dir != "":
 		if args.has("overview") and not _overview_done and _elapsed > 1.0:

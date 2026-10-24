@@ -39,6 +39,30 @@ const LANDMARK_SITES := {
 
 
 func build(td: TrackData, env: RaceEnvironment) -> void:
+	for step in build_steps(td, env):
+		step.call()
+
+
+## The build as separate steps, so the loading screen can keep animating and
+## report real progress between them. Order matters; run all of them.
+func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
+	return [
+		func(): _begin(td),
+		_place_wall_props,
+		_place_promenade,
+		_place_boulevard_inland,
+		_place_old_city,
+		_place_connector_greenery,
+		_place_corner_signs,
+		_place_landmarks,
+		_place_bunting,
+		_place_backdrop,
+		_flush_instances,
+		func(): _finish(env),
+	]
+
+
+func _begin(td: TrackData) -> void:
 	data = td
 	builder = get_parent().get_node_or_null("Track")
 	rng.seed = 20251022
@@ -46,16 +70,9 @@ func build(td: TrackData, env: RaceEnvironment) -> void:
 		var site: Array = LANDMARK_SITES[id]
 		_reserved.append([Vector3(site[0], 0.0, site[1]), float(site[2])])
 	_reserved.append([WHEEL_SITE, 34.0])
-	_place_wall_props()
-	_place_promenade()
-	_place_boulevard_inland()
-	_place_old_city()
-	_place_connector_greenery()
-	_place_corner_signs()
-	_place_landmarks()
-	_place_bunting()
-	_place_backdrop()
-	_flush_instances()
+
+
+func _finish(env: RaceEnvironment) -> void:
 	_flush_carpets()
 	if env:
 		env.decor_distance_changed.connect(set_decor_distance)
