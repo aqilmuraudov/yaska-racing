@@ -14,6 +14,9 @@ signal drift_started(dir: int)
 signal drift_ended
 signal drift_boost(tier: int, perfect: bool)
 signal drift_miss
+## DRIFT was held but no drift started: &"steer" (no direction chosen in
+## time) or &"speed" (too slow). The HUD explains it; nothing else changes.
+signal drift_denied(reason: StringName)
 signal boost_started(source: StringName)
 signal wall_hit(strength: float)
 signal got_hit(kind: StringName)
@@ -26,7 +29,7 @@ enum State { NORMAL, HOP, DRIFT, AIR, HIT, RECOVER }
 
 ## Bump whenever handling behaviour changes; ghosts from other versions are
 ## rejected because they would no longer be reproducible against.
-const PHYSICS_VERSION := 1
+const PHYSICS_VERSION := 2
 
 const HIT_DURATION := 1.0
 const HIT_IMMUNITY := 1.6 ## after a hit ends; prevents stun chaining
@@ -34,6 +37,14 @@ const RESPAWN_PROTECTION := 2.0
 const RECOVER_FADE := 0.55
 const RECOVER_TIME_COST := 0.6 ## extra seconds before control returns
 const HARD_HIT_COOLDOWN := 0.35
+## After a hop lands with DRIFT held but no direction yet, steering within
+## this window still starts the drift (forgiving timing for children).
+const DRIFT_GRACE := 0.35
+const DRIFT_STEER_MIN := 0.2 ## |steer| that picks a drift direction
+## Scraping along a barrier: one small loss on first touch, then a steady,
+## predictable deceleration (m/s²) instead of a percentage every tick.
+const WALL_SCRAPE_DECEL := 4.0
+const WALL_SCRAPE_PUSH := 0.6 ## m/s nudge away from the barrier per contact tick
 
 @export var stats: KartStats
 
@@ -66,6 +77,13 @@ var recover_timer := 0.0
 var item: StringName = &""
 var item_roll_timer := 0.0
 var landing_boost_armed := false
+## Easy Drift (player setting): release DRIFT while charged to boost.
+var easy_drift := false:
+	set(v):
+		easy_drift = v
+		drift.easy = v
+var _drift_grace := 0.0
+var _scrape_time := 0.0
 
 var _reverse_timer := 0.0
 var _hard_hit_cooldown := 0.0
@@ -148,6 +166,8 @@ func reset_for_race(xform: Transform3D) -> void:
 	boost.cancel()
 	drift.stop()
 	drift_dir = 0
+	_drift_grace = 0.0
+	_scrape_time = 0.0
 	hit_timer = 0.0
 	immunity_timer = 0.0
 	shield_timer = 0.0
@@ -182,7 +202,11 @@ func _physics_process(delta: float) -> void:
 	match state:
 		State.NORMAL:
 			if not on_floor:
+				_drift_grace = 0.0
 				_enter_air()
+			elif _drift_grace > 0.0 and _tick_drift_grace(delta, steer_in):
+				_drive(delta, true)
+				_steer_drift(delta, steer_in)
 			elif input.drift_pressed and _rehop_cooldown <= 0.0:
 				_hop()
 			else:
@@ -191,12 +215,16 @@ func _physics_process(delta: float) -> void:
 		State.HOP:
 			_drive(delta, false)
 			_steer_air(delta, 2.2)
-			if input.drift_held and absf(steer_in) > 0.3:
+			if input.drift_held and absf(steer_in) > DRIFT_STEER_MIN:
 				drift_dir = int(signf(steer_in))
 			if on_floor and vertical <= 0.0 and _hop_timer > 0.08:
 				_land_from_hop()
 		State.DRIFT:
 			if not input.drift_held or speed < stats.drift_min_speed * 0.6:
+				if not input.drift_held:
+					var rel := drift.release()
+					if rel.result == DriftMeter.Result.BOOST:
+						_award_drift_boost(rel.tier, rel.perfect)
 				_end_drift()
 				_drive(delta, false)
 				_steer_ground(delta)
@@ -233,6 +261,7 @@ func _physics_process(delta: float) -> void:
 func _tick_timers(delta: float) -> void:
 	boost.tick(delta)
 	_hard_hit_cooldown = maxf(_hard_hit_cooldown - delta, 0.0)
+	_scrape_time = maxf(_scrape_time - delta, 0.0)
 	_wall_contact = maxf(_wall_contact - delta, 0.0)
 	if state == State.HOP:
 		_hop_timer += delta
@@ -289,7 +318,8 @@ func _drive(delta: float, drifting: bool) -> void:
 				a = maxf(a, stats.boost_accel)
 			speed = minf(speed + a * delta, desired)
 		else:
-			var decay := stats.overspeed_decay * (2.5 if offroad and not boosted else 1.0)
+			# Off-road slowdown is firm but smooth (was 2.5x: an abrupt stop).
+			var decay := stats.overspeed_decay * (1.6 if offroad and not boosted else 1.0)
 			speed = move_toward(speed, desired, decay * delta)
 	else:
 		_reverse_timer = 0.0
@@ -311,6 +341,10 @@ func _steer_ground(delta: float) -> void:
 	rate *= authority
 	var grip := stats.lateral_grip * (stats.offroad_grip_factor if surface == &"offroad" else 1.0)
 	var dir := 1.0 if speed >= 0.0 else -1.0
+	# Scraping a barrier: steering further into it is damped, so the wall
+	# guides the kart along instead of scrubbing its speed away.
+	if _scrape_time > 0.0 and _last_wall_normal != Vector3.ZERO and -_last_wall_normal.dot(right_dir()) * steer_smoothed * dir > 0.0:
+		rate *= 0.25
 	yaw -= steer_smoothed * rate * dir * delta
 	# Slow and pressing into a barrier: ease the nose round to run along it
 	# (towards the race direction when known) so the kart never stays pinned.
@@ -349,14 +383,46 @@ func _hop() -> void:
 
 
 func _land_from_hop() -> void:
-	if input.drift_held and drift_dir != 0 and speed >= stats.drift_min_speed:
-		state = State.DRIFT
-		drift.start()
-		drift_started.emit(drift_dir)
+	if input.drift_held and speed >= stats.drift_min_speed:
+		if drift_dir != 0:
+			_start_drift(drift_dir)
+		else:
+			# Held without a direction yet: steering soon still starts it.
+			state = State.NORMAL
+			_drift_grace = DRIFT_GRACE
 	else:
 		state = State.NORMAL
 		drift_dir = 0
+		if input.drift_held:
+			drift_denied.emit(&"speed")
 	_rehop_cooldown = 0.12
+
+
+func _start_drift(dir: int) -> void:
+	drift_dir = dir
+	state = State.DRIFT
+	_drift_grace = 0.0
+	drift.start()
+	drift_started.emit(drift_dir)
+
+
+## Returns true when the drift started this tick.
+func _tick_drift_grace(delta: float, steer_in: float) -> bool:
+	if not input.drift_held:
+		_drift_grace = 0.0
+		return false
+	if speed < stats.drift_min_speed:
+		_drift_grace = 0.0
+		drift_denied.emit(&"speed")
+		return false
+	if absf(steer_in) > DRIFT_STEER_MIN:
+		_start_drift(int(signf(steer_in)))
+		return true
+	_drift_grace -= delta
+	if _drift_grace <= 0.0:
+		_drift_grace = 0.0
+		drift_denied.emit(&"steer")
+	return false
 
 
 func _enter_air() -> void:
@@ -371,11 +437,8 @@ func _land_from_air() -> void:
 		var s := clampf(t / 1.2, 0.5, 1.0)
 		boost.add(stats.pad_strength * s, 0.5 + 0.5 * s, &"landing")
 	landing_boost_armed = false
-	if input.drift_held and absf(input.steer) > 0.3 and speed >= stats.drift_min_speed:
-		drift_dir = int(signf(input.steer))
-		state = State.DRIFT
-		drift.start()
-		drift_started.emit(drift_dir)
+	if input.drift_held and absf(input.steer) > DRIFT_STEER_MIN and speed >= stats.drift_min_speed:
+		_start_drift(int(signf(input.steer)))
 	else:
 		state = State.NORMAL
 
@@ -581,13 +644,20 @@ func _after_slide(pre_horizontal: Vector3, delta: float) -> void:
 
 	if glancing and not hard:
 		# Slide along the barrier: the slide already removed the component
-		# into the wall; add light friction and align the kart with the wall.
+		# into the wall. A small loss on first touch, then steady friction, a
+		# light nudge off the wall and a smooth turn along it, so scraping is
+		# predictable and the kart drifts free instead of grinding to a halt.
 		var vh := Vector3(velocity.x, 0.0, velocity.z)
-		speed = vh.dot(forward_dir()) * (1.0 - stats.wall_glance_loss * glance_ratio)
+		var first_touch := _scrape_time <= 0.0
+		speed = vh.dot(forward_dir()) * (1.0 - (stats.wall_glance_loss * glance_ratio if first_touch else 0.0))
+		if speed > 0.0:
+			speed = maxf(speed - WALL_SCRAPE_DECEL * delta, 0.0)
+		_scrape_time = 0.2
 		lateral = vh.dot(right_dir()) * 0.5
+		lateral += _last_wall_normal.dot(right_dir()) * WALL_SCRAPE_PUSH # sideways only
 		if speed > 2.0 and state != State.DRIFT and glance_tangent.length_squared() > 0.01:
 			var t := glance_tangent.normalized()
-			yaw = lerp_angle(yaw, atan2(-t.x, -t.z), 0.18)
+			yaw = lerp_angle(yaw, atan2(-t.x, -t.z), 1.0 - exp(-9.0 * delta))
 	if floor_surface != &"":
 		surface = floor_surface
 	if now_floor:

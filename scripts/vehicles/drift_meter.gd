@@ -7,6 +7,11 @@ extends RefCounted
 ## (max 3 per drift); presses in the perfect zone earn extra. Pressing early,
 ## or holding at full for longer than `overheat_time`, is a miss: the meter
 ## restarts after a short cooldown but the chain is kept (light penalty).
+##
+## Easy mode (player "Easy Drift" setting): no overheating; once the window
+## opens the drift is "charged", and holding longer raises the charge level
+## (1 → 2 → 3, one more per `charge_time`). Releasing DRIFT while charged
+## awards a boost of that level (release()). Boost presses still work.
 
 const MAX_CHAIN := 3
 const MISS_COOLDOWN := 0.3
@@ -18,6 +23,7 @@ var window_start := 0.72
 var perfect_start := 0.92
 var overheat_time := 0.22
 
+var easy := false
 var active := false
 var meter := 0.0
 var chain := 0
@@ -74,7 +80,7 @@ func tick(delta: float) -> Result:
 	meter = minf(meter + delta / charge_time, 1.0)
 	if meter >= 1.0:
 		_full_timer += delta
-		if _full_timer >= overheat_time:
+		if _full_timer >= overheat_time and not easy:
 			_miss()
 			return Result.MISS
 	return Result.NONE
@@ -94,6 +100,35 @@ func press() -> Dictionary:
 		return {"result": Result.BOOST, "tier": chain, "perfect": perfect}
 	_miss()
 	return {"result": Result.MISS, "tier": chain, "perfect": false}
+
+
+## 0 = not charged, 1..MAX_CHAIN = charge level (easy) or completed boosts.
+func level() -> int:
+	if not active:
+		return 0
+	if easy:
+		if not in_window():
+			return 0
+		return clampi(1 + int(_full_timer / charge_time), 1, MAX_CHAIN - chain)
+	return chain
+
+
+## True when letting go (easy) or pressing boost (timing) would boost now.
+func is_charged() -> bool:
+	return in_window()
+
+
+## Easy mode: DRIFT released. Returns {result, tier, perfect}.
+func release() -> Dictionary:
+	if not easy or not in_window():
+		return {"result": Result.NONE, "tier": chain, "perfect": false}
+	var tier := chain + level()
+	chain = tier
+	last_result = Result.BOOST
+	last_perfect = tier >= MAX_CHAIN
+	meter = 0.0
+	_full_timer = 0.0
+	return {"result": Result.BOOST, "tier": tier, "perfect": last_perfect}
 
 
 func _miss() -> void:

@@ -644,10 +644,28 @@ func _racer_for(kart: KartController) -> Racer:
 	return null
 
 
-func _steer_assist_for(r: Racer) -> float:
-	# Positive lateral = right of centre → steer left (negative).
-	var hw := track.main.half_width_at(r.tracker.s)
-	return clampf(-r.tracker.lateral / maxf(hw, 1.0), -1.0, 1.0)
+## Steering help for the player: Vector2(centre pull, edge correction).
+## Positive lateral = right of centre → steer left (negative).
+func _steer_assist_for(r: Racer) -> Vector2:
+	var hw := maxf(track.main.half_width_at(r.tracker.s), 1.0)
+	var l := clampf(r.tracker.lateral / hw, -1.5, 1.5)
+	var centre := clampf(-l, -1.0, 1.0)
+	return Vector2(centre, edge_assist(l, r.kart.forward_dir().dot(track.main.right_at(r.tracker.s))))
+
+
+const EDGE_ASSIST_START := 0.55 ## fraction of the half width where help begins
+const EDGE_ASSIST_MAX := 0.6
+
+
+## Edge help from the lateral position (−1..1 = left..right edge) and how fast
+## the heading points sideways (+ = towards the right). Zero in the middle of
+## the road or when already heading away from the edge.
+static func edge_assist(l: float, heading_right: float) -> float:
+	var near := clampf((absf(l) - EDGE_ASSIST_START) / (1.0 - EDGE_ASSIST_START), 0.0, 1.0)
+	var towards := heading_right * signf(l)
+	if near <= 0.0 or towards <= 0.02:
+		return 0.0
+	return -signf(l) * clampf(near * (0.4 + towards * 3.0), 0.0, EDGE_ASSIST_MAX)
 
 
 func _on_boost_pad(body: Node) -> void:

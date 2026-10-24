@@ -17,7 +17,9 @@ var minimap: MinimapWidget
 var drift_meter: DriftMeterWidget
 var countdown_label: Label
 var message_label: Label
-var speed_label: Label
+var speed_gauge: SpeedGauge
+var speed_lines: SpeedLines
+var _stuck_time := 0.0
 var recover_bar: ProgressBar
 var recover_label: Label
 var wrong_way_label: Label
@@ -52,6 +54,10 @@ func setup(p_race: RaceManager) -> void:
 	speed_blur.material = blur_mat
 	speed_blur.visible = false
 	add_child(speed_blur)
+	speed_lines = SpeedLines.new()
+	speed_lines.kart = race.player.kart
+	speed_lines.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(speed_lines)
 	root = Control.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -136,13 +142,14 @@ func setup(p_race: RaceManager) -> void:
 	trap_warning.visible = false
 	tr_box.add_child(trap_warning)
 
-	# Item slot: next to the driving controls (right side), racer accent ring.
+	# Item slot for keyboard/controller play. With touch controls the ITEM
+	# button itself is the slot (shows the item, roll and availability).
 	item_panel = PanelContainer.new()
 	item_panel.add_theme_stylebox_override("panel", UITheme.art_box("panel_hud", 12, 8, 30))
 	item_panel.custom_minimum_size = Vector2(100, 100)
 	item_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	item_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	item_panel.position = Vector2(-100 - (128.0 if _uses_touch else 0.0), -100 - (380.0 if _uses_touch else 60.0))
+	item_panel.position = Vector2(-100, -160)
 	frame.add_child(item_panel)
 	item_icon = ItemIcon.new()
 	item_icon.custom_minimum_size = Vector2(78, 78)
@@ -190,9 +197,9 @@ func setup(p_race: RaceManager) -> void:
 	# Bottom-centre: drift meter, recovery hold
 	drift_meter = DriftMeterWidget.new()
 	drift_meter.kart = race.player.kart
-	drift_meter.custom_minimum_size = Vector2(380, 84)
+	drift_meter.custom_minimum_size = Vector2(300, 76)
 	drift_meter.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	drift_meter.position = Vector2(-190, -84 - (150.0 if _uses_touch else 40.0))
+	drift_meter.position = Vector2(-150, -76 - 112.0) # just above the speedometer
 	drift_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(drift_meter)
 	recover_label = _label(tr("HUD_RECOVER_HOLD"), &"HudSmall")
@@ -211,22 +218,24 @@ func setup(p_race: RaceManager) -> void:
 	recover_bar.visible = false
 	frame.add_child(recover_bar)
 
-	# Sound captions (accessibility): short text for important audio cues.
+	# Sound captions (accessibility) and item notices: top centre under the
+	# message line, never over the minimap or the controls.
 	captions = VBoxContainer.new()
-	captions.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	captions.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	captions.position = Vector2(0, -330.0 if _uses_touch else -190.0)
+	captions.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	captions.position = Vector2(-320, 232)
+	captions.custom_minimum_size = Vector2(640, 0)
+	captions.alignment = BoxContainer.ALIGNMENT_BEGIN
 	captions.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(captions)
 
-	speed_label = _label("", &"HudSmall")
-	speed_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	speed_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	speed_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	speed_label.custom_minimum_size = Vector2(200, 40)
-	speed_label.position = Vector2(-200, -290.0) if _uses_touch else Vector2(-320, -40)
-	frame.add_child(speed_label)
+	# Graphical speedometer, bottom centre between the thumb zones.
+	speed_gauge = SpeedGauge.new()
+	speed_gauge.kart = race.player.kart
+	speed_gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	speed_gauge.custom_minimum_size = Vector2(180, 110)
+	speed_gauge.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	speed_gauge.position = Vector2(-90, -110) # dial centred; its readout pill draws to the right
+	frame.add_child(speed_gauge)
 
 	# Touch controls, pause menu and results
 	touch = TouchControls.new()
@@ -249,7 +258,7 @@ func setup(p_race: RaceManager) -> void:
 	race.results_ready.connect(func(res):
 		touch.release_all()
 		touch.visible = false
-		for w in [pos_badge, item_panel, minimap, drift_meter, speed_label, lap_pill, trap_warning, captions]:
+		for w in [pos_badge, item_panel, minimap, drift_meter, speed_gauge, lap_pill, trap_warning, captions]:
 			w.visible = false
 		results.show_results(res))
 	race.state_changed.connect(_on_state)
@@ -259,6 +268,11 @@ func setup(p_race: RaceManager) -> void:
 		if not bool(Settings.get_value("accessibility", "reduced_flashing", false)):
 			UITheme.sparkle_burst(drift_meter, drift_meter.get_global_rect().get_center(), 9 if perfect else 5, UITheme.YELLOW if perfect else UITheme.TURQUOISE))
 	pk.drift_miss.connect(func(): drift_meter.show_result(tr("HUD_MISS"), false))
+	pk.drift_denied.connect(func(reason):
+		drift_meter.show_result(tr("HUD_DRIFT_SPEED") if reason == &"speed" else tr("HUD_DRIFT_STEER"), false)
+		if touch:
+			touch.flash_denied())
+	pk.respawned.connect(func(): caption(tr("HUD_PROTECTED")))
 	pk.shield_blocked.connect(func(): show_message(tr("HUD_SHIELD_BLOCK"), "info"))
 	pk.item_changed.connect(_on_item_changed)
 	pk.got_hit.connect(func(_k): caption(tr("CAP_HIT")))
@@ -310,7 +324,7 @@ func _apply_safe_area() -> void:
 
 
 func _on_settings_changed(_section: String, _key: String) -> void:
-	speed_label.visible = bool(Settings.get_value("gameplay", "speedometer", true))
+	speed_gauge.visible = bool(Settings.get_value("gameplay", "speedometer", true))
 	drift_meter.high_contrast = bool(Settings.get_value("accessibility", "high_contrast", false))
 	if touch:
 		touch.apply_settings()
@@ -327,8 +341,9 @@ func reset() -> void:
 	_last_place = 0
 	if touch:
 		touch.visible = _uses_touch
-	for w in [item_panel, minimap, drift_meter, speed_label, captions]:
+	for w in [minimap, drift_meter, speed_gauge, captions]:
 		w.visible = true
+	item_panel.visible = not _uses_touch
 	_update_static()
 
 
@@ -400,9 +415,10 @@ func caption(text: String) -> void:
 	if not bool(Settings.get_value("accessibility", "subtitles", true)):
 		return
 	var l := _label(text, &"HudSmall")
-	l.add_theme_font_size_override("font_size", 22)
+	l.add_theme_font_size_override("font_size", 24)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	captions.add_child(l)
-	while captions.get_child_count() > 4:
+	while captions.get_child_count() > 2:
 		var oldest := captions.get_child(0)
 		captions.remove_child(oldest)
 		oldest.queue_free()
@@ -477,7 +493,14 @@ func _process(delta: float) -> void:
 	if p.tracker.finished:
 		t = p.tracker.finish_time
 	timer_label.text = format_time(maxf(t, 0.0001)) if race.state != RaceManager.RaceState.COUNTDOWN and race.state != RaceManager.RaceState.INTRO else "0:00.000"
-	speed_label.text = "%d %s" % [int(absf(p.kart.speed) * 3.6), tr("HUD_KMH")]
+	# Recover button only when it helps: stuck for a moment, or wrong way.
+	var racing := race.state == RaceManager.RaceState.RACING
+	if racing and not p.kart.controls_locked and absf(p.kart.speed) < 2.5 and p.kart.state != KartController.State.RECOVER:
+		_stuck_time += delta
+	else:
+		_stuck_time = 0.0
+	if touch:
+		touch.show_recover = racing and (_stuck_time > 1.2 or p.tracker.wrong_way)
 	wrong_way_label.visible = p.tracker.wrong_way and race.state == RaceManager.RaceState.RACING
 	var hold := p.player_input.recover_hold_progress() if p.player_input else 0.0
 	var recovering := p.kart.state == KartController.State.RECOVER

@@ -22,6 +22,8 @@ func _release_all_actions() -> void:
 
 func test_simultaneous_touches() -> void:
 	_release_all_actions()
+	var easy_before: bool = Settings.values.controls.easy_drift
+	Settings.values.controls.easy_drift = false # show the TURBO timing button too
 	var tc := _make_touch()
 	var left := tc.get_button("steer_left")
 	var drift := tc.get_button("drift")
@@ -47,12 +49,35 @@ func test_simultaneous_touches() -> void:
 	for a in [InputActions.STEER_RIGHT, InputActions.DRIFT, InputActions.USE_ITEM]:
 		check(not Input.is_action_pressed(a), "%s released on focus loss" % a)
 	tc.queue_free()
+	Settings.values.controls.easy_drift = easy_before
 	_release_all_actions()
 
 
 func test_touch_layout_fits_wide_and_16_9_screens() -> void:
 	var tc := _make_touch()
-	for sz in [Vector2(1280, 720), Vector2(1600, 720), Vector2(1560, 720)]:
+	var c0: Dictionary = Settings.values.controls.duplicate()
+	# Every combination of the optional buttons (gas, turbo, recover), and all
+	# three button sizes, on 16:9, 19.5:9, 20:9 and 4:3 screens.
+	var combos: Array = []
+	for auto_gas in [true, false]:
+		for easy in [true, false]:
+			for size_i in [0, 1, 2]:
+				combos.append([auto_gas, easy, size_i])
+	for combo in combos:
+		Settings.values.controls.touch_auto_accelerate = combo[0]
+		Settings.values.controls.easy_drift = combo[1]
+		Settings.values.controls.button_size = combo[2]
+		Settings._sanitize()
+		tc.apply_settings()
+		tc.show_recover = true
+		_check_layout(tc, combo)
+	Settings.values.controls.merge(c0, true)
+	Settings._sanitize()
+	tc.queue_free()
+
+
+func _check_layout(tc: TouchControls, combo: Array) -> void:
+	for sz in [Vector2(1280, 720), Vector2(1600, 720), Vector2(1560, 720), Vector2(1280, 960)]:
 		tc.size = sz
 		tc._layout()
 		for b in tc.buttons:
@@ -66,8 +91,13 @@ func test_touch_layout_fits_wide_and_16_9_screens() -> void:
 				var a = tc.buttons[i]
 				var c = tc.buttons[j]
 				if a.visible and c.visible:
-					check(a.center.distance_to(c.center) >= a.radius + c.radius - 2.0, "%s and %s do not overlap at %s" % [a.id, c.id, sz])
-	tc.queue_free()
+					check(a.center.distance_to(c.center) >= a.radius + c.radius - 2.0, "%s and %s do not overlap at %s %s" % [a.id, c.id, sz, combo])
+		# The speedometer (dial centred, readout pill to its right) stays clear.
+		var gauge := Rect2(Vector2(sz.x * 0.5 - 100, sz.y - 130), Vector2(270, 130))
+		for b in tc.buttons:
+			if b.visible:
+				var near := Vector2(clampf(b.center.x, gauge.position.x, gauge.end.x), clampf(b.center.y, gauge.position.y, gauge.end.y))
+				check(near.distance_to(b.center) >= b.radius - 2.0, "%s clear of the speedometer at %s %s" % [b.id, sz, combo])
 
 
 ## The kart's state after N physics ticks must not depend on how many

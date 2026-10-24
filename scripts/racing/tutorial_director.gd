@@ -97,7 +97,11 @@ func _set_step(s: int) -> void:
 
 
 func _refresh() -> void:
-	text_label.text = tr(STEP_KEYS[step])
+	var easy: bool = race.player.kart.easy_drift or bool(Settings.get_value("controls", "easy_drift", true))
+	var key: String = STEP_KEYS[step]
+	if easy and step in [Step.BOOST, Step.CHAIN]:
+		key += "_EASY" # let go of DRIFT instead of a timing press
+	text_label.text = tr(key)
 	progress_label.text = "%d / %d" % [mini(int(step) + 1, 5), 5]
 	match step:
 		Step.HOP:
@@ -105,7 +109,10 @@ func _refresh() -> void:
 		Step.DRIFT:
 			hint_label.text = "%s  +  %s / %s" % [_binding_hint(InputActions.DRIFT, "TOUCH_DRIFT"), _binding_text(InputActions.STEER_LEFT), _binding_text(InputActions.STEER_RIGHT)]
 		Step.BOOST, Step.CHAIN:
-			hint_label.text = _binding_hint(InputActions.BOOST, "TOUCH_BOOST")
+			if easy:
+				hint_label.text = _binding_hint(InputActions.DRIFT, "TOUCH_DRIFT")
+			else:
+				hint_label.text = _binding_hint(InputActions.BOOST, "TOUCH_BOOST")
 		Step.DONE:
 			hint_label.text = ""
 

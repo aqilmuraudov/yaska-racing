@@ -45,8 +45,8 @@ BEST_LAP,Best lap,Ən yaxşı dövr
 BEST_RACE,Best race,Ən yaxşı yarış
 NO_RECORD,No record yet,Hələ rekord yoxdur
 LOADING,Loading…,Yüklənir…
-LOADING_TIP_1,Hold Drift and steer to powerslide. Tap Boost when the meter glows!,Drift düyməsini saxla və dön. Göstərici parlayanda Sürət düyməsinə bas!
-LOADING_TIP_2,Chain up to three drift boosts in a single slide.,Bir driftdə üç sürətlənməni ardıcıl birləşdir.
+LOADING_TIP_1,Hold Drift and steer to powerslide. Let go when the sparks glow!,Drift düyməsini saxla və dön. Qığılcımlar parlayanda burax!
+LOADING_TIP_2,Hold a drift longer for bigger sparks and a bigger boost.,"Drifti daha uzun saxla: qığılcımlar böyüyür, sürət artır."
 LOADING_TIP_3,The Old City alley is shorter but the cobbles are rough. Bring a boost.,"İçərişəhər dalanı qısadır, amma daşlar kələ-kötürdür. Sürətləndirici götür."
 LOADING_TIP_4,Press Accelerate just before GO for a starting boost.,Start sürəti üçün START-dan bir az əvvəl qaz ver.
 LOADING_TIP_5,A shield blocks one hit. Road Traps are dropped behind you.,Qalxan bir zərbəni dəf edir. Yol tələsi arxana atılır.
@@ -67,7 +67,7 @@ HUD_NEW_RECORD,NEW RECORD!,YENİ REKORD!
 HUD_INCOMING,Incoming!,Diqqət!
 HUD_SHIELD_BLOCK,Blocked!,Dəf edildi!
 HUD_KMH,km/h,km/saat
-ITEM_TURBO,Turbo Canister,Turbo balon
+ITEM_TURBO,Nitro Canister,Nitro balonu
 ITEM_SHIELD,Shield,Qalxan
 ITEM_TRAP,Road Trap,Yol tələsi
 PAUSE_TITLE,Paused,Fasilə
@@ -195,7 +195,7 @@ ACTION_look_back,Look behind,Arxaya bax
 ACTION_recover,Recover kart,Kartı bərpa et
 ACTION_pause,Pause,Fasilə
 TOUCH_DRIFT,DRIFT,DRIFT
-TOUCH_BOOST,BOOST,SÜRƏT
+TOUCH_BOOST,TURBO,TURBO
 TOUCH_ITEM,ITEM,ƏŞYA
 TOUCH_BRAKE,BRAKE,ƏYLƏC
 TOUCH_GAS,GAS,QAZ
@@ -301,3 +301,14 @@ SET3_STEER_HELP,Steering Help,Sükan köməyi
 SET3_STEER_HELP_HINT,Gently keeps the kart away from walls and grass.,Kartı yumşaq şəkildə divardan və otdan uzaq saxlayır.
 SET3_SHAKE,Camera Shake,Kamera silkələnməsi
 SET3_VIBRATION,Vibration,Titrəmə
+TOUCH_RECOVER,BACK ON TRACK,YOLA QAYIT
+TOUCH_LET_GO,LET GO!,BURAX!
+TOUCH_BOOST_NOW,TURBO!,TURBO!
+ITEM_SHORT_TURBO,NITRO,NİTRO
+ITEM_SHORT_SHIELD,SHIELD,QALXAN
+ITEM_SHORT_TRAP,TRAP,TƏLƏ
+HUD_DRIFT_STEER,Turn while holding DRIFT!,DRIFT saxlayaraq dön!
+HUD_DRIFT_SPEED,Go faster to drift!,Drift üçün sürətlən!
+HUD_PROTECTED,Safe for a moment!,Bir anlıq qorunursan!
+TUT_BOOST_EASY,"When the sparks glow, let go of Drift!","Qığılcımlar parlayanda Drift düyməsini burax!"
+TUT_CHAIN_EASY,Hold the drift longer for pink sparks — then let go!,Drifti daha uzun saxla — çəhrayı qığılcımlar çıxanda burax!

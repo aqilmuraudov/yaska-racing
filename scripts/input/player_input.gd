@@ -74,13 +74,18 @@ func _physics_process(delta: float) -> void:
 	if auto_accel and brake < 0.1:
 		throttle = 1.0
 	if Settings.get_value("gameplay", "steer_assist", false) and _steer_assist_target.is_valid():
-		# Gentle pull towards the track centre when the player is not steering.
-		var assist: float = _steer_assist_target.call()
+		# x: gentle pull towards the centre while the player is not steering;
+		# y: edge help, a correction that grows near the barrier/grass only
+		# while the kart heads towards it. Capped, so a child can still steer
+		# anywhere (it counters at most EDGE_ASSIST_MAX of full lock).
+		var assist: Vector2 = _steer_assist_target.call()
 		if absf(steer) < 0.15:
-			steer = clampf(steer + assist * 0.5, -1.0, 1.0)
+			steer += assist.x * 0.35
+		steer = clampf(steer + assist.y, -1.0, 1.0)
 	inp.steer = steer
 	inp.throttle = throttle
 	inp.brake = brake
+	kart.easy_drift = bool(Settings.get_value("controls", "easy_drift", true))
 	inp.drift_held = Input.is_action_pressed(InputActions.DRIFT)
 	inp.drift_pressed = Input.is_action_just_pressed(InputActions.DRIFT)
 	inp.boost_pressed = Input.is_action_just_pressed(InputActions.BOOST)

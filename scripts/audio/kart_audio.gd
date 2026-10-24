@@ -64,8 +64,11 @@ func _process(delta: float) -> void:
 	var spd := absf(kart.speed) / kart.stats.top_speed
 	var load := kart.input.throttle
 	var target := 0.55 + spd * 1.1 + load * 0.12
+	# Pitch rises with the real speed above top speed (boosts), so the engine
+	# "pulls" exactly when the kart covers more ground per second.
+	target += maxf(spd - 1.0, 0.0) * 0.9
 	if kart.boost.is_active():
-		target += 0.15
+		target += 0.08
 	if not kart.grounded:
 		target += 0.1 * load
 	_rpm = lerpf(_rpm, target, 1.0 - exp(-6.0 * delta))

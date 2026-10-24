@@ -148,7 +148,9 @@ func _physics_process(delta: float) -> void:
 	if kart.state == KartController.State.RECOVER:
 		var p := kart.recover_progress()
 		vis = p > 0.55 or fmod(p * 10.0, 1.0) < 0.5
-	elif kart.immunity_timer > 0.0 and not Settings.get_value("accessibility", "reduced_flashing", false):
+	elif not kart.is_player and kart.immunity_timer > 0.0 and not Settings.get_value("accessibility", "reduced_flashing", false):
+		# Rivals blink; the player's own kart stays solid (its protection is
+		# shown by a soft bubble, see KartEffects) so it is always readable.
 		vis = fmod(kart.immunity_timer * 8.0, 1.0) < 0.7
 	model.visible = vis
 	_update_camera_fade(delta)
@@ -159,14 +161,28 @@ var _fade := 0.0
 
 ## Rival karts that come between the camera and the player fade out so the
 ## player's kart and the road stay visible. Collision is unaffected.
+## Two cases: a rival very close to the lens, and a rival on the line of
+## sight to the player (closer to the camera than the player is).
 func _update_camera_fade(delta: float) -> void:
 	if kart.is_player:
 		return
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return
-	var d := cam.global_position.distance_to(global_position + Vector3.UP * 0.6)
-	var target := clampf((4.2 - d) / 2.0, 0.0, 0.85)
+	var me := global_position + Vector3.UP * 0.6
+	var c := cam.global_position
+	var d := c.distance_to(me)
+	var target := clampf((3.6 - d) / 1.6, 0.0, 0.9)
+	var chase := cam as ChaseCamera
+	if chase and chase.target and not chase.orbit:
+		var p := chase.target.global_position + Vector3.UP * 0.6
+		var seg := p - c
+		var len2 := seg.length_squared()
+		if len2 > 0.01:
+			var t := clampf((me - c).dot(seg) / len2, 0.0, 1.0)
+			if t < 0.97:
+				var off := me.distance_to(c + seg * t)
+				target = maxf(target, clampf((1.6 - off) / 0.8, 0.0, 0.8))
 	var nf := lerpf(_fade, target, 1.0 - exp(-12.0 * delta))
 	if absf(nf - _fade) > 0.01 or (nf == 0.0 and _fade != 0.0):
 		_fade = nf if nf > 0.01 else 0.0

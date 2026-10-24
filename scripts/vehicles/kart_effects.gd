@@ -32,7 +32,8 @@ func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void
 	add_to_group("kart_effects_density")
 	var dot := ShapeKit.soft_dot_texture()
 	for p in model.rear_contact_points:
-		var s := _particles(dot, 18, 0.55, Color(0.95, 0.95, 0.95, 0.32), 0.3, 0.75)
+		# Restrained: thin, short-lived, so the kart and the line stay visible.
+		var s := _particles(dot, 14, 0.45, Color(0.95, 0.95, 0.95, 0.24), 0.25, 0.6)
 		s.position = p
 		s.direction = Vector3(0, 0.6, 1)
 		s.spread = 35.0
@@ -90,15 +91,15 @@ func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void
 	boost_burst = _spark_particles()
 	boost_burst.one_shot = true
 	boost_burst.explosiveness = 0.9
-	boost_burst.amount = maxi(6, int(24 * density))
+	boost_burst.amount = maxi(6, int(16 * density))
 	boost_burst.lifetime = 0.45
 	boost_burst.position = Vector3(0, 0.6, 1.1)
 	boost_burst.direction = Vector3(0, 0.2, 1)
 	boost_burst.spread = 55.0
 	boost_burst.initial_velocity_min = 5.0
 	boost_burst.initial_velocity_max = 9.0
-	boost_burst.scale_amount_min = 1.6
-	boost_burst.scale_amount_max = 2.4
+	boost_burst.scale_amount_min = 0.9
+	boost_burst.scale_amount_max = 1.3
 	kart.landed.connect(func(t):
 		if t > 0.35 and density > 0.05:
 			landing_puff.restart())
@@ -121,7 +122,7 @@ func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void
 func set_density(d: float) -> void:
 	density = clampf(d, 0.0, 1.0)
 	for s in smoke:
-		s.amount = maxi(2, int(22 * density))
+		s.amount = maxi(2, int(14 * density))
 	for sp in sparks:
 		sp.amount = maxi(4, int(26 * density))
 	dust.amount = maxi(2, int(18 * density))
@@ -167,11 +168,13 @@ func _spark_particles() -> CPUParticles3D:
 	p.local_coords = false
 	p.emitting = false
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.05, 0.22)
+	quad.size = Vector2(0.05, 0.18)
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	# Soft-edged streak (an untextured quad read as a white bar on the road).
+	m.albedo_texture = ShapeKit.soft_dot_texture()
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	m.billboard_keep_scale = true
 	m.vertex_color_use_as_albedo = true
@@ -199,33 +202,41 @@ func update(delta: float) -> void:
 	var fast := absf(kart.speed) > 8.0
 	for s in smoke:
 		s.emitting = drifting and grounded and density > 0.05
-	# Sparks: tier = completed boosts this drift; window = ready to boost.
-	var tier := clampi(kart.drift.chain, 0, 3)
-	var ready := kart.drift.in_window()
+	# Sparks: colour/size = charge level (Easy Drift) or completed boosts
+	# (timing mode); bigger and faster once charged ("let go now").
+	var tier := clampi(kart.drift.level(), 0, 3)
+	var ready := kart.drift.is_charged()
 	for sp in sparks:
 		sp.emitting = drifting and grounded and (kart.drift.meter > 0.3 or ready)
-		sp.color = SPARK_COLORS[tier].lightened(0.25 if ready else 0.0)
-		sp.scale_amount_min = 1.6 if ready else 0.8
-		sp.scale_amount_max = 2.2 if ready else 1.2
+		sp.color = SPARK_COLORS[tier] if ready else Color(SPARK_COLORS[0], 0.8)
+		sp.scale_amount_min = 1.1 if ready else 0.7
+		sp.scale_amount_max = 1.5 if ready else 1.0
 		sp.speed_scale = 1.6 if ready else 1.0
 	dust.emitting = grounded and fast and (kart.surface == &"offroad" or kart.surface == &"rough") and density > 0.05
 	for e in exhaust:
 		# Puffs only while pulling away; at speed they would veil the kart.
 		e.emitting = kart.input.throttle > 0.1 and absf(kart.speed) < 7.0 and not kart.boost.is_active() and density > 0.3
-	# Boost flames
+	# Boost flames follow the real speed above top speed, so they
+	# grow and fade with the actual acceleration, not with a timer.
 	var boosting := kart.boost.is_active()
+	var over := clampf((absf(kart.speed) / kart.stats.top_speed - 1.0) / 0.35, 0.0, 1.0)
 	_flame_t += delta
 	for f in flames:
 		f.visible = boosting
 		if boosting:
 			var flick := 0.85 + 0.25 * sin(_flame_t * 50.0 + f.position.x * 10.0)
-			var power := clampf(kart.boost.bonus / 8.0, 0.6, 1.4)
-			f.scale = Vector3(1.0 + 0.3 * power, flick * power * 1.3, 1.0 + 0.3 * power)
+			var power := 0.7 + over * 0.9
+			f.scale = Vector3(1.0 + 0.3 * power, flick * power * 1.5, 1.0 + 0.3 * power)
+	var c: Color = BOOST_COLORS.get(kart.boost.last_source, Color("ffb21f"))
 	if boosting:
-		var c: Color = BOOST_COLORS.get(kart.boost.last_source, Color("ffb21f"))
 		flame_mat.albedo_color = Color(c, 0.85)
 	# Shield
 	var shielded := kart.has_shield()
-	shield.visible = shielded
+	# Player recovery window after a hit or respawn: a faint bubble says
+	# "you are protected" for exactly as long as immunity lasts.
+	var protected := kart.is_player and kart.immunity_timer > 0.0 and kart.state != KartController.State.RECOVER
+	shield.visible = shielded or protected
 	if shielded:
 		shield_mat.set_shader_parameter("fade", clampf(kart.shield_timer / 1.5, 0.25, 1.0))
+	elif protected:
+		shield_mat.set_shader_parameter("fade", clampf(kart.immunity_timer, 0.1, 0.3))

@@ -4,12 +4,23 @@ extends Camera3D
 ## transform (physics interpolation) so motion is smooth at any frame rate.
 ## Features: speed FOV, restrained drift framing, boost kick, look-back,
 ## wall avoidance, respawn smoothing and accessibility-scaled shake.
+##
+## The rig is kept relative to the kart (smoothed offset, not a smoothed
+## world position): smoothing the world position made the camera trail by
+## speed / rate, about 2 m extra at top speed and 2.6 m on nitro, so the
+## player's kart looked small and far away. Speed sensations (FOV, a small
+## deliberate stretch) are driven by the kart's real speed above its normal
+## top speed, so they appear exactly when the kart really travels faster.
 
-const DISTANCES := [4.2, 5.0, 6.2]
-const HEIGHTS := [1.8, 2.05, 2.5]
+const DISTANCES := [3.3, 3.9, 4.8]
+const HEIGHTS := [1.45, 1.65, 2.0]
+const FOV_SPEED := 5.0 ## degrees added from standstill to top speed
+const FOV_OVERSPEED := 26.0 ## degrees per 100 % above top speed (boosts)
+const FOV_MAX := 80.0
+const STRETCH_OVERSPEED := 1.6 ## metres of pull-back per 100 % above top speed
 
 var target: KartController
-var base_fov := 68.0
+var base_fov := 64.0
 var _yaw := 0.0
 var _pos := Vector3.ZERO
 var _look := Vector3.ZERO
@@ -21,6 +32,9 @@ var _time := 0.0
 var _ray_query: PhysicsRayQueryParameters3D
 var orbit := false ## pre-race / results orbit
 var _orbit_angle := 0.0
+var _offset := Vector3.ZERO ## camera position relative to the kart (smoothed)
+var _stretch := 0.0
+var _kick := 0.0 ## short FOV kick when a boost starts
 
 
 func _ready() -> void:
@@ -40,6 +54,7 @@ func follow(kart: KartController) -> void:
 		kart.wall_hit.connect(func(s): add_shake(clampf(s, 0.0, 1.0) * 0.4))
 		kart.got_hit.connect(func(_k): add_shake(0.5))
 		kart.landed.connect(func(t): if t > 0.4: add_shake(clampf(t * 0.3, 0.0, 0.35)))
+		kart.boost_started.connect(func(_s): _kick = 1.0)
 
 
 func snap() -> void:
@@ -73,7 +88,10 @@ func _process(delta: float) -> void:
 	var look_back := target.input.look_back and target.state != KartController.State.RECOVER
 	if look_back:
 		kyaw += PI
-	var speed_ratio := clampf(absf(target.speed) / target.stats.top_speed, 0.0, 1.4)
+	var speed_ratio := clampf(absf(target.speed) / target.stats.top_speed, 0.0, 1.6)
+	var overspeed := maxf(speed_ratio - 1.0, 0.0)
+	_stretch = lerpf(_stretch, overspeed * STRETCH_OVERSPEED, 1.0 - exp(-3.0 * delta))
+	_kick = maxf(_kick - delta * 2.5, 0.0)
 
 	# Yaw follow: responsive but not twitchy; drift framing leans slightly
 	# toward the inside of the slide so the exit stays visible.
@@ -90,7 +108,7 @@ func _process(delta: float) -> void:
 		_yaw = kyaw
 
 	var back := Vector3(sin(_yaw), 0.0, cos(_yaw))
-	var desired := kpos + back * (dist + speed_ratio * 0.6) + Vector3.UP * (height - speed_ratio * 0.15)
+	var desired := kpos + back * (dist + minf(speed_ratio, 1.0) * 0.3 + _stretch) + Vector3.UP * (height - minf(speed_ratio, 1.0) * 0.1)
 	# Wall / scenery avoidance: pull in towards the kart if blocked.
 	var pivot := kpos + Vector3.UP * 1.2
 	_ray_query.from = pivot
@@ -99,16 +117,19 @@ func _process(delta: float) -> void:
 	var hit := get_world_3d().direct_space_state.intersect_ray(_ray_query)
 	if not hit.is_empty():
 		desired = pivot.lerp(hit.position, 0.85)
+	var want := desired - kpos
 	if _snap:
-		_pos = desired
+		_offset = want
 		_look = kpos
 		_snap = false
 	else:
-		_pos.x = lerpf(_pos.x, desired.x, 1.0 - exp(-14.0 * delta))
-		_pos.z = lerpf(_pos.z, desired.z, 1.0 - exp(-14.0 * delta))
-		_pos.y = lerpf(_pos.y, desired.y, 1.0 - exp(-6.0 * delta)) # softer vertical (jumps)
-		_look = _look.lerp(kpos, 1.0 - exp(-18.0 * delta))
-	var look_target := _look + Vector3.UP * 1.0 - back * 2.5
+		_offset.x = lerpf(_offset.x, want.x, 1.0 - exp(-14.0 * delta))
+		_offset.z = lerpf(_offset.z, want.z, 1.0 - exp(-14.0 * delta))
+		_offset.y = lerpf(_offset.y, want.y, 1.0 - exp(-6.0 * delta)) # softer vertical
+		# Look point: exact horizontally (no trailing), soft vertically (jumps).
+		_look = Vector3(kpos.x, lerpf(_look.y, kpos.y, 1.0 - exp(-8.0 * delta)), kpos.z)
+	_pos = kpos + _offset
+	var look_target := _look + Vector3.UP * 0.85 - back * 3.0
 
 	# Shake (decays quickly; scaled by accessibility setting at add time).
 	var shake_off := Vector3.ZERO
@@ -120,9 +141,9 @@ func _process(delta: float) -> void:
 	if global_position.distance_squared_to(look_target) > 0.01:
 		look_at(look_target, Vector3.UP)
 
-	# FOV: moderate speed widening plus a short boost kick.
-	var target_fov := base_fov + speed_ratio * 8.0
-	if target.boost.is_active():
-		target_fov += 6.0
-	_fov = lerpf(_fov, target_fov, 1.0 - exp(-4.0 * delta))
+	# FOV from the real speed: gentle up to top speed, clearly wider only when
+	# the kart really goes faster than normal (boosts), plus a short kick.
+	var target_fov := base_fov + minf(speed_ratio, 1.0) * FOV_SPEED + overspeed * FOV_OVERSPEED + _kick * 3.0
+	target_fov = minf(target_fov, FOV_MAX)
+	_fov = lerpf(_fov, target_fov, 1.0 - exp(-5.0 * delta))
 	fov = _fov

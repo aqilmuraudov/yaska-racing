@@ -19,6 +19,8 @@ extends Node
 ##   --soak                 restart the race 3 s after every results screen
 ##   --ui-shots             capture pause, pause→settings and results screens
 ##   --via-loading          with --race: go through the loading screen (staged build)
+##   --nitro-at=T           fire the player's nitro at race time T (captures);
+##   --give-item=ID         give the player an item when the race starts
 ##   --startup-trace        print scene + frame brightness every 0.1 s (black-frame check)
 ##   --chaos                player kart driven erratically (wall rams, reversing,
 ##                          drift spam) to expose snags, falls and stuck states
@@ -185,6 +187,8 @@ func _enter_race() -> void:
 ## --startup-trace: every 0.1 s for the first seconds, print the current scene
 ## and the mean brightness of the rendered frame (a black frame shows as ~0),
 ## and save the frames when --capture is given.
+var _nitro_done := false
+var _item_given := false
 var _trace_t := 0.0
 var _trace_n := 0
 
@@ -223,6 +227,12 @@ func _process(delta: float) -> void:
 		if args.has("views") and not _views_done and _elapsed > 1.5 and _overview_done == args.has("overview"):
 			_views_done = true
 			_capture_views(race)
+		if args.has("nitro-at") and not _nitro_done and race.race_time >= float(args["nitro-at"]):
+			_nitro_done = true
+			race.player.kart.apply_item_boost()
+		if args.has("give-item") and not _item_given and race.state == RaceManager.RaceState.RACING:
+			_item_given = true
+			race.player.kart.give_item(StringName(args["give-item"]), 0.8)
 		for t in _capture_times:
 			if not _captured.has(t) and race.race_time >= t and race.state >= RaceManager.RaceState.RACING:
 				_captured[t] = true

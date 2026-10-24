@@ -57,7 +57,9 @@ func _draw() -> void:
 	var ready := dm.in_window()
 	var fill_col := UITheme.TURQUOISE
 	if ready:
-		fill_col = UITheme.GOLD if not dm.in_perfect() else Color("ffffff")
+		# Charged: the same colour as the sparks and the DRIFT button ring
+		# (orange → pink → violet as the charge level grows).
+		fill_col = TouchControls.CHARGE_COLORS[clampi(maxi(dm.level(), 1), 1, 3)] if dm.easy else (UITheme.GOLD if not dm.in_perfect() else Color("ffe9a8"))
 	if high_contrast:
 		fill_col = Color.WHITE if ready else Color("9fe8ff")
 	var fill := Rect2(bar.position, Vector2(bar.size.x * clampf(dm.meter, 0.0, 1.0), bar.size.y))

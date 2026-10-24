@@ -149,6 +149,7 @@ func test_tilt_reaches_kart_and_turns_it() -> void:
 	_orig_profile_path = SaveManager.save_path
 	SaveManager.save_path = "user://test_profile_tilt.json"
 	Settings.values.controls.touch_steer_mode = "tilt"
+	Settings.values.gameplay.steer_assist = false # isolate tilt from the edge assist
 	Settings.values.controls.steer_level = 1
 	Settings.values.controls.tilt_neutral_deg = 0.0
 	var cfg := Game.default_race_config()
@@ -229,6 +230,23 @@ func test_settings_v1_migration() -> void:
 	Settings.load_settings()
 	check_eq(int(Settings.values.version), Settings.SETTINGS_VERSION, "saved as v2")
 	check_eq(int(Settings.values.controls.button_size), 2, "v2 round trip")
+
+
+func test_settings_v2_migration() -> void:
+	var v2 := {
+		"version": 2,
+		"controls": {"touch_steer_mode": "buttons", "button_size": 0, "vibration": false},
+		"gameplay": {"language": "az", "steer_assist": false},
+		"accessibility": {"camera_shake": 1.0},
+	}
+	SafeFile.write_json(TEST_SETTINGS, v2)
+	Settings.load_settings()
+	var s: Dictionary = Settings.values
+	check_eq(bool(s.gameplay.steer_assist), true, "steering help on (was a developer-only default)")
+	check_near(float(s.accessibility.camera_shake), 0.6, 0.001, "camera shake becomes gentle")
+	check_eq(bool(s.controls.easy_drift), true, "easy drift added, on")
+	check_eq(int(s.controls.button_size), 0, "player choices kept")
+	check_eq(bool(s.controls.vibration), false, "vibration choice kept")
 
 
 func test_audio_switches_mute_and_restore() -> void:
