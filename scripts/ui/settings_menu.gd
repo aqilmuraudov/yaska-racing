@@ -14,6 +14,10 @@ const TABS := [
 	["SET_TAB_LANGUAGE", "tab_language", "blue"],
 ]
 const DEV_TAB := 4
+## Rail order: the child's everyday choices first, picture quality (for
+## grown-ups) last. Tab ids above stay stable for tools and tests.
+const RAIL_ORDER := [2, 1, 3, 0]
+const FIRST_TAB := 2
 const LONG_PRESS := 1.0
 
 var overlay_mode := false
@@ -83,7 +87,11 @@ func build() -> void:
 	rail.custom_minimum_size = Vector2(196, 0)
 	row.add_child(rail)
 	var tab_count := TABS.size() + (1 if _dev_available() else 0)
-	for i in tab_count:
+	tab_buttons.resize(tab_count)
+	var order: Array = RAIL_ORDER.duplicate()
+	if tab_count > TABS.size():
+		order.append(DEV_TAB)
+	for i: int in order:
 		var b := Button.new()
 		var def: Array = TABS[i] if i < TABS.size() else ["Dev", "gear", "violet"]
 		b.text = tr(def[0]) if i < TABS.size() else "Developer"
@@ -99,7 +107,7 @@ func build() -> void:
 			UITheme.bounce(b, 0.06)
 			_show_tab(idx))
 		rail.add_child(b)
-		tab_buttons.append(b)
+		tab_buttons[i] = b
 		if i >= TABS.size():
 			b.visible = false # revealed by the long press
 	var panel := PanelContainer.new()
@@ -111,11 +119,12 @@ func build() -> void:
 	scroll.follow_focus = true
 	panel.add_child(scroll)
 	touch_scroll = TouchScroll.attach(scroll)
+	ScrollHint.attach(scroll)
 	content = VBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 10)
+	content.add_theme_constant_override("separation", 12)
 	scroll.add_child(content)
-	_show_tab(0)
+	_show_tab(FIRST_TAB)
 
 
 func _dev_available() -> bool:
@@ -123,7 +132,7 @@ func _dev_available() -> bool:
 
 
 func first_focus() -> Control:
-	return tab_buttons[0] if not tab_buttons.is_empty() else null
+	return tab_buttons[FIRST_TAB] if not tab_buttons.is_empty() else null
 
 
 func go_back() -> void:
@@ -212,7 +221,7 @@ func _row(icon_name: String, title_key: String, hint_key: String, control: Contr
 	var t := Label.new()
 	t.text = tr(title_key)
 	t.add_theme_font_override("font", UITheme.heading_font())
-	t.add_theme_font_size_override("font_size", 28)
+	t.add_theme_font_size_override("font_size", 32)
 	t.add_theme_constant_override("outline_size", 8)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(t)
@@ -220,6 +229,7 @@ func _row(icon_name: String, title_key: String, hint_key: String, control: Contr
 		var d := Label.new()
 		d.text = tr(hint_key)
 		d.theme_type_variation = &"Dim"
+		d.add_theme_font_size_override("font_size", 21)
 		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		d.custom_minimum_size = Vector2(180, 0)
 		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -270,6 +280,7 @@ func _set_reason(sc: SegmentedChoice, text: String) -> void:
 
 func _graphics() -> void:
 	var g: Dictionary = Settings.values.graphics
+	_row("parents", "SET3_GROWNUPS", "SET3_GROWNUPS_HINT", Control.new())
 	_choice("texture", "SET2_TEXTURE", "SET2_TEXTURE_HINT", ["OPT_Q_LOW", "OPT_Q_NORMAL", "OPT_Q_HIGH"], int(g.texture_detail),
 		func(i): Settings.set_value("graphics", "texture_detail", i))
 	var caps: Array = Settings.fps_options()
@@ -291,9 +302,9 @@ func _graphics() -> void:
 
 
 func _audio() -> void:
-	_switch("master", "SET2_MASTER", "SET2_MASTER_HINT", "audio", "master_on")
-	var music := _switch("music", "SET2_MUSIC", "SET2_MUSIC_HINT", "audio", "music_on")
-	var sfx := _switch("sfx", "SET2_SFX", "SET2_SFX_HINT", "audio", "sfx_on")
+	_switch("master", "SET2_MASTER", "", "audio", "master_on")
+	var music := _switch("music", "SET2_MUSIC", "", "audio", "music_on")
+	var sfx := _switch("sfx", "SET2_SFX", "", "audio", "sfx_on")
 	if not bool(Settings.get_value("audio", "master_on", true)):
 		# Choices stay editable and remembered; say why nothing is heard.
 		_set_reason(music, tr("SET2_MASTER_OFF_NOTE"))
@@ -313,12 +324,24 @@ func _controls() -> void:
 		_set_reason(ct, tr(reason))
 	if tilt_mode:
 		_calibrate_row()
-	_choice("button_size", "SET2_BUTTON_SIZE", "SET2_BUTTON_SIZE_HINT", ["OPT_SMALL", "OPT_MEDIUM", "OPT_LARGE"], int(c.button_size),
-		func(i): Settings.set_value("controls", "button_size", i))
 	_switch("auto_accel", "SET2_AUTO_ACCEL", "SET2_AUTO_ACCEL_HINT", "controls", "touch_auto_accelerate")
+	_switch("easy_drift", "SET3_EASY_DRIFT", "SET3_EASY_DRIFT_HINT", "controls", "easy_drift")
+	_switch("steer_help", "SET3_STEER_HELP", "SET3_STEER_HELP_HINT", "gameplay", "steer_assist")
+	_choice("button_size", "SET2_BUTTON_SIZE", "", ["OPT_SMALL", "OPT_MEDIUM", "OPT_LARGE"], int(c.button_size),
+		func(i): Settings.set_value("controls", "button_size", i))
 	_choice("steering", "SET2_STEER_SENS", "SET2_STEER_SENS_HINT_TILT" if tilt_mode else "SET2_STEER_SENS_HINT_BUTTONS",
 		["OPT_S_LOW", "OPT_S_NORMAL", "OPT_S_HIGH"], int(c.steer_level),
 		func(i): Settings.set_value("controls", "steer_level", i))
+	var shake_levels := [0.0, 0.6, 1.0]
+	var shake := float(Settings.get_value("accessibility", "camera_shake", 0.6))
+	var shake_idx := 0 if shake < 0.3 else (1 if shake < 0.8 else 2)
+	_choice("camera_shake", "SET3_SHAKE", "", ["OPT_OFF", "OPT_S_LOW", "OPT_S_NORMAL"], shake_idx,
+		func(i): Settings.set_value("accessibility", "camera_shake", shake_levels[i]))
+	var vib := _switch("vibration", "SET3_VIBRATION", "", "controls", "vibration")
+	var vib_reason := Settings.unsupported_reason("vibration")
+	if vib_reason != "":
+		vib.set_option_disabled(0, true)
+		_set_reason(vib, tr(vib_reason))
 
 
 ## Shown only with Tilt selected: live tilt bar + Calibrate.

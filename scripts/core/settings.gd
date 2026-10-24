@@ -5,7 +5,7 @@ extends Node
 signal changed(section: String, key: String)
 signal graphics_changed
 
-const SETTINGS_VERSION := 2
+const SETTINGS_VERSION := 3
 const DEFAULT_PATH := "user://settings.json"
 const PRESET_PATH := "res://data/graphics/presets.json"
 const BUTTON_SCALES := [0.85, 1.0, 1.2]
@@ -71,11 +71,15 @@ func defaults() -> Dictionary:
 			"deadzone": InputActions.DEFAULT_DEADZONE,
 			"steer_sensitivity": 1.0, # legacy (v1), migrated into steer_level
 			"vibration": true,
+			# Drift boosts fire when DRIFT is released while charged (no
+			# separate timing button, no overheating). Keyboard/pad BOOST
+			# timing presses keep working either way.
+			"easy_drift": true,
 			"bindings": {},
 		},
 		"gameplay": {
 			"difficulty": "medium",
-			"steer_assist": false,
+			"steer_assist": true, # gentle pull away from the track edges
 			"accel_assist": false,
 			"camera_distance": 1, # 0 near, 1 normal, 2 far
 			"speedometer": true,
@@ -84,7 +88,7 @@ func defaults() -> Dictionary:
 		},
 		"accessibility": {
 			"ui_scale": 1.0,
-			"camera_shake": 1.0,
+			"camera_shake": 0.6, # 0 off, 0.6 gentle, 1.0 full
 			"reduced_flashing": false,
 			"subtitles": true,
 			"high_contrast": false,
@@ -120,6 +124,8 @@ func load_settings() -> void:
 					values[section][key] = float(lv)
 	if from_version < 2:
 		_migrate_v1(loaded)
+	if from_version < 3:
+		_migrate_v2()
 	_sanitize()
 
 
@@ -140,6 +146,15 @@ func _migrate_v1(loaded: Dictionary) -> void:
 	c.steer_level = 0 if sens < 0.85 else (2 if sens > 1.15 else 1)
 	var ts := float(c.touch_scale)
 	c.button_size = 0 if ts < 0.92 else (2 if ts > 1.1 else 1)
+
+
+## v2 → v3: steering help and camera shake were developer-only options, so
+## their stored values are the old defaults, not player choices; they move to
+## the new child-friendly defaults. Easy drift is new (default on).
+func _migrate_v2() -> void:
+	values.gameplay.steer_assist = true
+	if float(values.accessibility.camera_shake) >= 0.99:
+		values.accessibility.camera_shake = 0.6
 
 
 func save_settings() -> void:

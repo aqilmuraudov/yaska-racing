@@ -35,12 +35,18 @@ func build() -> void:
 	stage.auto_rotate = true
 	stage.rotation_speed = 0.3
 	# Cards (left): 2 columns x 3 rows
+	var grid_scroll := ScrollContainer.new()
+	grid_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	grid_scroll.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	grid_scroll.offset_right = 420
+	body.add_child(grid_scroll)
+	TouchScroll.attach(grid_scroll)
+	ScrollHint.attach(grid_scroll)
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
-	grid.position = Vector2(0, 4)
-	body.add_child(grid)
+	grid_scroll.add_child(grid)
 	for i in defs.size():
 		var d := defs[i]
 		var b := Button.new()
@@ -86,12 +92,23 @@ func build() -> void:
 	info_panel.offset_left = -470
 	info_panel.custom_minimum_size = Vector2(470, 0)
 	body.add_child(info_panel)
+	# Details scroll inside the panel; Start stays pinned and always visible.
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 8)
+	info_panel.add_child(outer)
+	var info_scroll := ScrollContainer.new()
+	info_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	info_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.add_child(info_scroll)
+	TouchScroll.attach(info_scroll)
+	ScrollHint.attach(info_scroll)
 	var iv := VBoxContainer.new()
 	iv.add_theme_constant_override("separation", 4)
-	info_panel.add_child(iv)
+	iv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_scroll.add_child(iv)
 	name_label = Label.new()
 	name_label.theme_type_variation = &"Heading"
-	name_label.add_theme_font_size_override("font_size", 50)
+	name_label.add_theme_font_size_override("font_size", 46)
 	iv.add_child(name_label)
 	kart_label = Label.new()
 	kart_label.add_theme_font_override("font", UITheme.bold_font())
@@ -112,11 +129,11 @@ func build() -> void:
 		row.add_child(l)
 		var bar := StatBar10.new()
 		bar.color = STAT_COLORS[STAT_KEYS.find(sk)]
-		bar.custom_minimum_size = Vector2(210, 24)
+		bar.custom_minimum_size = Vector2(186, 24)
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(bar)
 		var num := Label.new()
-		num.custom_minimum_size = Vector2(56, 0)
+		num.custom_minimum_size = Vector2(60, 0)
 		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		num.add_theme_font_override("font", UITheme.bold_font())
 		num.add_theme_font_size_override("font_size", 20)
@@ -130,21 +147,26 @@ func build() -> void:
 	spec_label = Label.new()
 	spec_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	spec_label.add_theme_font_size_override("font_size", 21)
-	spec_label.custom_minimum_size = Vector2(420, 0)
+	spec_label.custom_minimum_size = Vector2(400, 0)
 	iv.add_child(spec_label)
-	var sp := Control.new()
-	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	iv.add_child(sp)
 	start_btn = make_button(tr("MENU_START_RACE"), _start, true)
 	start_btn.icon = UITheme.icon("play")
 	start_btn.expand_icon = false
 	start_btn.add_theme_constant_override("icon_max_width", 34)
-	start_btn.custom_minimum_size = Vector2(420, 78)
-	iv.add_child(start_btn)
-	setup_btn = make_button(tr("TRACK_TITLE"), _setup)
-	setup_btn.custom_minimum_size = Vector2(420, 54)
+	start_btn.custom_minimum_size = Vector2(0, 80)
+	start_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 10)
+	outer.add_child(actions)
+	actions.add_child(start_btn)
+	# Race setup (track, laps, rivals): a gear beside Start, one row.
+	setup_btn = make_button("", _setup)
+	setup_btn.icon = UITheme.icon("gear")
+	setup_btn.expand_icon = true
+	setup_btn.tooltip_text = tr("TRACK_TITLE")
+	setup_btn.custom_minimum_size = Vector2(88, 80)
 	UITheme.style_button(setup_btn, "blue", 22)
-	iv.add_child(setup_btn)
+	actions.add_child(setup_btn)
 	_select(current, true)
 
 

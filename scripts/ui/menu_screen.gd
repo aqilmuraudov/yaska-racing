@@ -98,11 +98,13 @@ func _focus_first() -> void:
 
 
 func _apply_safe_area() -> void:
+	# Minimums keep content off rounded screen corners on every device; the
+	# reported safe area (notches, cutouts) can only make them larger.
 	var m := 28
 	var top := 20
 	var left := m
 	var right := m
-	var bottom := 20
+	var bottom := 26
 	if Settings.is_mobile():
 		var sa := DisplayServer.get_display_safe_area()
 		var win := DisplayServer.window_get_size()

@@ -293,3 +293,11 @@ LOAD_STAGE_TRACK,Building the road…,Yol qurulur…
 LOAD_STAGE_CITY,Decorating Baku…,Bakı bəzədilir…
 LOAD_STAGE_RACERS,Racers are lining up…,Yarışçılar düzülür…
 LOAD_STAGE_READY,Ready!,Hazırdır!
+SET3_GROWNUPS,For grown-ups,Böyüklər üçün
+SET3_GROWNUPS_HINT,Picture quality. The game already picks good values.,Şəkil keyfiyyəti. Oyun özü yaxşı dəyərləri seçir.
+SET3_EASY_DRIFT,Easy Drift,Asan drift
+SET3_EASY_DRIFT_HINT,Let go of DRIFT when the sparks glow to get a boost.,Qığılcımlar parlayanda DRIFT düyməsini burax: sürət alırsan.
+SET3_STEER_HELP,Steering Help,Sükan köməyi
+SET3_STEER_HELP_HINT,Gently keeps the kart away from walls and grass.,Kartı yumşaq şəkildə divardan və otdan uzaq saxlayır.
+SET3_SHAKE,Camera Shake,Kamera silkələnməsi
+SET3_VIBRATION,Vibration,Titrəmə
