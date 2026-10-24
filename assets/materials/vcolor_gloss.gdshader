@@ -11,12 +11,24 @@ uniform float metallic_amount = 0.0;
 // clear-coat highlight, rough parts (fur, tyres, fabric) stay matte.
 uniform float gloss = 0.0;
 uniform float saturation = 1.0;
+// Camera-occlusion fade for rival karts (KartVisual): an ordered-dither
+// "screen door" that stays in the opaque pass (instance transparency has no
+// effect on this opaque shader, and a transparent pass would cost more).
+instance uniform float occlusion_fade : hint_range(0.0, 1.0) = 0.0;
+
+const float BAYER[16] = float[](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
 
 vec3 srgb_to_linear(vec3 c) {
 	return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
 }
 
 void fragment() {
+	if (occlusion_fade > 0.001) {
+		ivec2 p = ivec2(FRAGCOORD.xy) % 4;
+		if ((BAYER[p.y * 4 + p.x] + 0.5) / 16.0 < occlusion_fade) {
+			discard;
+		}
+	}
 	vec3 c = srgb_to_linear(COLOR.rgb);
 	float l = dot(c, vec3(0.299, 0.587, 0.114));
 	ALBEDO = max(mix(vec3(l), c, saturation), vec3(0.0));

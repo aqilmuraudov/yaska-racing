@@ -204,12 +204,16 @@ func setup(p_race: RaceManager) -> void:
 	countdown_label.custom_minimum_size = Vector2(300, 180)
 	countdown_label.position = Vector2(-150, -170)
 	frame.add_child(countdown_label)
+	# Wraps inside the space between the left (badge/minimap) and right HUD
+	# columns, so long hints fit on 4:3 and 16:9 screens too.
 	message_label = _label("", &"Heading")
-	message_label.add_theme_font_size_override("font_size", 52)
-	message_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	message_label.add_theme_font_size_override("font_size", 46)
+	message_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	message_label.offset_left = 250
+	message_label.offset_right = -250
+	message_label.offset_top = 140
+	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_label.custom_minimum_size = Vector2(700, 80)
-	message_label.position = Vector2(-350, 150)
 	frame.add_child(message_label)
 	wrong_way_label = _label(tr("HUD_WRONG_WAY"), &"Heading")
 	wrong_way_label.add_theme_font_size_override("font_size", 56)
@@ -249,7 +253,7 @@ func setup(p_race: RaceManager) -> void:
 	# message line, never over the minimap or the controls.
 	captions = VBoxContainer.new()
 	captions.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	captions.position = Vector2(-320, 232)
+	captions.position = Vector2(-320, 268)
 	captions.custom_minimum_size = Vector2(640, 0)
 	captions.alignment = BoxContainer.ALIGNMENT_BEGIN
 	captions.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -6,6 +6,7 @@ extends Node3D
 ## Updated on the physics tick so physics interpolation keeps it smooth.
 
 const WHEEL_RADIUS := 0.34
+const VCOLOR_GLOSS := preload("res://assets/materials/vcolor_gloss.gdshader")
 
 var kart: KartController
 var body_pivot: Node3D
@@ -189,8 +190,16 @@ func _update_camera_fade(delta: float) -> void:
 		_set_transparency(body_pivot, _fade)
 
 
+## Kart body and driver use vcolor_gloss.gdshader: its `occlusion_fade`
+## instance uniform dithers them out (GeometryInstance3D.transparency has no
+## visible effect on that opaque shader). Effects keep their own materials.
 func _set_transparency(n: Node, t: float) -> void:
-	if n is GeometryInstance3D:
-		(n as GeometryInstance3D).transparency = t
+	if n is MeshInstance3D:
+		var mi := n as MeshInstance3D
+		var m := mi.get_active_material(0) if mi.mesh else null
+		if m is ShaderMaterial and (m as ShaderMaterial).shader == VCOLOR_GLOSS:
+			mi.set_instance_shader_parameter(&"occlusion_fade", t)
+		elif m is StandardMaterial3D:
+			mi.transparency = t # standard materials honour instance transparency
 	for c in n.get_children():
 		_set_transparency(c, t)

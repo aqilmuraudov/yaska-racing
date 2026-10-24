@@ -139,7 +139,6 @@ static func _star_mesh() -> Mesh:
 			else:
 				st.add_vertex(b)
 				st.add_vertex(a)
-	st.generate_tangents()
 	var mesh := st.commit()
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Color("ffd23f")
