@@ -323,3 +323,5 @@ PAINT_GRAPE,Grape,Üzüm
 RACER_PAINT,Paint,Rəng
 RESULTS_STARS,Stars,Ulduz
 RACER_PAINT_LOCKED,Collect %d stars to unlock (you have %d).,Açmaq üçün %d ulduz topla (səndə %d var).
+SET3_FPS_FALLBACK,Steady 30 FPS When Needed,Lazım olanda sabit 30 FPS
+SET3_FPS_FALLBACK_HINT,"If this phone cannot keep 60 FPS in a race, switch to an even 30.","Telefon yarışda 60 FPS saxlaya bilməsə, sabit 30-a keçir."

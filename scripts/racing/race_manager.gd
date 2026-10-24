@@ -19,7 +19,12 @@ const START_BOOST_WINDOW := 0.45
 const START_PERFECT_WINDOW := 0.25
 const FINISH_WINDOW := 18.0
 const SAFE_MARK_INTERVAL := 0.25
-const CONTACT_DIST := 1.75
+## Soft-contact footprint of a kart body (metres between centres): the
+## visual karts are 1.74 m wide and 2.35-2.7 m long (measured), larger than the
+## shared collision capsule, so side-by-side and nose-to-tail contact uses an
+## oriented ellipse; karts are eased apart before their bodies overlap.
+const CONTACT_SIDE := 1.8
+const CONTACT_LONG := 2.55
 
 
 class Racer:
@@ -608,11 +613,20 @@ func _resolve_contacts() -> void:
 			var d := b.global_position - a.global_position
 			d.y = 0.0
 			var dist := d.length()
-			if dist >= CONTACT_DIST or dist < 0.001 or absf(a.global_position.y - b.global_position.y) > 1.5:
+			if dist >= CONTACT_LONG or dist < 0.001 or absf(a.global_position.y - b.global_position.y) > 1.5:
 				continue
 			var nrm := d / dist
+			# Required centre distance along this direction from the average
+			# heading of the pair (ellipse: CONTACT_SIDE across, CONTACT_LONG along).
+			var fwd := (a.forward_dir() + b.forward_dir())
+			fwd = fwd.normalized() if fwd.length_squared() > 0.01 else a.forward_dir()
+			var along := nrm.dot(fwd)
+			var across := sqrt(maxf(1.0 - along * along, 0.0))
+			var need := 1.0 / sqrt(pow(across / CONTACT_SIDE, 2.0) + pow(along / CONTACT_LONG, 2.0))
+			if dist >= need:
+				continue
 			var rel := (a.velocity - b.velocity).dot(nrm)
-			var overlap := CONTACT_DIST - dist
+			var overlap := need - dist
 			var bump := minf(a.stats.kart_bump, b.stats.kart_bump)
 			var impulse := maxf(rel, 0.0) * 0.5 + overlap * 4.0
 			impulse = minf(impulse, bump)

@@ -46,6 +46,7 @@ func defaults() -> Dictionary:
 		"resolution_scale": 0.8, "msaa": 0, "fxaa": true, "shadows": 1, "effects_density": 0.7,
 		"decor_distance": 1, "texture_detail": 1, "ssao": false, "bloom": true, "fps_cap": 60,
 		"dynamic_resolution": false, "motion_blur": false, "brightness": 1.0, "vsync": true,
+		"fps_fallback": true, # steady 30 when 60 cannot be held (PerfMonitor)
 		"window_mode": "windowed", "dev_overlay": false, "tilt_debug": false,
 	})
 	return {

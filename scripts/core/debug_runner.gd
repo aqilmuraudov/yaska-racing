@@ -21,6 +21,7 @@ extends Node
 ##   --via-loading          with --race: go through the loading screen (staged build)
 ##   --nitro-at=T           fire the player's nitro at race time T (captures);
 ##   --give-item=ID         give the player an item when the race starts
+##   --fake-load-ms=N       add N ms of CPU work per frame (weak-device simulation)
 ##   --startup-trace        print scene + frame brightness every 0.1 s (black-frame check)
 ##   --chaos                player kart driven erratically (wall rams, reversing,
 ##                          drift spam) to expose snags, falls and stuck states
@@ -216,6 +217,8 @@ func _process(delta: float) -> void:
 	_elapsed += delta / maxf(Engine.time_scale, 0.001)
 	if args.has("startup-trace"):
 		_startup_trace(delta)
+	if args.has("fake-load-ms"):
+		OS.delay_msec(int(args["fake-load-ms"])) # simulate a weaker device (fallback checks)
 	var race := get_tree().current_scene as RaceManager
 	if race != null and _capture_dir != "":
 		if args.has("overview") and not _overview_done and _elapsed > 1.0:

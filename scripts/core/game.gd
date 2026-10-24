@@ -23,6 +23,7 @@ var _fade: ColorRect
 var _fade_layer: CanvasLayer
 var _changing := false
 var debug_race := false
+var perf: PerfMonitor
 
 
 func _ready() -> void:
@@ -36,6 +37,9 @@ func _ready() -> void:
 	_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_fade_layer.add_child(_fade)
 	race_config = default_race_config()
+	perf = PerfMonitor.new()
+	perf.name = "PerfMonitor"
+	add_child(perf)
 	# Controls under CanvasLayers do not inherit the Window theme, so the UI
 	# theme is merged into the default theme every Control falls back to.
 	var ui_theme := UITheme.build()

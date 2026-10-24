@@ -297,6 +297,7 @@ func _graphics() -> void:
 	if not unsupported.is_empty():
 		var hz := int(round(Settings.display_refresh_rate()))
 		_set_reason(fps, tr("SET2_FPS_UNSUPPORTED") % [hz, unsupported[0]] if hz > 0 else tr("SET2_FPS_UNKNOWN"))
+	_switch("fps", "SET3_FPS_FALLBACK", "SET3_FPS_FALLBACK_HINT", "graphics", "fps_fallback")
 	_choice("shadows", "SET2_SHADOWS", "SET2_SHADOWS_HINT", ["OPT_OFF", "OPT_Q_LOW", "OPT_Q_NORMAL", "OPT_Q_HIGH"], int(g.shadows),
 		func(i): Settings.set_value("graphics", "shadows", i), 92.0)
 
