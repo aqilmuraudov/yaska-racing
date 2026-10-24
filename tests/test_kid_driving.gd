@@ -165,3 +165,28 @@ func test_wall_scrape_is_predictable() -> void:
 	print("    wall scrape: %.1f → min %.1f m/s, end %.1f m/s" % [v0, min_speed, kart.speed])
 	check(min_speed > v0 * 0.6, "scraping keeps most of the speed (min %.1f of %.1f)" % [min_speed, v0])
 	_world.queue_free()
+
+
+func test_star_field_player_collects_and_respawns() -> void:
+	_flat_world()
+	var kart := _kart()
+	var track := TestCase.circle_track(60.0)
+	var field := StarField.new()
+	_world.add_child(field)
+	field.build(track, kart, true)
+	check_eq(field._positions.size(), StarField.GROUPS * StarField.PER_GROUP, "stars placed")
+	var got: Array = []
+	field.collected.connect(func(n): got.append(n))
+	kart.global_position = field._positions[0] - Vector3.UP * 0.6
+	await frames(2)
+	check_eq(field.count, 1, "driving through a star collects it")
+	check(not got.is_empty(), "collected signal for the HUD")
+	await frames(2)
+	check_eq(field.count, 1, "a collected star is gone (no double count)")
+	kart.global_position = Vector3(0, 0.1, 0)
+	field._respawn[0] = 0.01
+	await frames(3)
+	check(field._respawn[0] <= 0.0, "it comes back for the next lap")
+	field.reset()
+	check_eq(field.count, 0, "restart clears the race count")
+	_world.queue_free()

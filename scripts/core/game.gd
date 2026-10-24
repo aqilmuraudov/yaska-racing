@@ -57,7 +57,7 @@ func default_race_config() -> Dictionary:
 		"kart_id": SaveManager.get_selected_kart() if SaveManager.data.size() > 0 else RacerRoster.DEFAULT_ID,
 		"paint": 0,
 		"difficulty": Settings.get_value("gameplay", "difficulty", "medium"),
-		"laps": 3,
+		"laps": 2, # short races for children (Race Setup offers 1-5)
 		"ai_count": 5,
 		"items": true,
 		"seed": 0,

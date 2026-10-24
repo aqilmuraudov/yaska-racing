@@ -15,7 +15,7 @@ static func load_stats(racer_id: String) -> KartStats:
 	return RacerRoster.get_def(racer_id).make_stats()
 
 
-static func create(racer_id: String, is_player: bool, effects_density: float) -> KartController:
+static func create(racer_id: String, is_player: bool, effects_density: float, paint := 0) -> KartController:
 	var def := RacerRoster.get_def(racer_id)
 	var stats := def.make_stats()
 	var kart := KartController.new()
@@ -33,7 +33,7 @@ static func create(racer_id: String, is_player: bool, effects_density: float) ->
 	var visual := KartVisual.new()
 	visual.name = "Visual"
 	kart.add_child(visual)
-	visual.setup(kart, def, effects_density)
+	visual.setup(kart, KartPaints.painted(def, paint), effects_density)
 	var audio := KartAudio.new()
 	audio.name = "Audio"
 	kart.add_child(audio)

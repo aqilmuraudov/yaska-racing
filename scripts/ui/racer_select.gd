@@ -18,6 +18,8 @@ var stat_rows := {}
 var start_btn: Button
 var setup_btn: Button
 var info_panel: PanelContainer
+var paint_row: HBoxContainer
+var paint_note: Label
 var _dragging := false
 
 
@@ -114,6 +116,14 @@ func build() -> void:
 	kart_label.add_theme_font_override("font", UITheme.bold_font())
 	kart_label.add_theme_font_size_override("font_size", 24)
 	iv.add_child(kart_label)
+	# Kart paints: unlocked with collected stars (cosmetic only).
+	paint_row = HBoxContainer.new()
+	paint_row.add_theme_constant_override("separation", 10)
+	iv.add_child(paint_row)
+	paint_note = Label.new()
+	paint_note.add_theme_font_size_override("font_size", 18)
+	paint_note.add_theme_color_override("font_color", UITheme.YELLOW)
+	iv.add_child(paint_note)
 	pers_label = Label.new()
 	pers_label.theme_type_variation = &"Dim"
 	pers_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -129,7 +139,7 @@ func build() -> void:
 		row.add_child(l)
 		var bar := StatBar10.new()
 		bar.color = STAT_COLORS[STAT_KEYS.find(sk)]
-		bar.custom_minimum_size = Vector2(186, 24)
+		bar.custom_minimum_size = Vector2(166, 24)
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(bar)
 		var num := Label.new()
@@ -209,14 +219,46 @@ func _select(i: int, force := false) -> void:
 		pair[0].value = int(r[key])
 		pair[1].text = "%d/10" % int(r[key])
 	stage.show_racer(d.id)
+	_build_paints(d)
 	AudioManager.play_ui("ui_select" if not force else "ui_move")
+
+
+func _build_paints(d: RacerDefinition) -> void:
+	for c in paint_row.get_children():
+		c.queue_free()
+	var stars := SaveManager.get_stars()
+	var chosen := SaveManager.get_paint(d.id)
+	for i in KartPaints.count():
+		var sw := PaintSwatch.new()
+		sw.color = KartPaints.color_of(d, i)
+		sw.locked = not KartPaints.is_unlocked(i, stars)
+		sw.cost = KartPaints.cost(i)
+		sw.selected = i == chosen
+		sw.custom_minimum_size = Vector2(56, 56)
+		sw.focus_mode = Control.FOCUS_NONE
+		var idx := i
+		sw.pressed.connect(func(): _choose_paint(d, idx, sw))
+		paint_row.add_child(sw)
+	paint_note.text = "%s: %d" % [tr("RESULTS_STARS"), stars]
+
+
+func _choose_paint(d: RacerDefinition, i: int, sw: Control) -> void:
+	UITheme.bounce(sw, 0.12)
+	if not KartPaints.is_unlocked(i, SaveManager.get_stars()):
+		AudioManager.play_ui("ui_back")
+		paint_note.text = tr("RACER_PAINT_LOCKED") % [KartPaints.cost(i), SaveManager.get_stars()]
+		return
+	AudioManager.play_ui("ui_confirm")
+	SaveManager.set_paint(d.id, i)
+	stage.show_racer(d.id, false, i)
+	_build_paints(d)
 
 
 func _commit() -> void:
 	var d := defs[current]
 	SaveManager.set_selected_kart(d.id)
 	Game.race_config.kart_id = d.id
-	Game.race_config.paint = 0
+	Game.race_config.paint = SaveManager.get_paint(d.id)
 
 
 func _start() -> void:
@@ -245,6 +287,30 @@ func _unhandled_input(event: InputEvent) -> void:
 		stage.auto_rotate = not event.pressed
 	elif event is InputEventMouseMotion and _dragging:
 		stage.drag(event.relative.x * 0.01)
+
+
+class PaintSwatch:
+	extends BaseButton
+	## Round colour swatch; locked swatches show the star cost.
+	var color := Color.WHITE
+	var locked := false
+	var selected := false
+	var cost := 0
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := minf(size.x, size.y) * 0.5 - 4.0
+		if selected:
+			draw_circle(c, r + 4.0, UITheme.YELLOW)
+		draw_circle(c, r, UITheme.INK)
+		draw_circle(c, r - 3.0, color.darkened(0.45) if locked else color)
+		draw_circle(c + Vector2(-r * 0.3, -r * 0.35), r * 0.28, Color(1, 1, 1, 0.3))
+		if locked:
+			var f := UITheme.bold_font()
+			var t := str(cost)
+			var ts := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18)
+			draw_string_outline(f, c + Vector2(-ts.x * 0.5, 7), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 5, UITheme.INK)
+			draw_string(f, c + Vector2(-ts.x * 0.5, 7), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, UITheme.YELLOW)
 
 
 class StatBar10:

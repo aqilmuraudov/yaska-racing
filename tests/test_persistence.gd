@@ -130,3 +130,21 @@ func test_presets_change_settings_measurably() -> void:
 	check(int(low.shadows) < int(high.shadows), "low uses cheaper shadows")
 	check(float(low.effects_density) < float(high.effects_density), "low uses fewer particles")
 	check(int(low.decor_distance) < int(high.decor_distance), "low culls scenery sooner")
+
+
+func test_stars_added_once_and_unlock_paints() -> void:
+	check_eq(SaveManager.get_stars(), 0, "new profile has no stars")
+	check_eq(SaveManager.add_stars("race-a", 12), 12, "stars from a race are added")
+	check_eq(SaveManager.add_stars("race-a", 12), 0, "the same race never adds twice")
+	check_eq(SaveManager.get_stars(), 12, "total kept")
+	SaveManager.set_paint("havhav", 1)
+	check_eq(SaveManager.get_paint("havhav"), 0, "a locked paint cannot be chosen")
+	SaveManager.add_stars("race-b", 5)
+	SaveManager.set_paint("havhav", 1)
+	check_eq(SaveManager.get_paint("havhav"), 1, "unlocked at %d stars" % KartPaints.cost(1))
+	SaveManager.load_profile()
+	check_eq(SaveManager.get_stars(), 17, "stars survive a reload")
+	check_eq(SaveManager.get_paint("havhav"), 1, "paint survives a reload")
+	var def := RacerRoster.get_def("havhav")
+	check_eq(KartPaints.painted(def, 1).kart_primary, KartPaints.COLORS[0], "paint changes the body colour")
+	check_eq(def.kart_primary, RacerRoster.get_def("havhav").kart_primary, "the shared definition is not modified")

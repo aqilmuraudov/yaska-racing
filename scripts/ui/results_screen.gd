@@ -121,11 +121,19 @@ func show_results(res: Dictionary) -> void:
 	var parts: Array[String] = []
 	if res.get("improved", {}).get("lap", false) or res.get("improved", {}).get("race", false):
 		parts.append(tr("HUD_NEW_RECORD"))
+	if int(res.get("stars", 0)) > 0:
+		parts.append("%s +%d" % [tr("RESULTS_STARS"), int(res.stars)])
 	if int(res.get("reward", 0)) > 0:
 		parts.append("%s: +%d %s" % [tr("RESULTS_REWARD"), int(res.reward), tr("RESULTS_COINS")])
 	elif res.get("already_rewarded", false):
 		parts.append(tr("RESULTS_ALREADY_REWARDED"))
 	reward_label.text = "   ".join(parts)
+	# A new paint unlocked by this race's stars: say so (cosmetic reward).
+	var before := int(res.get("stars_total", 0))
+	var after := before + int(res.get("stars_added", 0))
+	for i in range(1, KartPaints.count()):
+		if not KartPaints.is_unlocked(i, before) and KartPaints.is_unlocked(i, after):
+			reward_label.text += "\n" + tr("RESULTS_PAINT_UNLOCKED") % tr(KartPaints.NAME_KEYS[i - 1])
 	if not p.is_empty() and int(p.place) <= 3:
 		summary.add_theme_color_override("font_color", [UITheme.YELLOW, Color("e3ecf7"), Color("ffad6b")][int(p.place) - 1])
 	else:

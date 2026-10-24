@@ -88,7 +88,7 @@ func _choose(mode: String) -> void:
 	Game.race_config.mode = mode
 	if mode == "tutorial":
 		Game.race_config.kart_id = SaveManager.get_selected_kart()
-		Game.race_config.paint = 0
+		Game.race_config.paint = SaveManager.get_paint(Game.race_config.kart_id)
 		Game.race_config.laps = 1
 		Game.race_config.ai_count = 0
 		Game.race_config.items = false

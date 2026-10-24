@@ -312,3 +312,14 @@ HUD_DRIFT_SPEED,Go faster to drift!,Drift üçün sürətlən!
 HUD_PROTECTED,Safe for a moment!,Bir anlıq qorunursan!
 TUT_BOOST_EASY,"When the sparks glow, let go of Drift!","Qığılcımlar parlayanda Drift düyməsini burax!"
 TUT_CHAIN_EASY,Hold the drift longer for pink sparks — then let go!,Drifti daha uzun saxla — çəhrayı qığılcımlar çıxanda burax!
+HINT_STEER,Hold ◀ ▶ to steer. The kart drives by itself!,Dönmək üçün ◀ ▶ saxla. Kart özü sürür!
+HINT_DRIFT,"In a corner: hold DRIFT and turn, then let go!","Döngədə: DRIFT saxla və dön, sonra burax!"
+HINT_ITEM,Tap the item button to use it!,İstifadə üçün əşya düyməsinə toxun!
+RESULTS_PAINT_UNLOCKED,New kart paint: %s!,Yeni kart rəngi: %s!
+PAINT_SUN,Sunshine,Günəş
+PAINT_MINT,Mint,Nanə
+PAINT_CANDY,Candy,Konfet
+PAINT_GRAPE,Grape,Üzüm
+RACER_PAINT,Paint,Rəng
+RESULTS_STARS,Stars,Ulduz
+RACER_PAINT_LOCKED,Collect %d stars to unlock (you have %d).,Açmaq üçün %d ulduz topla (səndə %d var).

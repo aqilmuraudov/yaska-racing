@@ -18,6 +18,11 @@ var drift_meter: DriftMeterWidget
 var countdown_label: Label
 var message_label: Label
 var speed_gauge: SpeedGauge
+var star_pill: PanelContainer
+var star_label: Label
+## First quick race only: three short prompts (steer, drift, item).
+var _hints_on := false
+var _hint_step := 0
 var speed_lines: SpeedLines
 var _stuck_time := 0.0
 var recover_bar: ProgressBar
@@ -97,6 +102,28 @@ func setup(p_race: RaceManager) -> void:
 	pos_arrow = _label("", &"HudSmall")
 	pos_arrow.add_theme_font_size_override("font_size", 30)
 	pos_row.add_child(pos_arrow)
+
+	# Stars collected this race, beside the position badge.
+	star_pill = PanelContainer.new()
+	star_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_pill.add_theme_stylebox_override("panel", UITheme.art_box("panel_hud", 14, 6, 30))
+	star_pill.position = Vector2(140, 10)
+	frame.add_child(star_pill)
+	var star_row := HBoxContainer.new()
+	star_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_row.add_theme_constant_override("separation", 6)
+	star_pill.add_child(star_row)
+	var star_icon := TextureRect.new()
+	star_icon.texture = UITheme.icon("star")
+	star_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	star_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	star_icon.custom_minimum_size = Vector2(40, 40)
+	star_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_row.add_child(star_icon)
+	star_label = _label("0", &"HudSmall")
+	star_label.add_theme_font_size_override("font_size", 30)
+	star_label.custom_minimum_size = Vector2(36, 0)
+	star_row.add_child(star_label)
 
 	# Upper right: lap pill, compact timer pill and the pause button
 	var tr_box := VBoxContainer.new()
@@ -258,10 +285,19 @@ func setup(p_race: RaceManager) -> void:
 	race.results_ready.connect(func(res):
 		touch.release_all()
 		touch.visible = false
-		for w in [pos_badge, item_panel, minimap, drift_meter, speed_gauge, lap_pill, trap_warning, captions]:
+		if _hints_on and not bool(race.config.get("debug_autopilot", false)):
+			SaveManager.set_tutorial_flag("basics_done", true)
+		for w in [pos_badge, star_pill, item_panel, minimap, drift_meter, speed_gauge, lap_pill, trap_warning, captions]:
 			w.visible = false
 		results.show_results(res))
 	race.state_changed.connect(_on_state)
+	if race.stars:
+		race.stars.collected.connect(func(total: int):
+			star_label.text = str(total)
+			star_pill.pivot_offset = star_pill.size * 0.5
+			star_pill.scale = Vector2.ONE * 1.25
+			if not bool(Settings.get_value("accessibility", "reduced_flashing", false)):
+				UITheme.sparkle_burst(star_pill, star_pill.get_global_rect().get_center(), 5, UITheme.YELLOW))
 	var pk := race.player.kart
 	pk.drift_boost.connect(func(tier, perfect):
 		drift_meter.show_result(tr("HUD_PERFECT") if perfect else tr("HUD_BOOST"), true)
@@ -344,6 +380,10 @@ func reset() -> void:
 	for w in [minimap, drift_meter, speed_gauge, captions]:
 		w.visible = true
 	item_panel.visible = not _uses_touch
+	star_label.text = "0"
+	star_pill.visible = race.config.mode != "tutorial"
+	_hints_on = race.config.mode == "quick" and not SaveManager.get_tutorial_flag("basics_done")
+	_hint_step = 0
 	_update_static()
 
 
@@ -444,6 +484,25 @@ func _on_item_changed(it: StringName) -> void:
 	_last_item = it if it != &"?rolling" else _last_item
 
 
+## First-race prompts, each once: steer at the start, drift on the first
+## long straight-to-corner, the item button when the first item arrives.
+func _tick_hints() -> void:
+	var t := race.race_time
+	var p := race.player
+	if _hint_step == 0 and t > 0.6:
+		_hint_step = 1
+		show_message(tr("HINT_STEER"), "info")
+		_msg_time = 3.0
+	elif _hint_step == 1 and t > 9.0:
+		_hint_step = 2
+		show_message(tr("HINT_DRIFT"), "info")
+		_msg_time = 3.5
+	elif _hint_step == 2 and p.kart.item != &"" and p.kart.item_roll_timer <= 0.0:
+		_hint_step = 3
+		show_message(tr("HINT_ITEM"), "info")
+		_msg_time = 3.0
+
+
 func show_pause(on: bool) -> void:
 	pause_menu.open(on)
 	if touch:
@@ -485,6 +544,9 @@ func _process(delta: float) -> void:
 		if _place_flash <= 0.0:
 			pos_arrow.text = ""
 	pos_badge.scale = pos_badge.scale.lerp(Vector2.ONE, 1.0 - exp(-8.0 * delta))
+	star_pill.scale = star_pill.scale.lerp(Vector2.ONE, 1.0 - exp(-8.0 * delta))
+	if _hints_on and race.state == RaceManager.RaceState.RACING:
+		_tick_hints()
 	trap_warning.visible = race.state == RaceManager.RaceState.RACING and race.items.threat_near(p.kart)
 	pos_label.text = str(p.place)
 	pos_total.text = "/%d" % race.racers.size()

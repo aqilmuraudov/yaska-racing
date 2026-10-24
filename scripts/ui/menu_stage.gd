@@ -191,11 +191,12 @@ func build() -> void:
 
 ## Shows one racer package. Only the current preview exists; the previous
 ## one is freed, so the selection screen never holds six animated models.
-func show_racer(racer_id: String, greet := true) -> void:
+func show_racer(racer_id: String, greet := true, paint := -1) -> void:
 	for c in kart_holder.get_children():
 		c.queue_free()
 	kart_model = KartModel.new()
-	kart_model.build(RacerRoster.get_def(racer_id), true)
+	var p := SaveManager.get_paint(racer_id) if paint < 0 else paint
+	kart_model.build(KartPaints.painted(RacerRoster.get_def(racer_id), p), true)
 	kart_holder.add_child(kart_model)
 	if greet and kart_model.driver:
 		kart_model.driver.greet()

@@ -67,6 +67,7 @@ var auto_pause_on_focus_loss := true
 var tutorial: TutorialDirector
 var ghosts: GhostSystem
 var skid_marks: SkidMarks
+var stars: StarField
 ## Set by the loading screen before adding the scene: build over several frames.
 var staged_build := false
 var build_timings: Array = [] ## [step name, ms] from build_world_staged
@@ -163,6 +164,10 @@ func _build_racers() -> void:
 	items.setup(track, bool(config.items) and config.mode != "time_trial", seed_value)
 	items.racers_provider = _racer_place_info
 	_spawn_racers(seed_value)
+	stars = StarField.new()
+	stars.name = "Stars"
+	add_child(stars)
+	stars.build(track, player.kart, config.mode != "tutorial")
 	skid_marks = SkidMarks.new()
 	skid_marks.name = "SkidMarks"
 	add_child(skid_marks)
@@ -218,7 +223,8 @@ func _spawn_racers(seed_value: int) -> void:
 		r.name = def.display_name
 		if r.is_player:
 			r.name = "%s %s" % [def.display_name, tr("RACER_YOU_SUFFIX")]
-		var kart := KartFactory.create(racer_id, r.is_player, density if r.is_player else density * 0.7)
+		var paint := int(config.get("paint", 0)) if r.is_player else 0
+		var kart := KartFactory.create(racer_id, r.is_player, density if r.is_player else density * 0.7, paint)
 		kart.racer_index = slot
 		kart.display_name = r.name
 		kart.name = "Kart_%d" % slot
@@ -339,6 +345,8 @@ func restart() -> void:
 		decor.reset_lights()
 	if skid_marks:
 		skid_marks.clear()
+	if stars:
+		stars.reset()
 	if tutorial:
 		tutorial.reset()
 	if ghosts:
@@ -543,6 +551,8 @@ const REWARDS := [100, 75, 60, 45, 35, 25, 20, 15]
 
 
 func _apply_rewards(res: Dictionary) -> void:
+	res.stars = stars.count if stars else 0
+	res.stars_total = SaveManager.get_stars()
 	var p: Dictionary = res.player
 	# Autopilot (debug/demo) races never touch the player's profile.
 	if p.is_empty() or headless_test or bool(config.get("debug_autopilot", false)):
@@ -557,6 +567,7 @@ func _apply_rewards(res: Dictionary) -> void:
 		amount = 15 if p.finished else 0
 	if improved.lap or improved.race:
 		amount += 20
+	res.stars_added = SaveManager.add_stars(res.event_instance_id, int(res.get("stars", 0)))
 	var granted := 0
 	if not SaveManager.has_rewarded(res.event_instance_id):
 		granted = SaveManager.grant_reward(res.event_instance_id, amount)

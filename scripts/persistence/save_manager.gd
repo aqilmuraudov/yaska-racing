@@ -22,6 +22,7 @@ static func default_profile() -> Dictionary:
 		"version": SAVE_VERSION,
 		"profile_name": "Player",
 		"currency": 0,
+		"stars": 0, ## collected on the track, unlock kart paints (KartPaints)
 		"selected_kart": RacerRoster.DEFAULT_ID,
 		"paints": {},
 		"unlocks": [],
@@ -64,6 +65,8 @@ func _validate(d: Dictionary) -> bool:
 	if int(d.version) > SAVE_VERSION:
 		return false # written by a newer build; never downgrade it silently
 	if d.has("currency") and typeof(d.currency) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	if d.has("stars") and typeof(d.stars) not in [TYPE_INT, TYPE_FLOAT]:
 		return false
 	if d.has("records") and typeof(d.records) != TYPE_DICTIONARY:
 		return false
@@ -108,7 +111,33 @@ func set_selected_kart(racer_id: String, _paint_index: int = 0) -> void:
 
 
 func get_paint(kart_id: String) -> int:
-	return int(data.paints.get(kart_id, 0))
+	var p := int(data.paints.get(kart_id, 0))
+	return p if KartPaints.is_unlocked(p, get_stars()) else 0
+
+
+func set_paint(kart_id: String, index: int) -> void:
+	if not KartPaints.is_unlocked(index, get_stars()):
+		return
+	data.paints[kart_id] = index
+	save_profile()
+
+
+func get_stars() -> int:
+	return int(data.get("stars", 0))
+
+
+## Adds the stars collected in one race exactly once (same ledger as rewards,
+## separate key). Returns the number actually added.
+func add_stars(event_instance_id: String, count: int) -> int:
+	var key := "stars:" + event_instance_id
+	if event_instance_id.is_empty() or count <= 0 or has_rewarded(key):
+		return 0
+	data.reward_ledger.append(key)
+	while data.reward_ledger.size() > LEDGER_LIMIT:
+		data.reward_ledger.pop_front()
+	data.stars = get_stars() + count
+	save_profile()
+	return count
 
 
 # --- Records --------------------------------------------------------------
