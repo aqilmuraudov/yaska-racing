@@ -1,5 +1,5 @@
 {
-	"_doc": "Graphics presets. Keys match Settings graphics section. Presets never change collision, checkpoints, physics or item visibility. See docs/TUNING.md.",
+	"_doc": "Graphics presets. Keys match Settings graphics section. Presets never change collision, checkpoints, physics or item visibility. See docs/TUNING.md. 0.11.2: render_height caps the 3D height in pixels on phones (see Settings.base_render_scale);",
 	"low": {
 		"resolution_scale": 0.6,
 		"msaa": 0,
@@ -11,7 +11,8 @@
 		"ssao": false,
 		"bloom": false,
 		"fps_cap": 60,
-		"dynamic_resolution": true
+		"dynamic_resolution": true,
+		"render_height": 648
 	},
 	"medium": {
 		"resolution_scale": 0.8,
@@ -24,7 +25,8 @@
 		"ssao": false,
 		"bloom": true,
 		"fps_cap": 60,
-		"dynamic_resolution": true
+		"dynamic_resolution": true,
+		"render_height": 864
 	},
 	"high": {
 		"resolution_scale": 1.0,
@@ -37,6 +39,7 @@
 		"ssao": true,
 		"bloom": true,
 		"fps_cap": 60,
-		"dynamic_resolution": false
+		"dynamic_resolution": false,
+		"render_height": 1080
 	}
 }

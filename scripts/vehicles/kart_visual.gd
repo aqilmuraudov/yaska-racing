@@ -54,6 +54,7 @@ func setup(p_kart: KartController, def: RacerDefinition, density: float) -> void
 ## the full model stops drawing there. Roughly 3x fewer triangles per far kart.
 const KART_LOD := 28.0
 var model_lo: KartModel
+var shadow_proxies := 0 ## 0.11.2 shadows-only low-detail copies (tests)
 
 
 func _build_far_lod(def: RacerDefinition) -> void:
@@ -69,14 +70,34 @@ func _build_far_lod(def: RacerDefinition) -> void:
 		var g := mi as GeometryInstance3D
 		g.visibility_range_end = KART_LOD if g.visibility_range_end <= 0.0 else minf(g.visibility_range_end, KART_LOD)
 		g.visibility_range_end_margin = 2.0
+	# 0.11.2: the near model no longer casts shadows itself; a shadows-only
+	# copy of the low-detail mesh (ShapeKit.detail 0.4, same pivots, so it
+	# steers and leans with the kart) casts them instead: same silhouette in
+	# the shadow map, about a third of the triangles in the shadow pass.
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		(mi as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shadow_proxies = 0
 	for mi in model_lo.find_children("*", "MeshInstance3D", true, false):
 		var g := mi as GeometryInstance3D
 		var small := g.visibility_range_end > 0.0
+		var casts := g.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and not small
 		g.visibility_range_begin = KART_LOD
 		g.visibility_range_begin_margin = 2.0
 		g.visibility_range_end = 0.0
+		# Beyond 28 m a kart's real shadow is a few pixels; the blob grounds it.
+		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if small:
 			g.visible = false # eyes / ears / arms are invisible that far away
+		elif casts:
+			var proxy := MeshInstance3D.new()
+			proxy.name = "ShadowProxy"
+			proxy.mesh = (mi as MeshInstance3D).mesh
+			proxy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+			proxy.visibility_range_end = KART_LOD
+			proxy.visibility_range_end_margin = 2.0
+			proxy.transform = (mi as Node3D).transform
+			mi.get_parent().add_child(proxy)
+			shadow_proxies += 1
 
 
 ## Cheap contact shadow used when real-time shadows are off (Low preset).

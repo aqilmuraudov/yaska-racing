@@ -40,7 +40,7 @@ static func params(id: String) -> Dictionary:
 				"sky_energy": 1.0, "sun_angle_max": 6.0, "sun_curve": 0.3,
 				"sun_color": Color(0.62, 0.74, 1.0), "sun_energy": 0.6, "sun_pitch": -42.0, "sun_yaw": -150.0,
 				# Flat blue-grey fill so the road and barriers stay readable.
-				"ambient_source": Environment.AMBIENT_SOURCE_COLOR, "ambient_energy": 0.6, "ambient_color": Color(0.46, 0.54, 0.85), "saturation": 0.78,
+				"ambient_source": Environment.AMBIENT_SOURCE_COLOR, "ambient_energy": 0.42, "ambient_color": Color(0.46, 0.54, 0.85), "saturation": 0.8,
 				"exposure": Palette.ENV_EXPOSURE * 1.05, "fog": Color(0.07, 0.1, 0.2),
 				"glow": 0.85, "led": 1.0, "lamps": 1.0, "windows": 1.0, "hac": 1.0, "floodlight": 1.0,
 				"headlights": true,
@@ -78,6 +78,7 @@ static func apply_materials(id: String) -> void:
 		g.emission = Color(1.0, 0.78, 0.42)
 		g.emission_energy_multiplier = w * 1.4
 	CityKit.set_window_glow(float(p.windows)) # 0.11.0 downtown towers
+	NightGlow.set_global_night(id) # 0.11.2 water darkens at night
 	# Heydar Aliyev Center: soft warm-white uplight on the white skin.
 	var hac := LandmarkKit.hac_white()
 	var hk := float(p.hac)
@@ -105,8 +106,8 @@ static func add_lights(root: Node3D, id: String, landmarks: Dictionary, player_k
 		var hl := SpotLight3D.new()
 		hl.name = "Headlight"
 		hl.light_color = Color(1.0, 0.95, 0.82)
-		hl.light_energy = 4.0
-		hl.spot_range = 34.0
+		hl.light_energy = 6.5 # 0.11.2: brighter, the night ambient is darker
+		hl.spot_range = 38.0
 		hl.spot_angle = 32.0
 		hl.spot_attenuation = 0.7
 		hl.shadow_enabled = false
@@ -114,24 +115,5 @@ static func add_lights(root: Node3D, id: String, landmarks: Dictionary, player_k
 		hl.rotation = Vector3(deg_to_rad(-9.0), 0, 0) # forward is -Z, tipped to the road
 		player_kart.add_child(hl)
 		out.append(hl)
-		var lamp_mat := StandardMaterial3D.new()
-		lamp_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		lamp_mat.albedo_color = Color(1.0, 0.97, 0.85)
-		lamp_mat.emission_enabled = true
-		lamp_mat.emission = Color(1.0, 0.95, 0.8)
-		lamp_mat.emission_energy_multiplier = 3.0
-		var sm := SphereMesh.new()
-		sm.radius = 0.09
-		sm.height = 0.18
-		sm.radial_segments = 8
-		sm.rings = 4
-		for x in [-0.32, 0.32]:
-			var bulb := MeshInstance3D.new()
-			bulb.name = "HeadlightBulb"
-			bulb.mesh = sm
-			bulb.material_override = lamp_mat
-			bulb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			bulb.position = Vector3(x, 0.45, -0.95)
-			player_kart.add_child(bulb)
-			out.append(bulb)
+		# 0.11.2: the bulbs moved into NightGlow's merged per-kart lamp mesh.
 	return out

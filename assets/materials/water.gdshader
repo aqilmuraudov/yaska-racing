@@ -11,19 +11,13 @@ uniform float speed = 0.35;
 uniform vec3 sky_tint : source_color = vec3(1.0, 0.78, 0.55); // golden-hour reflection (0.9.2)
 
 varying vec3 world_pos;
+global uniform float yaska_night;
 
-float hash12(vec2 p) {
-	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-	p3 += dot(p3, p3.yzx + 33.33);
-	return fract((p3.x + p3.y) * p3.z);
-}
-
+// 0.11.2: one mipmapped fetch of the shared tileable noise (tools/gen_noise.py)
+// instead of 4 hashes per call - cheaper on phones and no far-distance shimmer.
+global uniform sampler2D yaska_noise : filter_linear_mipmap, repeat_enable;
 float vnoise(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	vec2 u = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash12(i), hash12(i + vec2(1, 0)), u.x),
-		mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), u.x), u.y);
+	return texture(yaska_noise, p * 0.015625).r;
 }
 
 void vertex() {
@@ -44,9 +38,15 @@ void fragment() {
 	vec3 col = mix(shallow, deep, clamp(fres * 1.4 + smoothstep(30.0, 250.0, dist) * 0.5, 0.0, 1.0));
 	float spark = smoothstep(0.78, 0.92, h) * (1.0 - smoothstep(60.0, 160.0, dist));
 	col = mix(col, sky_tint, fres * 0.45);
-	ALBEDO = mix(col, sparkle, spark * 0.35);
-	// Sun glint: small bright flecks that the glow can pick up.
-	EMISSION = sky_tint * spark * 0.6 * (1.0 - smoothstep(40.0, 140.0, dist));
+	vec3 day_col = mix(col, sparkle, spark * 0.35);
+	// 0.11.2 night (global yaska_night 0..1): deep navy sea that reflects a
+	// little moonlight at grazing angles instead of the bright day turquoise.
+	vec3 night_col = mix(vec3(0.020, 0.060, 0.120), vec3(0.006, 0.018, 0.055), clamp(fres * 1.4 + smoothstep(30.0, 250.0, dist) * 0.5, 0.0, 1.0));
+	night_col += vec3(0.10, 0.13, 0.22) * fres * 0.6;
+	ALBEDO = mix(day_col, night_col, yaska_night);
+	// Sun glint by day, cool moon flecks by night; both feed the glow.
+	float glint = spark * (1.0 - smoothstep(40.0, 140.0, dist));
+	EMISSION = mix(sky_tint * 0.6, vec3(0.55, 0.65, 0.95) * 0.45, yaska_night) * glint;
 	ROUGHNESS = 0.08;
 	METALLIC = 0.0;
 	SPECULAR = 0.65;

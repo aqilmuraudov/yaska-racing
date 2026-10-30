@@ -1,6 +1,28 @@
 # Status, verification evidence and known issues
 
-Date: 2026-10-30 · Build: 0.11.1 · Engine: Godot 4.4.1-stable
+Date: 2026-10-31 · Build: 0.11.2 · Engine: Godot 4.4.1-stable
+
+## Update 0.11.2 (versionCode 28) — phone optimisation, night polish
+Owner request: "super-optimise for Android, raise graphics quality". New build box (Linux): Godot 4.4.1 official + templates, OpenJDK 17, debug keystore copied from the owner (SHA-256 726cd353…6e25d9). Android SDK pieces come from Ubuntu packages (apksigner 31.0.2, zipalign, adb) laid out as build-tools/34.0.0 — Google's servers are unreachable here, so no sdkmanager / Android Studio / emulator (no KVM either). Screenshots now use the **Mobile renderer** on software Vulkan (lavapipe) under Xvfb — closer to the phone than the old Compatibility shots, but still not a phone.
+- **Shaders:** road, ground and water no longer compute hash value noise per pixel; one mipmapped tileable texture (`assets/textures/noise_value.png`, `tools/gen_noise.py`, global uniform `yaska_noise`) replaces it (road ~16 hashes/pixel → 4 fetches; ground ~8 → 2; water ~8 → 2). Mipmaps also remove far-distance shimmer. Ground: vertex colour sRGB→linear per vertex (was 2 `pow`/pixel). **Not measurable here:** lavapipe runs on the CPU where texture fetches are dear and ALU is cheap, so the frozen-frame A/B was within noise (269–281 ms vs 270–275 ms). The gain is an estimate until measured on the phone.
+- **Kart shadows:** shadows-only low-detail proxy (`ShadowProxy`, far-LOD mesh) instead of the full model; no kart shadows beyond 28 m (blob stays). Kart shadow-pass primitives at the start grid 58k → 9.5k; whole frame 441k → 401k (−9 %), draw calls unchanged (225).
+- **Render height cap** on phones (`render_height` Low 648 / Medium 864 / High 1080): 1080p phones unchanged, 1440p phones render 31–44 % fewer 3D pixels. FSR stays Forward+-only (engine error on Mobile — the old comment was right; tried and reverted).
+- **Tried and rejected:** MSAA 2× instead of FXAA on Medium looked more jagged in Mobile-renderer screenshots (`docs/screenshots/0.11.2/aa_compare.png`); Medium stays FXAA.
+- **Night (NightGlow):** warm light pools under every street lamp (one MultiMesh: seafront 24, downtown 105), head + tail lamps on every kart (one merged mesh each), soft headlight cones in front of rivals (fade near the camera), darker navy sea with moon glints (global `yaska_night`), night ambient 0.6 → 0.42, player headlight 4 → 6.5 / 34 → 38 m. No extra real lights (the Mobile renderer limits lights per mesh). Sunset gets a faint version.
+- **Settings v5:** fills `render_height` from the stored preset; all other stored values kept.
+- **Fix:** `ResultsScreen.show_results` crashed when the screen had no race (UI tests r5/r7/r8/r9): 24 script errors per suite run, and the retry button text/icon/focus lines were never reached in tests. Now guarded and tested.
+- **Measured** (`--perf-every=2`, autopilot seed 5, 40 s, Mobile renderer, mean / max; before → after):
+  | track | preset | draw calls mean/max | primitives mean/max (Δ mean / Δ max) |
+  |---|---|---|---|
+  | seafront_sprint | low | 197/268 → 197/268 | 180k/266k → 180k/266k (+0 % / +0 %) |
+  | seafront_sprint | medium | 253/325 → 253/325 | 323k/464k → 310k/424k (-4 % / -9 %) |
+  | seafront_sprint | high | 316/428 → 316/428 | 537k/774k → 509k/689k (-5 % / -11 %) |
+  | downtown_towers | low | 203/253 → 203/253 | 106k/150k → 106k/150k (+0 % / +0 %) |
+  | downtown_towers | medium | 263/345 → 262/345 | 226k/329k → 208k/281k (-8 % / -15 %) |
+  | downtown_towers | high | 305/437 → 304/425 | 412k/619k → 376k/519k (-9 % / -16 %) |
+  Low is unchanged (no real-time shadows there). Draw calls unchanged everywhere; the savings are shadow-pass triangles.
+- Tests: `tests/test_round22.gd` (9 methods); full suite 190 methods, 5313 checks, 0 failures, 0 script errors (0.11.1: 24 script errors per run). `test_round18` night-fill threshold 0.6 → 0.4 (deliberate darker night; readability now from headlight/pools/cones, see sheet). Screenshots: `docs/screenshots/0.11.2/sheet.jpg` (0.11.1 vs 0.11.2).
+- Known / not verified: no phone was attached — real FPS, thermals and the shader gain need the Mi 12 Lite (Developer → Performance overlay writes `perf_*.csv`). Lamp pools are flat quads 0.32 m above the lamp base (no collision under the promenade to ray-cast), so on a slope edge one may float or clip slightly. Rival cones are flat on the kart plane and can poke through a crest for a moment. Git history before this round was uncommitted since 0.6.0; committed now as one 0.7–0.11.1 commit. The test runner still reports a method as PASS when it aborts on a script error (seen here, worked around in r22) — worth a runner fix.
 
 ## Update 0.11.1 (versionCode 27) — "Şəhəri seç": city choice in the normal flow
 - Owner feedback: the normal Oyna flow always loaded the seafront; the new city was only reachable via Race Setup. Now Oyna → Rejim seç → Yarış / Rekord → **Şəhəri seç** → kart select → race.

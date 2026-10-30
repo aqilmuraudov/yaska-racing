@@ -24,12 +24,11 @@ float hash12(vec2 p) {
 	return fract((p3.x + p3.y) * p3.z);
 }
 
+// 0.11.2: one mipmapped fetch of the shared tileable noise (tools/gen_noise.py)
+// instead of 4 hashes per call - cheaper on phones and no far-distance shimmer.
+global uniform sampler2D yaska_noise : filter_linear_mipmap, repeat_enable;
 float vnoise(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	vec2 u = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash12(i), hash12(i + vec2(1, 0)), u.x),
-		mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), u.x), u.y);
+	return texture(yaska_noise, p * 0.015625).r;
 }
 
 // Anti-aliased band: 1 inside [a, b].

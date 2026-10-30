@@ -209,7 +209,14 @@ func _build_racers() -> void:
 	stars.collected.connect(func(_t): _earn("star"))
 	# 0.10.1: night/sunset lights (Government House floodlight, player headlight).
 	var marks: Dictionary = decor.landmarks if decor and "landmarks" in decor else {}
-	night_lights = TimeOfDay.add_lights(self, environment.time_of_day if environment else TimeOfDay.DEFAULT, marks, player.kart)
+	var tod_id := environment.time_of_day if environment else TimeOfDay.DEFAULT
+	night_lights = TimeOfDay.add_lights(self, tod_id, marks, player.kart)
+	# 0.11.2: faked lamp pools, kart lamps and rival headlight cones (no real lights).
+	var glow_karts: Array = []
+	for r in racers:
+		glow_karts.append(r.kart)
+	var lamp_xf: Array = decor.instance_transforms("lamp") if decor and decor.has_method("instance_transforms") else []
+	night_lights.append_array(NightGlow.build(self, tod_id, lamp_xf, glow_karts, player.kart))
 	skid_marks = SkidMarks.new()
 	skid_marks.name = "SkidMarks"
 	add_child(skid_marks)

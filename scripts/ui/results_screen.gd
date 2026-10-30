@@ -266,7 +266,9 @@ func show_results(res: Dictionary) -> void:
 	medal.pivot_offset = medal.custom_minimum_size * 0.5
 	medal.scale = Vector2.ONE * 0.3
 	create_tween().tween_property(medal, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	var cup_next := String(race.config.get("series", "")) == "cup"
+	# 0.11.2: race is null in UI tests (setup(null)); the old line crashed there
+	# and the button text/icon/focus below were never set or tested.
+	var cup_next := race != null and String(race.config.get("series", "")) == "cup"
 	retry_btn.text = tr("CUP_STANDINGS_BTN") if cup_next else tr("RESULTS_RETRY")
 	retry_btn.icon = UITheme.icon("trophy" if cup_next else "restore")
 	retry_btn.grab_focus()

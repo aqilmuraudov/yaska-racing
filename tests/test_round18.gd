@@ -65,7 +65,10 @@ func test_environment_params() -> void:
 	check(sunset.sky_horizon.r > sunset.sky_horizon.g and sunset.sky_top.b > sunset.sky_top.g, "pink horizon, purple top")
 	check(night.sky_top.get_luminance() < 0.05, "dark night sky")
 	check(night.sun_color.b > night.sun_color.r, "cool moonlight")
-	check(float(night.ambient_energy) >= 0.6, "night fill keeps the road readable")
+	# 0.11.2: fill lowered 0.6 -> 0.42 for a real night mood; the road stays
+	# readable through the headlight, lamp pools and rival cones (NightGlow,
+	# test_round22) - see docs/screenshots/0.11.2/.
+	check(float(night.ambient_energy) >= 0.4, "night fill keeps the road readable")
 	check(bool(night.headlights) and not bool(day.headlights) and not bool(sunset.headlights), "headlights only at night")
 	for id in TimeOfDay.IDS:
 		var env := RaceEnvironment.new()

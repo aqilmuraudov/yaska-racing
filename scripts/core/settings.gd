@@ -5,12 +5,12 @@ extends Node
 signal changed(section: String, key: String)
 signal graphics_changed
 
-const SETTINGS_VERSION := 4
+const SETTINGS_VERSION := 5
 const DEFAULT_PATH := "user://settings.json"
 const PRESET_PATH := "res://data/graphics/presets.json"
 const BUTTON_SCALES := [0.85, 1.0, 1.2]
 const PRESET_KEYS := ["resolution_scale", "msaa", "fxaa", "shadows", "effects_density",
-	"decor_distance", "texture_detail", "ssao", "bloom", "fps_cap", "dynamic_resolution"]
+	"decor_distance", "texture_detail", "ssao", "bloom", "fps_cap", "dynamic_resolution", "render_height"]
 
 var save_path := DEFAULT_PATH
 var values: Dictionary = {}
@@ -42,7 +42,7 @@ func defaults() -> Dictionary:
 	var g: Dictionary = (presets.get(preset_name, {}) as Dictionary).duplicate()
 	g.merge({
 		"preset": preset_name,
-		"resolution_scale": 0.8, "msaa": 0, "fxaa": true, "shadows": 1, "effects_density": 0.7,
+		"resolution_scale": 0.8, "render_height": 864, "msaa": 0, "fxaa": true, "shadows": 1, "effects_density": 0.7,
 		"decor_distance": 1, "texture_detail": 1, "ssao": false, "bloom": true, "fps_cap": 60,
 		"dynamic_resolution": false, "motion_blur": false, "brightness": 1.0, "vsync": true,
 		"fps_fallback": true, # steady 30 when 60 cannot be held (PerfMonitor)
@@ -136,6 +136,8 @@ func load_settings() -> void:
 		_migrate_v2()
 	if from_version < 4:
 		_migrate_v3()
+	if from_version < 5:
+		_migrate_v4()
 	_sanitize()
 
 
@@ -166,6 +168,16 @@ func _migrate_v1(loaded: Dictionary) -> void:
 ## (centre pull + edge correction). It is now off for everyone.
 func _migrate_v3() -> void:
 	values.gameplay.steer_assist = false
+
+
+## v4 → v5 (0.11.2): presets gained `render_height` (phone 3D height cap).
+## Only that new key is filled from the stored preset; every other stored
+## value (frame rate, texture detail, ...) is the player's and is kept.
+func _migrate_v4() -> void:
+	var g: Dictionary = values.graphics
+	var preset_name := String(g.get("preset", "medium"))
+	if presets.has(preset_name) and presets[preset_name].has("render_height"):
+		g.render_height = int(presets[preset_name].render_height)
 
 
 func _migrate_v2() -> void:
@@ -302,6 +314,7 @@ func apply_preset(preset_name: String, persist := true) -> void:
 func _sanitize() -> void:
 	var g: Dictionary = values.graphics
 	g.resolution_scale = clampf(float(g.resolution_scale), 0.5, 1.0)
+	g.render_height = clampi(int(g.get("render_height", 0)), 0, 2160)
 	g.msaa = clampi(int(g.msaa), 0, 2)
 	g.shadows = clampi(int(g.shadows), 0, 3)
 	g.effects_density = clampf(float(g.effects_density), 0.0, 1.0)
@@ -387,8 +400,10 @@ func _apply_key(section: String, key: String) -> void:
 func apply_graphics() -> void:
 	var g: Dictionary = values.graphics
 	var vp := get_tree().root
-	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR if float(g.resolution_scale) >= 0.99 else _upscale_mode()
-	vp.scaling_3d_scale = clampf(float(g.resolution_scale) * dynamic_scale, 0.5, 1.0)
+	var base := base_render_scale()
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR if base * dynamic_scale >= 0.99 else _upscale_mode()
+	vp.scaling_3d_scale = clampf(base * dynamic_scale, 0.5, 1.0)
+	vp.fsr_sharpness = FSR_SHARPNESS
 	vp.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][int(g.msaa)]
 	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if g.fxaa else Viewport.SCREEN_SPACE_AA_DISABLED
 	# Texture quality: asset tier (TextureLibrary: 256 / 512 / 1024 px sets),
@@ -424,19 +439,46 @@ func _process(delta: float) -> void:
 	_dyn_timer = 0.0
 	var old := dynamic_scale
 	if _frame_ema > target * 1.12:
-		dynamic_scale = maxf(dynamic_scale - 0.05, 0.5 / maxf(float(g.resolution_scale), 0.5))
+		dynamic_scale = maxf(dynamic_scale - 0.05, 0.5 / maxf(base_render_scale(), 0.5))
 	elif _frame_ema < target * 0.85:
 		dynamic_scale = minf(dynamic_scale + 0.025, 1.0)
 	if not is_equal_approx(old, dynamic_scale):
-		get_tree().root.scaling_3d_scale = clampf(float(g.resolution_scale) * dynamic_scale, 0.5, 1.0)
+		var vp := get_tree().root
+		var sc := clampf(base_render_scale() * dynamic_scale, 0.5, 1.0)
+		vp.scaling_3d_scale = sc
+		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR if sc >= 0.99 else _upscale_mode()
+
+
+## FSR 1.0 sharpens the upscale but Godot 4.4 only offers it on Forward+
+## ("FSR1 is only available when using the Forward+ renderer", checked
+## 0.11.2 on the Mobile renderer); phones use bilinear scaling.
+const FSR_SHARPNESS := 0.2
 
 
 func _upscale_mode() -> Viewport.Scaling3DMode:
-	# FSR 1.0 sharpens the upscale but Godot only offers it on Forward+;
-	# the Mobile renderer (Android) uses bilinear scaling.
 	if rendering_method() == "forward_plus":
 		return Viewport.SCALING_3D_MODE_FSR
 	return Viewport.SCALING_3D_MODE_BILINEAR
+
+
+## 0.11.2: 3D render scale before the adaptive (dynamic) factor. On phones the
+## preset's `render_height` caps the 3D height in pixels, so a 1440p phone does
+## not render 78 % more pixels than a 1080p one at the same preset; the HUD
+## stays at native resolution. Desktop keeps the plain fraction.
+func base_render_scale() -> float:
+	var g: Dictionary = values.get("graphics", {})
+	var short_px := 0
+	if is_mobile() and is_inside_tree():
+		var sz := get_tree().root.size
+		short_px = mini(sz.x, sz.y)
+	return render_scale_for(float(g.get("resolution_scale", 1.0)), int(g.get("render_height", 0)), short_px)
+
+
+static func render_scale_for(fraction: float, render_height: int, screen_short_px: int) -> float:
+	var sc := clampf(fraction, 0.5, 1.0)
+	if render_height > 0 and screen_short_px > 0:
+		sc = minf(sc, float(render_height) / float(screen_short_px))
+	return clampf(sc, 0.5, 1.0)
 
 
 ## Frame-rate caps offered to the player. A cap is a ceiling, not a promise:

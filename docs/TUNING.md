@@ -221,9 +221,9 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 
 ## Time of day (0.10.1, `scripts/racing/time_of_day.gd`)
 - `TimeOfDay.params(id)` holds sky, sun/moon, ambient, fog, glow, saturation and which lights are on; "day" reproduces the old values.
-- Sunset: sun pitch -9, colour (1, .56, .3), energy 1.55. Night: moon pitch -42, energy 0.6, colour ambient 0.6, saturation x0.78.
+- Sunset: sun pitch -9, colour (1, .56, .3), energy 1.55. Night: moon pitch -42, energy 0.6, colour ambient 0.42 (0.11.2; was 0.6), saturation x0.8.
 - `apply_materials` switches shared emissions (LED, lamps, windows, HAC); `RaceEnvironment._exit_tree` restores day for the menus.
-- `add_lights`: Government House OmniLight (range 70, energy 3) at sunset/night; player headlight SpotLight (range 34, angle 32) at night.
+- `add_lights`: Government House OmniLight (range 70, energy 3) at sunset/night; player headlight SpotLight (range 38, energy 6.5 since 0.11.2; angle 32) at night.
 
 
 ## Quality tiers and LOD (0.10.2)
@@ -250,3 +250,18 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 - Cards: width clamp((avail - gap - 24) / 2, 300, 600), height clamp(avail.y - 12, 320, 1.02·w); picture height clamp(0.6·h, 150, 0.78·w).
 - "Yeni!" shown for every city except `TrackList.IDS[0]` until `CityCards.is_played` (played_tracks, a record, or a quick/tt finish stat).
 - Thumbnails: 640×400 JPEG crops of 1280×720 `--no-hud` race captures (seafront: cinematic t=9 s; downtown: chase t=17 s), colour ×1.12.
+
+## Phone optimisation and night polish (0.11.2)
+- **Render height cap** (`presets.json` `render_height`, `Settings.render_scale_for`): on phones the 3D scale is `min(resolution_scale, render_height / screen short side)`, clamped 0.5–1.0. Low 648, Medium 864, High 1080 px. A 1080p phone (Mi 12 Lite) renders exactly as before (0.6 / 0.8 / 1.0); a 1440p phone renders 0.5 / 0.6 / 0.75 instead of 0.6 / 0.8 / 1.0 (−31…−44 % pixels). Desktop keeps the plain fraction. Dynamic resolution works on top of it.
+- **Upscaling**: phones stay on bilinear. FSR 1.0 is Forward+-only in Godot 4.4 (engine error "FSR1 is only available when using the Forward+ renderer", seen on the Mobile renderer in 0.11.2).
+- **Anti-aliasing**: MSAA 2× was tried on Medium and rejected: in the Mobile-renderer screenshots (render scale 0.8) edges were clearly MORE jagged than with FXAA (`docs/screenshots/0.11.2/aa_compare.png`). Medium stays on FXAA.
+- **Settings v5**: only the new `render_height` is filled in from the stored preset; all other stored values (frame rate, texture detail, …) are kept.
+- **Shared noise texture** `assets/textures/noise_value.png` (`tools/gen_noise.py`: tileable value noise, period 64 cells, 4 texels per cell, smoothstep, 256×256 L8, lossless + mipmaps), global shader uniform `yaska_noise`. `vnoise(p)` = `texture(yaska_noise, p / 64).r` in road, ground and water. Estimated fragment ALU saved per pixel: road 4 calls × 4 hashes (~16 hashes), ground 2 calls (~8 hashes), water 2 calls (~8 hashes), each replaced by one texture fetch. Ground: sRGB→linear of the vertex colour moved to the vertex shader (was 2 `pow` per pixel).
+- **Kart shadows**: the full-detail kart/driver no longer casts; a shadows-only copy of the far-LOD mesh (`ShadowProxy`, ShapeKit.detail 0.4, same pivots) casts up to `KART_LOD` (28 m); beyond it nothing casts (blob shadow grounds the kart). Kart shadow-pass primitives at the start grid (6 karts near): ~58k → ~9.5k.
+- **Night (NightGlow, `scripts/racing/night_glow.gd`)**, no extra real lights:
+  - lamp pools: one MultiMesh of 11 m additive unshaded quads, `POOL_LIFT` 0.32 m above each `lamp` instance (promenade/sidewalk tops sit above the lamp base), strength 0.62 × k; colour (1, .74, .42). Seafront 24 lamps, downtown 105.
+  - kart lamps: one merged vertex-coloured mesh per kart (2 head lamps r 0.1 m at z −0.97, 2 tail lamps r 0.075 m at z +1.12), unshaded, colour × 2.6 (HDR for glow).
+  - rival headlight cone: 6.5 × 11 m additive quad ahead of the kart, strength 0.24 × k, fades out within 5–13 m of the camera (a kart beside the camera would wash the screen), hidden beyond 70 m. The player keeps the real SpotLight.
+  - k = 1 at night, 0.35 at sunset, 0 by day.
+  - sea: global `yaska_night` (1 night, 0.3 sunset, 0 day) mixes the water to navy (0.02, 0.06, 0.12)…(0.006, 0.018, 0.055) with cool moon glints.
+

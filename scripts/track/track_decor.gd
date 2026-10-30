@@ -134,6 +134,20 @@ var chunk_size := {}
 var skyline_min := {}
 
 
+## 0.11.2: every placed transform of one prop (e.g. "lamp" for NightGlow).
+## _instances is cleared after the MultiMeshes are built, so the props listed
+## in KEEP_TRANSFORMS are copied into _kept first.
+const KEEP_TRANSFORMS := ["lamp"]
+var _kept := {} # prop_id -> Array[Transform3D]
+
+
+func instance_transforms(prop: String) -> Array:
+	var out: Array = (_kept.get(prop, []) as Array).duplicate()
+	for key in _instances.get(prop, {}).keys():
+		out.append_array(_instances[prop][key])
+	return out
+
+
 func add_instance(prop: String, xform: Transform3D) -> void:
 	if not _instances.has(prop):
 		_instances[prop] = {}
@@ -233,6 +247,12 @@ func _flush_instances() -> void:
 						mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 					_chunk_nodes.append(mmi)
 				add_child(mmi)
+	for kp in KEEP_TRANSFORMS:
+		if _instances.has(kp):
+			var keep: Array = _kept.get(kp, [])
+			for key in _instances[kp].keys():
+				keep.append_array(_instances[kp][key])
+			_kept[kp] = keep
 	_instances.clear()
 
 
