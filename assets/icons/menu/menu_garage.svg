@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+<defs>
+<linearGradient id="roof" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd3ff"/><stop offset="1" stop-color="#2f7de1"/></linearGradient>
+<linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f8ff"/><stop offset="1" stop-color="#b9cbea"/></linearGradient>
+<linearGradient id="met" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.5" stop-color="#c7d2e0"/><stop offset="1" stop-color="#7d8ca3"/></linearGradient>
+</defs>
+<g stroke="#0c2559" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+<path d="M16 66 L80 22 L144 66 L144 140 L16 140 Z" fill="#0c2559" opacity="0.3" transform="translate(0,6)" stroke="none"/>
+<path d="M24 70 L24 140 L136 140 L136 70" fill="url(#wall)"/>
+<path d="M12 72 L80 24 L148 72 L136 80 L80 42 L24 80 Z" fill="url(#roof)"/>
+<rect x="44" y="84" width="72" height="56" rx="4" fill="#5b6f91"/>
+<path d="M44 98 H116 M44 112 H116 M44 126 H116" fill="none" stroke-width="5"/>
+</g>
+<g transform="rotate(-40 80 100)" stroke="#0c2559" stroke-width="7" stroke-linejoin="round">
+<path d="M73 70 h14 v62 a7 7 0 0 1 -14 0 z" fill="url(#met)"/>
+<path d="M62 62 a20 20 0 1 0 36 0 l-8 0 l0 12 l-20 0 l0 -12 z" fill="url(#met)"/>
+</g>
+<path d="M36 60 L80 30 L100 44" fill="none" stroke="#fff" stroke-width="5" opacity="0.6" stroke-linecap="round"/>
+</svg>

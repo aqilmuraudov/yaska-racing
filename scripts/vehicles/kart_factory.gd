@@ -15,9 +15,13 @@ static func load_stats(racer_id: String) -> KartStats:
 	return RacerRoster.get_def(racer_id).make_stats()
 
 
-static func create(racer_id: String, is_player: bool, effects_density: float, paint := 0) -> KartController:
+## `tuning`: garage upgrade levels (KartTuning); empty = stock handling.
+static func create(racer_id: String, is_player: bool, effects_density: float, paint := 0, tuning := {}) -> KartController:
 	var def := RacerRoster.get_def(racer_id)
 	var stats := def.make_stats()
+	if not tuning.is_empty():
+		stats = stats.duplicate() # the definition's stats are a shared cache
+		KartTuning.apply(stats, tuning)
 	var kart := KartController.new()
 	kart.name = "Kart"
 	kart.stats = stats

@@ -34,7 +34,7 @@ func setup(p_race: RaceManager) -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
 	resume_btn = _btn(v, "PAUSE_RESUME", func(): race.set_paused(false), "yellow", "play")
-	resume_btn.custom_minimum_size = Vector2(0, 84)
+	resume_btn.custom_minimum_size = Vector2(0, UITheme.H_PRIMARY)
 	_btn(v, "PAUSE_RESTART", func():
 		open(false)
 		race.restart(), "blue", "restore")
@@ -53,8 +53,8 @@ func _btn(parent: Control, key: String, cb: Callable, color := "blue", icon_name
 	var b := Button.new()
 	b.text = tr(key)
 	b.set_meta("key", key)
-	b.custom_minimum_size = Vector2(0, 70)
-	UITheme.style_button(b, color, 30 if color == "yellow" else 26)
+	b.custom_minimum_size = Vector2(0, UITheme.H_BTN)
+	UITheme.style_button(b, color, UITheme.FS_BTN_PRIMARY - 4 if color == "yellow" else UITheme.FS_BTN)
 	if icon_name != "":
 		b.icon = UITheme.icon(icon_name)
 		b.expand_icon = false

@@ -26,7 +26,7 @@ static func m(id: String) -> Material:
 		"limestone_warm":
 			var sm2 := ShaderMaterial.new()
 			sm2.shader = LIMESTONE_SHADER
-			sm2.set_shader_parameter("stone", Color(0.95, 0.80, 0.62))
+			sm2.set_shader_parameter("stone", Color(0.88, 0.72, 0.52))
 			TextureLibrary.bind(sm2, "stone_tex", "limestone")
 			mat = sm2
 		"palm_leaf":
@@ -83,6 +83,9 @@ static func m(id: String) -> Material:
 				"tire": [Color("1d1e22"), 0.85],
 				"leaf": [Color("5aa34a"), 0.85],
 				"leaf_dark": [Color("3f8a3f"), 0.85],
+				"leaf_light": [Color("78b850"), 0.85],
+				"pine_needle": [Color("2f6a3a"), 0.9],
+				"bark_plane": [Color("b9ab8a"), 0.9],
 				"concrete": [Color("d8d4cc"), 0.9],
 				"stone_dark": [Color("b8a786"), 0.9],
 				"water_fountain": [Color("6fd6e0"), 0.1, 0.2],
@@ -96,6 +99,17 @@ static func m(id: String) -> Material:
 				"flower_yellow": [Color("ffd23f"), 0.7],
 				"flower_white": [Color("fff6ea"), 0.7],
 				"hedge": [Color("3f9a3a"), 0.85],
+				"pastel_pink": [Color("f6b8c8"), 0.6],
+				"pastel_mint": [Color("aee6cf"), 0.6],
+				"pastel_blue": [Color("aecdf2"), 0.6],
+				"pastel_yellow": [Color("f7e3a3"), 0.6],
+				"sand": [Color("ecd6aa"), 0.85],
+				"sand_light": [Color("f8ecd2"), 0.8],
+				"sand_shade": [Color("cdb187"), 0.9],
+				"window_dark": [Color("27303d"), 0.35],
+				"asphalt": [Color("4b5059"), 0.9],
+				"steel": [Color("9aa0aa"), 0.45], # 0.11.0 plain (merges into vcolor)
+				"gold_flat": [Color("ffc93c"), 0.45],
 			}
 			var def: Array = colors.get(id, [Color.MAGENTA, 0.5])
 			mat = _std(def[0], def[1], def[2] if def.size() > 2 else 0.0)
@@ -105,7 +119,7 @@ static func m(id: String) -> Material:
 
 static func _std(c: Color, rough: float, metal: float = 0.0) -> StandardMaterial3D:
 	var s := StandardMaterial3D.new()
-	s.albedo_color = c
+	s.albedo_color = Palette.vivid(c)
 	s.roughness = rough
 	s.metallic = metal
 	return s
@@ -123,6 +137,7 @@ static func vcolor_material() -> ShaderMaterial:
 		return _mats["__vcolor"]
 	var sm := ShaderMaterial.new()
 	sm.shader = preload("res://assets/materials/vcolor.gdshader")
+	sm.set_shader_parameter("saturation", Palette.WORLD_SAT)
 	_mats["__vcolor"] = sm
 	return sm
 
@@ -249,6 +264,14 @@ static func box(size: Vector3) -> Mesh:
 
 
 static func rbox(size: Vector3, r: float = 0.3) -> Mesh:
+	if ShapeKit.detail < 0.999:
+		# Far LOD: a plain box (12 triangles instead of ~64).
+		var key := "lobox|%s" % size
+		if not ShapeKit._cache.has(key):
+			var b := BoxMesh.new()
+			b.size = size
+			ShapeKit._cache[key] = b
+		return ShapeKit._cache[key]
 	return ShapeKit.superellipsoid(size, r, r, Vector2.ONE, Vector2.ONE, 4, 8)
 
 
@@ -257,6 +280,22 @@ static func rbox(size: Vector3, r: float = 0.3) -> Mesh:
 static func get_mesh(id: String) -> ArrayMesh:
 	if _meshes.has(id):
 		return _meshes[id]
+	if id.ends_with(LO_SUFFIX):
+		# 0.10.2 far LOD: the same prop rebuilt with half the segments.
+		ShapeKit.detail = 0.5
+		var lo := _build(id.trim_suffix(LO_SUFFIX))
+		ShapeKit.detail = 1.0
+		_meshes[id] = lo
+		return lo
+	var mesh := _build(id)
+	_meshes[id] = mesh
+	return mesh
+
+
+const LO_SUFFIX := "@lo"
+
+
+static func _build(id: String) -> ArrayMesh:
 	var a := Accum.new()
 	match id:
 		"palm": _palm(a, 7.5, 0)
@@ -270,6 +309,7 @@ static func get_mesh(id: String) -> ArrayMesh:
 		"chevron_right": _chevron(a, 1.0)
 		"tree": _tree(a)
 		"cypress": _cypress(a)
+		"pine": _pine(a)
 		"house_a": _house(a, 0)
 		"house_b": _house(a, 1)
 		"house_c": _house(a, 2)
@@ -294,9 +334,10 @@ static func get_mesh(id: String) -> ArrayMesh:
 		"wheel_frame": _wheel_frame(a)
 		"wheel_ring": _wheel_ring(a)
 		"kiosk": _kiosk(a)
-	var mesh := a.commit()
-	_meshes[id] = mesh
-	return mesh
+		_:
+			if CityKit.has(id): # 0.11.0 downtown props
+				CityKit.build(a, id)
+	return a.commit()
 
 
 # --- Props ---------------------------------------------------------------------
@@ -352,13 +393,8 @@ static func _frond(origin: Vector3, ang: float, length: float, droop: float) -> 
 
 
 static func _lamp(a: Accum) -> void:
-	a.add(ShapeKit.cylinder(0.22, 0.5, 10), T(Vector3(0, 0.25, 0)), m("metal_dark"))
-	a.add(ShapeKit.cylinder(0.08, 4.6, 8), T(Vector3(0, 2.6, 0)), m("metal_dark"))
-	a.add(ShapeKit.sphere(0.12, 8, 5), T(Vector3(0, 4.95, 0)), m("gold"))
-	a.add(box(Vector3(1.6, 0.08, 0.08)), T(Vector3(0, 4.6, 0)), m("metal_dark"))
-	for x in [-0.75, 0.75]:
-		a.add(rbox(Vector3(0.36, 0.5, 0.36), 0.4), T(Vector3(x, 4.25, 0)), m("lantern"))
-		a.add(ShapeKit.cone(0.28, 0.05, 0.22, 8), T(Vector3(x, 4.58, 0)), m("metal_dark"))
+	# 0.9.6: Baku boulevard triple-globe lamp.
+	BakuExtras._lamp_baku(a)
 
 
 static func _bench(a: Accum) -> void:
@@ -408,10 +444,22 @@ static func _chevron(a: Accum, dir: float) -> void:
 	a.add_builder(mb, m("white"))
 
 
+## 0.9.7: Oriental plane tree (çinar), the Baku street tree: pale mottled
+## trunk forking into a broad, lumpy crown.
 static func _tree(a: Accum) -> void:
-	a.add(ShapeKit.cone(0.22, 0.16, 2.6, 8), T(Vector3(0, 1.3, 0)), m("trunk"))
-	a.add(ShapeKit.superellipsoid(Vector3(3.2, 2.6, 3.2), 0.9, 0.9, Vector2.ONE, Vector2.ONE, 6, 10), T(Vector3(0, 3.4, 0)), m("leaf"))
-	a.add(ShapeKit.superellipsoid(Vector3(2.2, 1.9, 2.2), 0.9, 0.9, Vector2.ONE, Vector2.ONE, 6, 10), T(Vector3(0.7, 4.3, 0.4)), m("leaf_dark"))
+	a.add(ShapeKit.cone(0.32, 0.22, 3.4, 8), T(Vector3(0, 1.7, 0)), m("bark_plane"))
+	a.add(ShapeKit.cone(0.16, 0.1, 2.0, 6), T(Vector3(0.45, 3.9, 0), Vector3(0, 0, -0.45)), m("bark_plane"))
+	a.add(ShapeKit.cone(0.16, 0.1, 2.0, 6), T(Vector3(-0.4, 3.9, 0.2), Vector3(0.2, 0, 0.45)), m("bark_plane"))
+	a.add(ShapeKit.superellipsoid(Vector3(5.2, 3.4, 5.0), 1.0, 1.0, Vector2.ONE, Vector2.ONE, 7, 12), T(Vector3(0, 5.6, 0)), m("leaf"))
+	a.add(ShapeKit.superellipsoid(Vector3(3.2, 2.4, 3.2), 1.0, 1.0, Vector2.ONE, Vector2.ONE, 6, 10), T(Vector3(1.5, 6.6, 0.8)), m("leaf_dark"))
+	a.add(ShapeKit.superellipsoid(Vector3(3.0, 2.2, 3.0), 1.0, 1.0, Vector2.ONE, Vector2.ONE, 6, 10), T(Vector3(-1.4, 6.2, -1.0)), m("leaf_light"))
+
+
+## Stone pine (Pinus pinea): tall bare trunk, flat umbrella crown.
+static func _pine(a: Accum) -> void:
+	a.add(ShapeKit.cone(0.3, 0.18, 7.0, 8), T(Vector3(0, 3.5, 0), Vector3(0, 0, 0.06)), m("trunk_dark"))
+	a.add(ShapeKit.superellipsoid(Vector3(6.4, 1.7, 6.0), 1.0, 0.8, Vector2.ONE, Vector2.ONE, 6, 12), T(Vector3(0.3, 7.6, 0)), m("pine_needle"))
+	a.add(ShapeKit.superellipsoid(Vector3(4.2, 1.3, 4.0), 1.0, 0.8, Vector2.ONE, Vector2.ONE, 6, 10), T(Vector3(0.5, 8.4, 0.3)), m("leaf_dark"))
 
 
 static func _cypress(a: Accum) -> void:
@@ -491,36 +539,63 @@ static func _modern(a: Accum, v: int) -> void:
 
 
 static func _maiden_tower(a: Accum) -> void:
-	# Qız Qalası: a plain, slightly tapering limestone cylinder with the
-	# characteristic ribbed buttress projecting on one side, a flat top with a
-	# low parapet (no fairy-tale crenellations) and a few narrow openings.
-	var r := 8.2
-	var h := 29.0
-	a.add(ShapeKit.cylinder(r * 1.25, 1.2, 36), T(Vector3(0, 0.6, 0)), m("stone_dark")) # rock base
-	a.add(ShapeKit.cone(r * 1.05, r * 0.95, h, 36), T(Vector3(0, h * 0.5 + 1.0, 0)), m("limestone_warm"))
-	# Buttress: a long rounded projection, full height, with vertical ribs.
-	var bx := r * 0.95
-	a.add(ShapeKit.superellipsoid(Vector3(7.0, h * 0.96, 8.6), 0.15, 0.55, Vector2(0.92, 1.0), Vector2(1.0, 1.0)), T(Vector3(bx, h * 0.48 + 1.0, 0)), m("limestone_warm"))
-	for k in 5:
-		var z := -3.2 + k * 1.6
-		a.add(box(Vector3(0.7, h * 0.86, 0.6)), T(Vector3(bx + 3.25 - absf(z) * 0.18, h * 0.45 + 1.0, z)), m("limestone"))
-	# Stone courses: three subtle bands that read at distance.
-	for y in [h * 0.33, h * 0.62, h * 0.9]:
-		a.add(ShapeKit.cylinder(r * 1.0 + 0.25, 0.45, 36), T(Vector3(0, y + 1.0, 0)), m("limestone"))
-	# Flat top with a low plain parapet.
-	a.add(ShapeKit.cylinder(r * 0.98, 1.4, 36), T(Vector3(0, h + 1.7, 0)), m("limestone"))
-	a.add(ShapeKit.cylinder(r * 0.7, 0.3, 24), T(Vector3(0, h + 2.45, 0)), m("stone_dark"))
-	# Narrow openings
-	for k in 4:
-		var ang2 := TAU * k / 4.0 + 0.9
-		for f in 3:
-			a.add(box(Vector3(0.5, 1.8, 0.4)), T(Vector3(cos(ang2) * r * 0.97, 8.0 + f * 7.0, sin(ang2) * r * 0.97), Vector3(0, -ang2 + PI * 0.5, 0)), m("navy"))
-	a.add(rbox(Vector3(1.8, 3.2, 0.6), 0.4), T(Vector3(0, 2.6, r * 1.02)), m("wood"))
-	# Small national flag on the roof
-	a.add(ShapeKit.cylinder(0.08, 6.0, 6), T(Vector3(-2.0, h + 5.0, 0)), m("metal_grey"))
-	a.add(box(Vector3(0.05, 0.5, 2.4)), T(Vector3(-2.0, h + 7.6, 1.2)), m("blue"))
-	a.add(box(Vector3(0.05, 0.5, 2.4)), T(Vector3(-2.0, h + 7.1, 1.2)), m("red"))
-	a.add(box(Vector3(0.05, 0.5, 2.4)), T(Vector3(-2.0, h + 6.6, 1.2)), m("green"))
+	# Qız Qalası (12th c.): 29.5 m high, 16.5 m across at the base, a smooth,
+	# slightly tapering cylinder of grey-beige limestone with alternating
+	# light/dark horizontal courses, a long beak-shaped buttress on the east
+	# (+x) rising almost the full height, a flat top with a low plain
+	# parapet (no crenellations), very few slit windows and a small arched
+	# door at the base. It stands on sloping bedrock.
+	var r0 := 8.25
+	var r1 := 7.6
+	var h := 29.5
+	var base := 1.2
+	a.add(ShapeKit.cone(r0 * 1.35, r0 * 1.15, base + 0.4, 32), T(Vector3(0, (base + 0.4) * 0.5 - 0.2, 0)), m("stone_dark")) # rock
+	a.add(ShapeKit.cone(r0, r1, h, 40), T(Vector3(0, base + h * 0.5, 0)), m("limestone"))
+	# Masonry courses: thin darker bands slightly proud of the wall.
+	var n := 14
+	for k in n:
+		var y := base + 1.6 + k * (h - 2.6) / n
+		var rr := lerpf(r0, r1, (y - base) / h) + 0.06
+		a.add(ShapeKit.cylinder(rr, 0.22, 40), T(Vector3(0, y, 0)), m("limestone_warm"))
+	# Buttress: a wedge (beak) in plan, upright, almost full height.
+	var bh := h - 1.2
+	for flip in [false, true]: # both windings: robust against culling
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var plan: Array = [] # wedge from the wall outwards to a rounded tip
+		var segs := 10
+		for k in segs + 1:
+			var t := float(k) / segs # 0..1 one side → tip → other side
+			var ang := lerpf(-PI * 0.5, PI * 0.5, t)
+			plan.append(Vector2(r0 - 1.0 + 5.6 * cos(ang) * (0.35 + 0.65 * cos(ang)), 4.6 * sin(ang) * (1.0 - 0.45 * cos(ang))))
+		for k in segs:
+			var p0: Vector2 = plan[k]
+			var p1: Vector2 = plan[k + 1]
+			var lo0 := Vector3(p0.x, base, p0.y)
+			var lo1 := Vector3(p1.x, base, p1.y)
+			var hi0 := Vector3((p0.x - r0) * 0.86 + r1, base + bh, p0.y * 0.86)
+			var hi1 := Vector3((p1.x - r0) * 0.86 + r1, base + bh, p1.y * 0.86)
+			for q in ([lo0, lo1, hi1, lo0, hi1, hi0] if not flip else [lo0, hi1, lo1, lo0, hi0, hi1]):
+				st.set_uv(Vector2(q.z * 0.25, q.y * 0.25))
+				st.add_vertex(q)
+			# top cap
+			for q in ([Vector3(r1 - 1.0, base + bh, 0), hi0, hi1] if not flip else [Vector3(r1 - 1.0, base + bh, 0), hi1, hi0]):
+				st.set_uv(Vector2(q.x * 0.25, q.z * 0.25))
+				st.add_vertex(q)
+		st.generate_normals()
+		st.generate_tangents()
+		st.index()
+		a.add(st.commit(), Transform3D.IDENTITY, m("limestone"))
+	# Flat top: a low plain parapet ring, no merlons.
+	a.add(ShapeKit.cylinder(r1 + 0.1, 1.0, 40), T(Vector3(0, base + h + 0.4, 0)), m("limestone_warm"))
+	a.add(ShapeKit.cylinder(r1 - 0.7, 0.4, 24), T(Vector3(0, base + h + 0.75, 0)), m("stone_dark"))
+	# A few narrow slit windows, small arched door at the base (west).
+	for d in [[0.7, 9.0], [2.3, 15.5], [3.6, 21.0], [5.2, 12.0], [1.6, 25.0]]:
+		var ang2: float = d[0]
+		var rr2 := lerpf(r0, r1, d[1] / h)
+		a.add(box(Vector3(0.35, 1.3, 0.5)), T(Vector3(cos(ang2) * rr2, base + d[1], sin(ang2) * rr2), Vector3(0, -ang2 + PI * 0.5, 0)), m("navy"))
+	a.add(box(Vector3(0.5, 2.0, 1.1)), T(Vector3(-r0 + 0.1, base + 1.0, 0)), m("wood"))
+	a.add(ShapeKit.cylinder(0.55, 0.5, 10), T(Vector3(-r0 + 0.1, base + 2.0, 0), Vector3(0, 0, PI * 0.5)), m("wood"))
 
 
 static func _flame_tower(a: Accum, height: float, v: int) -> void:
@@ -620,8 +695,9 @@ static func _wheel_ring(a: Accum) -> void:
 	for i in 24:
 		var ang2 := TAU * i / 24.0
 		var p2 := Vector3(cos(ang2), sin(ang2), 0) * (r + 1.2)
-		var col: String = ["red", "turquoise", "gold", "orange"][i % 4]
-		a.add(ShapeKit.superellipsoid(Vector3(1.8, 2.0, 1.8), 0.7, 0.8), T(p2), m(col))
+		# Baku Eye: 60 m wheel, pastel cabins (~2.5 m)
+		var col: String = ["pastel_pink", "pastel_mint", "pastel_blue", "pastel_yellow"][i % 4]
+		a.add(ShapeKit.superellipsoid(Vector3(2.5, 2.6, 2.5), 0.7, 0.8), T(p2), m(col))
 
 
 static func _kiosk(a: Accum) -> void:

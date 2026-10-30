@@ -21,6 +21,26 @@ const VIOLET := Color("8b5cf6")
 const CREAM := Color("fff6df")
 const TEXT := Color("ffffff")
 const TEXT_DIM := Color(0.86, 0.93, 1.0, 0.86)
+
+## Type scale and touch metrics, in base canvas units (1280x720 design size,
+## stretched with canvas_items/expand: x1.5 on a 2400x1080 phone). Every menu
+## uses these so hierarchy and sizes stay consistent across screens.
+const FS_DISPLAY := 92 ## game logo
+const FS_TITLE := 38 ## screen titles
+const FS_H1 := 30 ## panel / card headings
+const FS_H2 := 25 ## row titles
+const FS_BODY := 21 ## body text
+const FS_CAPTION := 17 ## hints, secondary info
+const FS_BTN_PRIMARY := 32
+const FS_BTN := 23
+const FS_BTN_SMALL := 20
+const H_PRIMARY := 84 ## primary call-to-action height
+const H_BTN := 72 ## standard button height
+const H_BTN_SMALL := 64 ## smallest touch target (~38 dp on a 400 ppi phone)
+const ICON_ROW := 44 ## settings row icon
+const GAP_S := 8
+const GAP_M := 12
+const GAP_L := 20
 # Legacy names still used by HUD widgets (mapped onto the new palette).
 const NAVY := BLUE
 const NAVY_DEEP := INK
@@ -108,7 +128,11 @@ static func art_box(art: String, pad_x := 22, pad_y := 12, margin := 34) -> Styl
 
 ## Gives a Button the glossy look of one palette colour
 ## ("yellow", "orange", "blue", "turquoise", "coral", "lime", "violet").
-static func style_button(b: Button, color := "blue", font_size := 26) -> void:
+static func style_button(b: Button, color := "blue", font_size := FS_BTN) -> void:
+	# Press bounce on every styled button (0.9.2), connected once.
+	if not b.has_meta("press_bounce"):
+		b.set_meta("press_bounce", true)
+		b.pressed.connect(func(): bounce(b, 0.06))
 	var normal := art_box("btn_" + color)
 	var pressed := art_box("btn_" + color + "_pressed")
 	b.add_theme_stylebox_override("normal", normal)
@@ -129,7 +153,7 @@ static func style_button(b: Button, color := "blue", font_size := 26) -> void:
 static func build() -> Theme:
 	var t := Theme.new()
 	t.default_font = body_font()
-	t.default_font_size = 24
+	t.default_font_size = FS_BODY
 
 	# Panels
 	t.set_stylebox("panel", "PanelContainer", art_box("panel_blue", 22, 18))
@@ -170,7 +194,7 @@ static func build() -> Theme:
 		t.set_color("font_outline_color", type, Color(INK, 0.85))
 		t.set_constant("outline_size", type, 6)
 		t.set_font("font", type, heading_font())
-		t.set_font_size("font_size", type, 26)
+		t.set_font_size("font_size", type, FS_BTN)
 	t.set_color("font_hover_pressed_color", "Button", YELLOW)
 	for type in ["CheckButton", "CheckBox"]:
 		t.set_stylebox("pressed", type, b_normal)
@@ -192,7 +216,7 @@ static func build() -> Theme:
 		t.set_color(k, "BigButton", INK)
 	t.set_constant("outline_size", "BigButton", 0)
 	t.set_font("font", "BigButton", heading_font())
-	t.set_font_size("font_size", "BigButton", 40)
+	t.set_font_size("font_size", "BigButton", FS_BTN_PRIMARY)
 
 	# Labels: white, bold, with a soft ink outline for legibility on 3D.
 	t.set_color("font_color", "Label", TEXT)
@@ -208,12 +232,12 @@ static func build() -> Theme:
 	t.set_constant("shadow_offset_x", "Title", 0)
 	t.set_type_variation("Heading", "Label")
 	t.set_font("font", "Heading", heading_font())
-	t.set_font_size("font_size", "Heading", 42)
+	t.set_font_size("font_size", "Heading", FS_TITLE)
 	t.set_constant("outline_size", "Heading", 12)
 	t.set_color("font_outline_color", "Heading", INK)
 	t.set_type_variation("Dim", "Label")
 	t.set_color("font_color", "Dim", TEXT_DIM)
-	t.set_font_size("font_size", "Dim", 20)
+	t.set_font_size("font_size", "Dim", FS_CAPTION + 1)
 	t.set_constant("outline_size", "Dim", 0)
 	t.set_type_variation("HudBig", "Label")
 	t.set_font("font", "HudBig", heading_font())
@@ -309,6 +333,21 @@ static func _circle_texture(size: int, color: Color) -> ImageTexture:
 # Shared micro-animations -------------------------------------------------------
 
 ## Short squash-and-bounce on press / selection (respects pivot at centre).
+## Dialog open pop (0.9.2): grows from 92 % with a soft overshoot.
+static func pop_in(c: Control) -> void:
+	if c == null:
+		return
+	c.pivot_offset = c.size * 0.5
+	if not c.has_meta("pop_pivot"):
+		c.set_meta("pop_pivot", true)
+		c.resized.connect(func(): c.pivot_offset = c.size * 0.5)
+	c.scale = Vector2.ONE * 0.92
+	c.modulate.a = 0.0
+	var tw := c.create_tween().set_parallel(true)
+	tw.tween_property(c, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(c, "modulate:a", 1.0, 0.12)
+
+
 static func bounce(c: Control, amount := 0.1) -> void:
 	if c == null or not c.is_inside_tree():
 		return

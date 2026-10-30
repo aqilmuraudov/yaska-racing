@@ -11,9 +11,18 @@ extends Node3D
 ## - Repeated props are MultiMesh-instanced in spatial chunks so the
 ##   "scenery distance" setting can cull them; landmarks are always visible.
 
-const CHUNK := 140.0
+const CHUNK := 70.0 ## 0.10.2: 140 -> 70 m for tighter culling and LOD
+## 0.10.2: chunk-centre distance where decor switches to the far LOD mesh
+## (Low 60 m, Medium ~109 m, High 200 m; see lod_for).
+const LOD_DISTANCE := 109.0
+var lod_distance := LOD_DISTANCE
+
+
+static func lod_for(decor_meters: float) -> float:
+	return clampf(decor_meters * 0.42, 60.0, 200.0)
 const NO_SHADOW_PROPS := ["bench", "bollard", "umbrella", "kiosk", "baluster", "chevron_left", "chevron_right", "tire_stack", "boat"]
 
+var _lod_nodes: Array = []
 var data: TrackData
 var builder: TrackBuilder
 var rng := RandomNumberGenerator.new()
@@ -32,9 +41,11 @@ const WHEEL_SITE := Vector3(-40.0, 0.0, 22.0)
 const LANDMARK_SITES := {
 	# id: [x, z, footprint radius, yaw]
 	"flag_square": [338.0, -14.0, 36.0, 0.0],
-	"heydar_aliyev": [170.0, -252.0, 66.0, 0.45],
-	"flame_towers": [-150.0, -398.0, 52.0, 0.35],
+	"heydar_aliyev": [175.0, -285.0, 66.0, 0.45],
+	"flame_towers": [-175.0, -435.0, 66.0, 0.69],
 	"crescent": [-236.0, 150.0, 44.0, 0.2],
+	"government_house": [40.0, -104.0, 64.0, 0.0],
+	"carpet_museum": [-160.0, -84.0, 56.0, 0.55],
 }
 
 
@@ -57,6 +68,7 @@ func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
 		_place_landmarks,
 		_place_bunting,
 		_place_backdrop,
+		_place_baku_extras,
 		_flush_instances,
 		func(): _finish(env),
 	]
@@ -115,42 +127,126 @@ func ground_y(p: Vector3) -> float:
 	return y - 0.05
 
 
+## 0.11.0: per-prop chunk size (big buildings use larger chunks, fewer draw
+## calls) and a minimum far distance for skyline props (towers stay visible
+## on Low, they are only ~40 triangles each).
+var chunk_size := {}
+var skyline_min := {}
+
+
 func add_instance(prop: String, xform: Transform3D) -> void:
 	if not _instances.has(prop):
 		_instances[prop] = {}
-	var key := Vector2i(int(floor(xform.origin.x / CHUNK)), int(floor(xform.origin.z / CHUNK)))
+	var cs: float = chunk_size.get(prop, CHUNK)
+	var key := Vector2i(int(floor(xform.origin.x / cs)), int(floor(xform.origin.z / cs)))
 	if not _instances[prop].has(key):
 		_instances[prop][key] = []
 	_instances[prop][key].append(xform)
 
 
+## 0.11.0 cinematic fix: decor has no collision, so the camera's physics ray
+## could not see signs, palms or beds and they slid in front of the kart. Every
+## instanced prop taller than OCC_MIN_H (and not standing on the road) is kept
+## as a world AABB in a coarse grid; segment_hit() tests a camera line.
+const OCC_CELL := 24.0
+const OCC_MIN_H := 1.2
+var _occ := {} # Vector2i -> Array[AABB]
+var occluder_count := 0
+
+
+func add_occluder(box: AABB) -> void:
+	var c0 := Vector2i(int(floor(box.position.x / OCC_CELL)), int(floor(box.position.z / OCC_CELL)))
+	var c1 := Vector2i(int(floor(box.end.x / OCC_CELL)), int(floor(box.end.z / OCC_CELL)))
+	for cx in range(c0.x, c1.x + 1):
+		for cz in range(c0.y, c1.y + 1):
+			var k := Vector2i(cx, cz)
+			if not _occ.has(k):
+				_occ[k] = []
+			_occ[k].append(box)
+	occluder_count += 1
+
+
+## Fraction (0..1) along a->b of the first decor box hit, or -1 when clear.
+func segment_hit(a: Vector3, b: Vector3) -> float:
+	var len := a.distance_to(b)
+	if len < 0.01:
+		return -1.0
+	var lo := Vector2(minf(a.x, b.x), minf(a.z, b.z))
+	var hi := Vector2(maxf(a.x, b.x), maxf(a.z, b.z))
+	var best := 2.0
+	for cx in range(int(floor(lo.x / OCC_CELL)), int(floor(hi.x / OCC_CELL)) + 1):
+		for cz in range(int(floor(lo.y / OCC_CELL)), int(floor(hi.y / OCC_CELL)) + 1):
+			for box: AABB in _occ.get(Vector2i(cx, cz), []):
+				var hit = box.intersects_segment(a, b)
+				if hit != null:
+					best = minf(best, a.distance_to(hit) / len)
+	return best if best <= 1.0 else -1.0
+
+
+func _register_occluders(mesh: Mesh, list: Array) -> void:
+	if mesh == null or data == null:
+		return
+	var ab := mesh.get_aabb()
+	if ab.size.y < OCC_MIN_H or maxf(ab.size.x, ab.size.z) < 0.25:
+		return
+	for x: Transform3D in list:
+		var box: AABB = x * ab
+		var c := box.get_center()
+		# Overhead pieces spanning the road (gates, bunting) are not walls.
+		var cl := data.main.closest(Vector3(c.x, 0.0, c.z))
+		if cl.distance < data.main.half_width_at(cl.s) + 0.5:
+			continue
+		add_occluder(box.grow(0.15))
+
+
 func _flush_instances() -> void:
 	for prop in _instances.keys():
 		var mesh := PropKit.get_mesh(prop)
+		var lo := PropKit.get_mesh(prop + PropKit.LO_SUFFIX)
 		for key in _instances[prop].keys():
 			var list: Array = _instances[prop][key]
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = mesh
-			mm.instance_count = list.size()
-			for i in list.size():
-				mm.set_instance_transform(i, list[i])
-			var mmi := MultiMeshInstance3D.new()
-			mmi.name = "%s_%d_%d" % [prop, key.x, key.y]
-			mmi.multimesh = mm
-			mmi.visibility_range_end_margin = 20.0
-			mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
-			if prop in NO_SHADOW_PROPS:
-				mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			add_child(mmi)
-			_chunk_nodes.append(mmi)
+			_register_occluders(mesh, list)
+			# 0.10.2 LOD: full mesh near the camera, half-segment mesh without
+			# shadows beyond LOD_DISTANCE (chunk centre), cut at the decor distance.
+			for far in [false, true]:
+				var mm := MultiMesh.new()
+				mm.transform_format = MultiMesh.TRANSFORM_3D
+				mm.mesh = lo if far else mesh
+				mm.instance_count = list.size()
+				for i in list.size():
+					mm.set_instance_transform(i, list[i])
+				var mmi := MultiMeshInstance3D.new()
+				mmi.name = "%s_%d_%d%s" % [prop, key.x, key.y, "_lo" if far else ""]
+				mmi.set_meta("prop", prop)
+				mmi.multimesh = mm
+				mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+				if far:
+					mmi.visibility_range_begin = LOD_DISTANCE
+					mmi.visibility_range_begin_margin = 10.0
+					mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					_lod_nodes.append(mmi)
+				else:
+					mmi.set_meta("instance_xforms", list) # CPU copy for layout checks (tests)
+					mmi.visibility_range_end = LOD_DISTANCE
+					mmi.visibility_range_end_margin = 10.0
+					if prop in NO_SHADOW_PROPS:
+						mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					_chunk_nodes.append(mmi)
+				add_child(mmi)
 	_instances.clear()
 
 
 func set_decor_distance(meters: float) -> void:
+	# Near chunks stop at the LOD switch (or earlier on Low); far LOD chunks
+	# carry on to the decor distance.
+	lod_distance = lod_for(meters)
 	for n in _chunk_nodes:
 		if is_instance_valid(n):
-			n.visibility_range_end = meters
+			n.visibility_range_end = lod_distance
+	for n in _lod_nodes:
+		if is_instance_valid(n):
+			n.visibility_range_begin = lod_distance
+			n.visibility_range_end = maxf(meters, skyline_min.get(n.get_meta("prop", ""), 0.0))
 	for c in _carpets:
 		if is_instance_valid(c):
 			c.visibility_range_end = meters * 0.6
@@ -258,7 +354,7 @@ func _place_boulevard_inland() -> void:
 			if absf(r.z) > 0.6:
 				var tp := p + inward * (hw + data.offroad_width + 5.0 + rng.randf_range(0.0, 4.0))
 				if clear_of_track(tp, 2.0):
-					add_instance("tree" if rng.randf() < 0.7 else "cypress", Transform3D(Basis(Vector3.UP, rng.randf() * TAU), Vector3(tp.x, ground_y(tp), tp.z)))
+					add_instance(["tree", "tree", "pine", "cypress"][rng.randi() % 4], Transform3D(Basis(Vector3.UP, rng.randf() * TAU), Vector3(tp.x, ground_y(tp), tp.z)))
 				if int(s) % 36 < 12:
 					var bp := p + inward * (hw + data.offroad_width + 26.0)
 					if clear_of_track(bp, 12.0):
@@ -302,7 +398,7 @@ func _place_old_city() -> void:
 				for q in corners:
 					if not clear_of_track(q + t * (w * 0.45), 0.4, 0.4) or not clear_of_track(q - t * (w * 0.45), 0.4, 0.4):
 						ok = false
-				if tower_pos != Vector3.INF and Vector2(c.x - tower_pos.x, c.z - tower_pos.z).length() < 14.0:
+				if tower_pos != Vector3.INF and Vector2(c.x - tower_pos.x, c.z - tower_pos.z).length() < 46.0:
 					ok = false
 				if ok:
 					var gy := path.position_at(sc).y - 0.05
@@ -382,7 +478,7 @@ func _place_connector_greenery() -> void:
 	for i in 260:
 		var q := Vector3(rng.randf_range(b.position.x - 60, b.end.x + 60), 0, rng.randf_range(b.position.z - 60, minf(b.end.z, data.sea_z - 20.0)))
 		if clear_of_track(q, 3.0, 4.0):
-			add_instance("tree" if rng.randf() < 0.65 else "cypress", Transform3D(Basis(Vector3.UP, rng.randf() * TAU), Vector3(q.x, ground_y(q) - 0.1, q.z)))
+			add_instance(["tree", "pine", "pine", "cypress"][rng.randi() % 4], Transform3D(Basis(Vector3.UP, rng.randf() * TAU), Vector3(q.x, ground_y(q) - 0.1, q.z)))
 
 
 func _place_corner_signs() -> void:
@@ -416,7 +512,7 @@ func _place_landmarks() -> void:
 	# Maiden-Tower-inspired keep inside the Old City block.
 	var tp := _tower_position()
 	if tp != Vector3.INF:
-		_landmark(PropKit.get_mesh("maiden_tower"), Transform3D(Basis(Vector3.UP, 0.4), Vector3(tp.x, tp.y - 0.05, tp.z)), "OldTower")
+		_landmark(PropKit.get_mesh("maiden_tower"), Transform3D(Basis(Vector3.UP, -PI * 0.5).scaled(Vector3.ONE * 1.3), Vector3(tp.x, tp.y - 0.05, tp.z)), "OldTower")
 	_build_gate()
 	_build_gantry()
 	_place_baku_landmarks()
@@ -427,6 +523,8 @@ func _place_landmarks() -> void:
 	var frame := _landmark(PropKit.get_mesh("wheel_frame"), Transform3D(Basis.IDENTITY, wp), "WheelFrame")
 	wheel_ring = Node3D.new()
 	wheel_ring.name = "WheelRing"
+	# Rotated per frame in _process, so it must not be physics-interpolated.
+	wheel_ring.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	wheel_ring.transform = Transform3D(Basis.IDENTITY, wp + Vector3(0, 34.0, 0))
 	add_child(wheel_ring)
 	var ring_mi := MeshInstance3D.new()
@@ -458,6 +556,8 @@ func _place_baku_landmarks() -> void:
 			hill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(hill)
 		var xf := Transform3D(Basis(Vector3.UP, float(site[3])), Vector3(p.x, y, p.z))
+		if id == "carpet_museum":
+			xf.basis = xf.basis.scaled(Vector3.ONE * 1.5)
 		var root := Node3D.new()
 		root.name = "Landmark_" + id
 		root.transform = xf
@@ -505,21 +605,34 @@ func _build_gate() -> void:
 	var r := data.main.right_at(gate_s)
 	var t := data.main.tangent_at(gate_s)
 	var half := data.main.half_width_at(gate_s) + data.offroad_width + 1.4
-	var a := PropKit.Accum.new()
-	var tower_h := 11.0
-	for side: float in [-1.0, 1.0]:
-		var c := r * side * (half + 1.8)
-		a.add(PropKit.rbox(Vector3(3.6, tower_h, 3.6), 0.18), Transform3D(Basis.IDENTITY, c + Vector3.UP * tower_h * 0.5), PropKit.m("limestone_warm"))
-		for k in 4:
-			var ang := TAU * k / 4.0 + PI * 0.25
-			a.add(PropKit.box(Vector3(0.9, 1.0, 0.9)), Transform3D(Basis.IDENTITY, c + Vector3(cos(ang) * 1.5, tower_h + 0.5, sin(ang) * 1.5)), PropKit.m("limestone"))
-	# Arch beam high above the road (clearance > 8 m).
-	var span := (half + 1.8) * 2.0
-	a.add(PropKit.rbox(Vector3(span, 1.6, 2.4), 0.15), Transform3D(Basis.IDENTITY, Vector3.UP * (tower_h - 1.6)), PropKit.m("limestone_warm"))
-	a.add(PropKit.rbox(Vector3(span - 3.0, 0.5, 2.6), 0.2), Transform3D(Basis.IDENTITY, Vector3.UP * (tower_h - 0.6)), PropKit.m("limestone"))
+	# Qoşa Qala: the Old City's double gate, with crenellated walls running
+	# off both sides (cut short wherever they would reach another road).
 	var basis := Basis(r, Vector3.UP, r.cross(Vector3.UP)).orthonormalized()
-	var gate := _landmark(a.commit(), Transform3D(basis, p + Vector3.DOWN * 0.05), "CityGate")
-	_sign(gate, "İÇƏRİŞƏHƏR", Vector3(0, tower_h - 1.6, 0), 1.25, Color("fff3d6"), Color("7a4a2a"))
+	var gate := _landmark(LandmarkKit.qosa_qala(half * 2.0), Transform3D(basis, p + Vector3.DOWN * 0.05), "CityGate")
+	gate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	_sign(gate, "İÇƏRİŞƏHƏR", Vector3(0, 11.2, 0), 1.25, Color("fff3d6"), Color("7a4a2a"))
+	landmarks["icherisheher_gate"] = gate
+	for side: float in [-1.0, 1.0]:
+		var start := half + 3.6 + 10.4
+		var length := 0.0
+		while length < 80.0:
+			var q := p + r * side * (start + length + 4.0)
+			if not clear_of_track(q, 3.0, 1.0):
+				break
+			length += 4.0
+		if length < 8.0:
+			continue
+		var wall_dir := r * side
+		var wb := Basis(wall_dir, Vector3.UP, wall_dir.cross(Vector3.UP)).orthonormalized()
+		var origin := p + r * side * start
+		_landmark(LandmarkKit.city_wall(length), Transform3D(wb, Vector3(origin.x, ground_y(origin) - 0.05, origin.z)), "CityWall")
+		var end := origin + wall_dir * length
+		var tower := PropKit.Accum.new()
+		tower.add(ShapeKit.cylinder(3.4, 11.0, 16), PropKit.T(Vector3(0, 5.5, 0)), PropKit.m("limestone_warm"))
+		for k in 10:
+			var ang := TAU * k / 10.0
+			tower.add(PropKit.box(Vector3(0.9, 1.2, 0.7)), PropKit.T(Vector3(cos(ang) * 3.3, 11.6, sin(ang) * 3.3), Vector3(0, -ang, 0)), PropKit.m("limestone_warm"))
+		_landmark(tower.commit(), Transform3D(Basis.IDENTITY, Vector3(end.x, ground_y(end) - 0.05, end.z)), "WallTower")
 
 
 func _build_gantry() -> void:
@@ -539,7 +652,7 @@ func _build_gantry() -> void:
 		a.add(PropKit.box(Vector3(half * 2.0 / 24.0, 0.5, 0.05)), Transform3D(Basis.IDENTITY, Vector3(x, h - 0.05, 0.52)), PropKit.m("navy" if i % 2 == 0 else "white"))
 	var basis := Basis(r, Vector3.UP, r.cross(Vector3.UP)).orthonormalized()
 	var gantry := _landmark(a.commit(), Transform3D(basis, p + Vector3.DOWN * 0.05), "StartGantry")
-	_sign(gantry, "BAKU TURBO", Vector3(0, h + 0.3, 0), 0.55, Color("ffc93c"), Color("1b2a4a"))
+	_sign(gantry, "YASKA RACING", Vector3(0, h + 0.3, 0), 0.55, Color("ffc93c"), Color("1b2a4a"))
 	# Countdown lights (lit by RaceManager's countdown signal).
 	_light_on_mat = StandardMaterial3D.new()
 	_light_on_mat.albedo_color = Color("ff3b3b")
@@ -679,12 +792,127 @@ func _place_backdrop() -> void:
 		var ang := rng.randf() * TAU
 		var dist := rng.randf_range(450.0, 800.0)
 		var cpos := center + Vector3(cos(ang) * dist, rng.randf_range(110.0, 180.0), sin(ang) * dist)
-		for k in 4:
+		for k in 5:
 			var sz := Vector3(rng.randf_range(40, 80), rng.randf_range(14, 24), rng.randf_range(26, 48))
 			var off := Vector3(rng.randf_range(-35, 35), rng.randf_range(-4, 6), rng.randf_range(-15, 15))
-			clouds.add(ShapeKit.superellipsoid(sz, 0.9, 0.9, Vector2.ONE, Vector2.ONE, 5, 8), Transform3D(Basis.IDENTITY, cpos + off), cloud_mat)
+			clouds.add(ShapeKit.superellipsoid(sz, 1.0, 1.0, Vector2.ONE, Vector2.ONE, 6, 10), Transform3D(Basis.IDENTITY, cpos + off), cloud_mat)
+			# flat, slightly grey base like a cumulus
+			clouds.add(ShapeKit.superellipsoid(Vector3(sz.x * 1.2, sz.y * 0.35, sz.z * 1.1), 1.0, 1.0, Vector2.ONE, Vector2.ONE, 4, 8), Transform3D(Basis.IDENTITY, cpos + off - Vector3(0, sz.y * 0.3, 0)), cloud_mat)
 	var cloud_mi := _landmark(clouds.commit(), Transform3D.IDENTITY, "Clouds")
 	cloud_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## 0.9.6 ambiance: TV Tower on the northern hills, Crystal Hall on the bay,
+## oil platforms and ships on the Caspian horizon, flag poles along the
+## promenade and Azerbaijani street signs beside the road.
+const EXTRA_SITES := {
+	"tv_tower": [-20.0, -640.0, 0.0],
+	"crystal_hall": [300.0, 92.0, 0.0],
+}
+const STREET_NAMES := ["Neftçilər prospekti", "Dənizkənarı bulvar", "İçərişəhər", "Azadlıq meydanı", "Üzeyir Hacıbəyov küç."]
+
+
+func _place_baku_extras() -> void:
+	for id in EXTRA_SITES.keys():
+		var site: Array = EXTRA_SITES[id]
+		var p := Vector3(site[0], 0.0, site[1])
+		var y := ground_y(p) - 0.5
+		if id == "crystal_hall":
+			y = data.sea_level - 0.6
+		var root := Node3D.new()
+		root.name = "Landmark_" + id
+		root.transform = Transform3D(Basis(Vector3.UP, float(site[2])), Vector3(p.x, y, p.z))
+		add_child(root)
+		var mi := MeshInstance3D.new()
+		mi.name = "Near"
+		mi.mesh = BakuExtras.get_mesh(id)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(mi)
+		landmarks[id] = root
+	# Horizon: oil platforms far out, a few freighters nearer.
+	var sea := data.sea_z
+	var hz := PropKit.Accum.new()
+	for i in 5:
+		var op := Vector3(-700.0 + i * 340.0 + rng.randf_range(-60, 60), data.sea_level, sea + rng.randf_range(430.0, 620.0))
+		hz.add_committed(BakuExtras.get_mesh("oil_platform"), Transform3D(Basis(Vector3.UP, rng.randf() * TAU), op))
+	for i in 3:
+		var sp := Vector3(-350.0 + i * 360.0 + rng.randf_range(-50, 50), data.sea_level, sea + rng.randf_range(220.0, 380.0))
+		hz.add_committed(BakuExtras.get_mesh("ship"), Transform3D(Basis(Vector3.UP, PI * 0.5 + rng.randf_range(-0.3, 0.3)), sp))
+	var hz_mi := _landmark(hz.commit(), Transform3D.IDENTITY, "CaspianHorizon")
+	hz_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var hz_mark := Node3D.new()
+	hz_mark.name = "HorizonMark"
+	hz_mark.position = Vector3(0.0, data.sea_level, sea + 300.0)
+	add_child(hz_mark)
+	landmarks["caspian_horizon"] = hz_mark
+	# Azerbaijani flags along the promenade.
+	var flag_mesh := LandmarkKit.flag_mesh(2.2, 1.1)
+	var x := -300.0
+	while x < 290.0:
+		var fp := Vector3(x, -0.05, sea - 5.0)
+		if clear_of_track(fp, 0.6, 0.6):
+			var pole := _landmark(BakuExtras.get_mesh("flag_pole"), Transform3D(Basis.IDENTITY, fp), "FlagPole")
+			pole.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			pole.add_to_group("flag_pole")
+			var f := MeshInstance3D.new()
+			f.name = "Flag"
+			f.mesh = flag_mesh
+			f.position = Vector3(0, 7.9, 0)
+			f.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			f.extra_cull_margin = 2.0
+			pole.add_child(f)
+		x += 48.0
+	# Street signs (blue name plates) beside the road.
+	var L := data.main.length
+	for i in STREET_NAMES.size():
+		var half: float = 0.45 + String(STREET_NAMES[i]).length() * 0.08
+		var placed := false
+		for k in 16:
+			if placed:
+				break
+			var s := fposmod(L * (0.08 + 0.19 * i) + k * 9.0, L)
+			var p := data.main.position_at(s)
+			var r := data.main.right_at(s)
+			var off: float = data.main.half_width_at(s) + data.offroad_width + 2.0 + half
+			for side: float in [1.0, -1.0]:
+				var sp: Vector3 = p + r * side * off
+				if clear_of_track(sp, half + 0.4, 0.6):
+					_street_sign(STREET_NAMES[i], Vector3(sp.x, p.y - 0.05, sp.z), data.main.tangent_at(s))
+					placed = true
+					break
+
+
+func _street_sign(text: String, pos: Vector3, along: Vector3) -> void:
+	var root := Node3D.new()
+	root.name = "StreetSign"
+	root.add_to_group("street_sign")
+	add_child(root)
+	# Plate faces the oncoming karts.
+	root.global_transform = _face(pos, -along)
+	var w := 0.5 + text.length() * 0.16
+	var pole := MeshInstance3D.new()
+	pole.mesh = ShapeKit.cylinder(0.06, 3.4, 6)
+	pole.material_override = PropKit.m("metal_grey")
+	pole.position = Vector3(-w * 0.5 + 0.2, 1.7, 0)
+	root.add_child(pole)
+	var plate := MeshInstance3D.new()
+	plate.mesh = PropKit.box(Vector3(w, 0.62, 0.06))
+	plate.material_override = ShapeKit.mat(Color("1d5fae"), 0.5)
+	plate.position = Vector3(0, 3.1, 0)
+	root.add_child(plate)
+	for side: float in [-1.0, 1.0]:
+		var l := Label3D.new()
+		l.text = text
+		l.font = UITheme.heading_font()
+		l.font_size = 64
+		l.pixel_size = 0.0045
+		l.outline_size = 0
+		l.modulate = Color.WHITE
+		l.position = Vector3(0, 3.1, side * 0.04)
+		l.rotation.y = 0.0 if side > 0.0 else PI
+		l.double_sided = false
+		l.shaded = false
+		root.add_child(l)
 
 
 func _process(delta: float) -> void:

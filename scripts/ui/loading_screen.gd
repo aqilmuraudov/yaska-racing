@@ -77,7 +77,7 @@ func _ready() -> void:
 func _track_name_key() -> String:
 	if Game.race_config.get("mode", "") == "tutorial":
 		return "MODE_TUTORIAL"
-	return "TRACK_SEAFRONT"
+	return TrackList.name_key(String(Game.race_config.get("track_id", ""))) # 0.11.0
 
 
 ## Build step name → player-facing stage text.

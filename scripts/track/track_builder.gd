@@ -11,7 +11,10 @@ const WATER_SHADER := preload("res://assets/materials/water.gdshader")
 
 const CURB_WIDTH := 0.9
 const CURB_CURVATURE := 0.010 ## |rad/m| above which kerbs are placed
-const WALL_HEIGHT_COLLISION := 4.5
+const WALL_HEIGHT_COLLISION := 6.0
+const WALL_COLLISION_THICKNESS := 2.0
+const WALL_SEAM_OVERLAP := 0.35
+const WALL_FACE_INSET := 0.3
 const OFFROAD_DROP := 0.04
 
 # Palette (warm, readable)
@@ -25,6 +28,9 @@ const C_CONCRETE := Color("d8d4cc")
 const C_STRIPE_RED := Color("d9343f")
 const C_STRIPE_BLUE := Color("2f74c9")
 const C_SEABED := Color("6d8f86")
+const C_CITY_SIDEWALK := Color("b9b4ac") ## 0.11.0 downtown kerbside paving
+const C_CITY_PLAZA := Color("d6cfc2")
+const C_CITY_PARK := Color("6fb35a")
 
 var data: TrackData
 var road_body: StaticBody3D
@@ -201,6 +207,8 @@ func _offroad_color(theme: int, p: Vector3, side: float, right: Vector3) -> Colo
 			return C_SAND if (right * side).z > 0.3 else C_GRASS
 		TrackData.THEME_OLDCITY:
 			return C_COBBLE_OFF
+		TrackData.THEME_DOWNTOWN:
+			return C_CITY_SIDEWALK
 	return C_GRASS
 
 
@@ -246,10 +254,27 @@ func _build_walls() -> void:
 				_wall_visual(stone_mb if style.get("kind", "") == "oldcity" else wall_mb, a, b, r0 * side, r1 * side, style)
 				wall_segments.append({"a": a, "b": b, "out": r0 * side, "theme": theme,
 					"path": entry.index, "side": side, "s": path.cum[i], "style": style.get("kind", "")})
-				# Collision: thin vertical plane, tall enough to stop jumps.
 				var lo := Vector3.DOWN * 1.0
 				var hi := Vector3.UP * WALL_HEIGHT_COLLISION
-				col_mb.quad(a + lo, b + lo, b + hi, a + hi)
+				# Thick closed block behind the face (WALL_COLLISION_THICKNESS),
+				# overlapping its neighbours, so a fast drifting kart can never
+				# tunnel through a seam or a thin plane.
+				var along := (b - a)
+				along.y = 0.0
+				along = along.normalized() * WALL_SEAM_OVERLAP if along.length_squared() > 1e-6 else Vector3.ZERO
+				# The kart capsule (r=0.6) is narrower than the body (0.87 half
+				# width), so the collision face sits WALL_FACE_INSET inside the
+				# visual face: wheels stop at the barrier instead of inside it.
+				var ia := a - along - r0 * side * WALL_FACE_INSET
+				var ib := b + along - r1 * side * WALL_FACE_INSET
+				var oa := ia + r0 * side * (WALL_COLLISION_THICKNESS + WALL_FACE_INSET)
+				var ob := ib + r1 * side * (WALL_COLLISION_THICKNESS + WALL_FACE_INSET)
+				col_mb.quad(ia + lo, ib + lo, ib + hi, ia + hi)
+				col_mb.quad(ob + lo, oa + lo, oa + hi, ob + hi)
+				col_mb.quad(ia + hi, ib + hi, ob + hi, oa + hi)
+				col_mb.quad(oa + lo, ob + lo, ib + lo, ia + lo)
+				col_mb.quad(oa + lo, ia + lo, ia + hi, oa + hi)
+				col_mb.quad(ib + lo, ob + lo, ob + hi, ib + hi)
 	_add_mesh("Barriers", wall_mb.commit(materials.wall), false)
 	_add_mesh("StoneBarriers", stone_mb.commit(materials.stone), false)
 	_attach_shape(wall_body, col_mb)
@@ -262,6 +287,9 @@ func _wall_style(theme: int, outward: Vector3) -> Dictionary:
 				# Low plinth; the balustrade on top is placed by TrackDecor.
 				return {"h": 0.22, "body": Color("e8dcc0"), "cap": Color("f4ecd8"), "stripe": Color.TRANSPARENT, "kind": "balustrade"}
 			return {"h": 0.9, "body": C_CONCRETE, "cap": C_STRIPE_RED, "stripe": Color.WHITE}
+		TrackData.THEME_DOWNTOWN:
+			# City street barrier: light grey with a yellow cap and white stripe.
+			return {"h": 0.95, "body": Color("c4cad3"), "cap": Color("ffb21f"), "stripe": Color.WHITE}
 		TrackData.THEME_OLDCITY:
 			# Tints for the limestone shader (near white keeps the stone colour).
 			return {"h": 1.2, "body": Color(1.0, 0.97, 0.93), "cap": Color(1.0, 1.0, 1.0), "stripe": Color.TRANSPARENT, "kind": "oldcity"}
@@ -495,6 +523,12 @@ func _terrain_sample(hash: Dictionary, hcell: float, wx: float, wz: float) -> Ar
 	if wsum > 0.0:
 		y = ysum / wsum
 	var col := C_GRASS
+	var city := data.ground == "city"
+	if city:
+		# Downtown: paved blocks, with a few round park lawns.
+		col = C_CITY_PLAZA
+		if sin(wx * 0.021 + 1.3) * cos(wz * 0.026) > 0.55 and best_d > 24.0:
+			col = C_CITY_PARK
 	var inside := best_d < best_edge + 1.0
 	if inside:
 		y = best_y - 0.7
@@ -508,12 +542,18 @@ func _terrain_sample(hash: Dictionary, hcell: float, wx: float, wz: float) -> Ar
 	elif wz > data.sea_z:
 		col = C_SEABED
 		y = data.sea_level - 3.0
+	elif city:
+		pass
 	elif best_y > 4.5 and best_d < 60.0:
 		col = C_COBBLE_OFF.lightened(0.15)
 	elif best_d > 70.0:
 		col = C_GRASS_DARK
 	var n := sin(wx * 0.05) * cos(wz * 0.043)
-	if best_d > 60.0 and wz < data.sea_z - 16.0:
+	if city:
+		# Flat blocks (towers stand on them); hills only far outside town.
+		if best_d > 170.0 and wz < data.sea_z - 16.0:
+			y += minf((best_d - 170.0) * 0.08, 8.0) + n * 1.5
+	elif best_d > 60.0 and wz < data.sea_z - 16.0:
 		y += minf(maxf(0.0, (best_d - 60.0) * 0.06), 6.0) + n * 1.5 # gentle hills away from the course
 	return [y, col]
 

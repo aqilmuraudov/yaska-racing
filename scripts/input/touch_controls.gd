@@ -49,6 +49,12 @@ var _denied_time := 0.0
 var _t := 0.0
 var _last_item: StringName = &""
 var _icons := {}
+## Garage Nitro add-on (0.8.0): level 0 hides the button; the HUD feeds the
+## charge (0..1) every frame.
+## Kids controls (0.9.5): only NITRO (and recover) stay; no steering/gas/brake.
+var kids := false
+var nitro_level := 0
+var nitro_charge := 0.0
 
 
 func setup(p_input: PlayerInput) -> void:
@@ -62,7 +68,9 @@ func setup(p_input: PlayerInput) -> void:
 	_add("item", InputActions.USE_ITEM, "TOUCH_ITEM", "", Color("8b5cf6"))
 	_add("brake", InputActions.BRAKE, "TOUCH_BRAKE", "hud_brake", Color("5b6b8f"))
 	_add("gas", InputActions.ACCELERATE, "TOUCH_GAS", "hud_gas", Color("4fae2a"))
+	_add("nitro", InputActions.NITRO, "HUD_NITRO", "hud_nitro", Color("e8334f"))
 	_add("look", InputActions.LOOK_BACK, "", "hud_look_back", Color("6f7fa0"))
+	_add("camera", InputActions.CAMERA, "", "hud_camera", Color("17b9c9"))
 	_add("recover", InputActions.RECOVER, "TOUCH_RECOVER", "hud_recover", Color("4fae2a"))
 	resized.connect(_layout)
 	visibility_changed.connect(func():
@@ -127,7 +135,11 @@ func _layout() -> void:
 		"boost": [right_base + Vector2(-296, -228) * s, 58.0],
 		"gas": [right_base + Vector2(-300, -96) * s, 74.0],
 		"look": [Vector2(-1000, -1000), 30.0],
+		# Nitro add-on: where TURBO sits when Easy Drift hides it, else above ITEM.
+		"nitro": [right_base + (Vector2(-300, -236) if easy else Vector2(-124, -474)) * s, 60.0],
 		"recover": [Vector2(sz.x * 0.5, 210.0 * s), 50.0],
+		# Camera view switch: small, top-right under the pause / timer row.
+		"camera": [Vector2(sz.x - m - 40.0 * s - ox, 150.0 * s), 36.0],
 	}
 	if not auto_gas:
 		defs["gas"] = [right_base + Vector2(-292, -92) * s, 74.0]
@@ -152,6 +164,10 @@ func _layout() -> void:
 				b.visible = false
 			"recover":
 				b.visible = show_recover
+			"nitro":
+				b.visible = nitro_level > 0
+		if kids and not b.id in ["nitro", "recover"]:
+			b.visible = false
 	if swapped:
 		# Keep left/right steering semantically correct when mirrored.
 		var l := get_button("steer_left")
@@ -177,6 +193,11 @@ func _button_at(p: Vector2) -> TouchButton:
 
 
 func _input(event: InputEvent) -> void:
+	# Releases are always processed, even while hidden (pause menu): a lost
+	# release left a steer action latched, so the kart kept turning "by itself".
+	if event is InputEventScreenTouch and not event.pressed:
+		handle_touch(event.index, event.position, false)
+		return
 	if not visible or not is_visible_in_tree():
 		return
 	if event is InputEventScreenTouch:
@@ -187,6 +208,12 @@ func _input(event: InputEvent) -> void:
 
 func handle_touch(index: int, pos: Vector2, pressed: bool) -> void:
 	if pressed:
+		# A new press for a finger we still track (Android may drop the
+		# release, e.g. on ACTION_CANCEL): release the old button first so
+		# the finger counter can never stay above zero.
+		if _finger_button.has(index):
+			_release(_finger_button[index])
+			_finger_button.erase(index)
 		var b := _button_at(pos)
 		if b != null:
 			_finger_button[index] = b
@@ -312,6 +339,16 @@ mode=%s unavailable=%s kart_steer=%+.2f" % [player_input.steer_mode(), player_in
 				_draw_item_button(b, font)
 			"drift":
 				_draw_drift_button(b, font)
+			"nitro":
+				var ready := nitro_charge >= 1.0
+				var c := _draw_body(b, b.color if ready else Color("7a8299"), 1.0)
+				_draw_icon_label(b, font)
+				var rr := b.radius * 1.12
+				draw_arc(c, rr, 0, TAU, 40, Color(UITheme.INK, 0.8), 10.0, true)
+				draw_arc(c, rr, -PI * 0.5, -PI * 0.5 + TAU * clampf(nitro_charge, 0.0, 1.0), 40,
+					UITheme.YELLOW if ready else Color("ff8a1f"), 6.0, true)
+				if ready:
+					draw_arc(c, rr + 6.0 + sin(_t * 8.0) * 3.0, 0, TAU, 40, Color(UITheme.YELLOW, 0.6), 3.0, true)
 			_:
 				_draw_body(b, b.color, 1.0)
 				if b.id.begins_with("steer"):

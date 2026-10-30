@@ -5,6 +5,14 @@ extends RefCounted
 ## as "finished" stylised shapes rather than raw primitives.
 
 static var _cache: Dictionary = {}
+## 0.10.2 LOD: segment multiplier used while building far-LOD prop meshes
+## (PropKit "<id>@lo"). 1.0 = full detail; counts never drop below a
+## minimum that keeps each shape's silhouette.
+static var detail := 1.0
+
+
+static func _d(n: int, lo: int) -> int:
+	return n if detail >= 0.999 else maxi(lo, mini(n, int(round(n * detail))))
 
 
 static func _sgnpow(x: float, p: float) -> float:
@@ -17,6 +25,8 @@ static func _sgnpow(x: float, p: float) -> float:
 static func superellipsoid(size: Vector3, e_v: float = 0.35, e_h: float = 0.35,
 		front_scale := Vector2.ONE, back_scale := Vector2.ONE, rings: int = 10, segs: int = 18,
 		y_shift_front: float = 0.0) -> ArrayMesh:
+	rings = _d(rings, 4)
+	segs = _d(segs, 8)
 	var key := "%s|%s|%s|%s|%s|%d|%d|%s" % [size, e_v, e_h, front_scale, back_scale, rings, segs, y_shift_front]
 	if _cache.has(key):
 		return _cache[key]
@@ -76,12 +86,12 @@ static func mat(color: Color, roughness: float = 0.6, metallic: float = 0.0, emi
 	if _cache.has(key):
 		return _cache[key]
 	var m := StandardMaterial3D.new()
-	m.albedo_color = color
+	m.albedo_color = Palette.vivid(color)
 	m.roughness = roughness
 	m.metallic = metallic
 	if emission > 0.0:
 		m.emission_enabled = true
-		m.emission = color
+		m.emission = Palette.vivid(color)
 		m.emission_energy_multiplier = emission
 	_cache[key] = m
 	return m
@@ -99,6 +109,7 @@ static func add_mesh(parent: Node3D, mesh: Mesh, material: Material, xform: Tran
 
 
 static func cylinder(radius: float, height: float, sides: int = 16) -> CylinderMesh:
+	sides = _d(sides, 5)
 	var key := "cyl|%s|%s|%d" % [radius, height, sides]
 	if _cache.has(key):
 		return _cache[key]
@@ -113,6 +124,7 @@ static func cylinder(radius: float, height: float, sides: int = 16) -> CylinderM
 
 
 static func cone(r_bottom: float, r_top: float, height: float, sides: int = 12) -> CylinderMesh:
+	sides = _d(sides, 4)
 	var key := "cone|%s|%s|%s|%d" % [r_bottom, r_top, height, sides]
 	if _cache.has(key):
 		return _cache[key]
@@ -127,6 +139,8 @@ static func cone(r_bottom: float, r_top: float, height: float, sides: int = 12) 
 
 
 static func torus(inner: float, outer: float, rings: int = 18, ring_segments: int = 10) -> TorusMesh:
+	rings = _d(rings, 6)
+	ring_segments = _d(ring_segments, 4)
 	var key := "torus|%s|%s|%d|%d" % [inner, outer, rings, ring_segments]
 	if _cache.has(key):
 		return _cache[key]
@@ -140,6 +154,8 @@ static func torus(inner: float, outer: float, rings: int = 18, ring_segments: in
 
 
 static func sphere(radius: float, segs: int = 16, rings: int = 10) -> SphereMesh:
+	segs = _d(segs, 6)
+	rings = _d(rings, 3)
 	var key := "sph|%s|%d|%d" % [radius, segs, rings]
 	if _cache.has(key):
 		return _cache[key]

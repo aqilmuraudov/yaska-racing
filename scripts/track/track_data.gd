@@ -9,9 +9,12 @@ extends RefCounted
 const THEME_BOULEVARD := 0
 const THEME_CONNECTOR := 1
 const THEME_OLDCITY := 2
+const THEME_DOWNTOWN := 3 ## 0.11.0 Göydələnlər şəhəri streets
 
 var id := ""
 var name_key := ""
+var decor_kind := "seafront" ## "seafront" (TrackDecor) or "downtown" (DowntownDecor)
+var ground := "" ## "" seafront hills, "city" flat paved blocks
 var default_laps := 3
 var main: TrackPath
 var finish_s := 0.0
@@ -41,6 +44,8 @@ static func from_dict(d: Dictionary) -> TrackData:
 	td.raw = d
 	td.id = d.get("id", "track")
 	td.name_key = d.get("name_key", "")
+	td.decor_kind = String(d.get("decor", "seafront"))
+	td.ground = String(d.get("ground", ""))
 	td.default_laps = int(d.get("laps", 3))
 	td.offroad_width = float(d.get("offroad_width", 4.0))
 	if d.has("sea"):

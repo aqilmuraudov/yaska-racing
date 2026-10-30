@@ -2,7 +2,7 @@ extends MenuScreen
 ## Race setup: track card with records and layout preview, plus the rules
 ## that apply to the chosen mode.
 
-const TRACKS := ["seafront_sprint"]
+const TRACKS := TrackList.IDS ## 0.11.0: two tracks
 const DIFFS := ["easy", "medium", "hard"]
 
 var start_btn: Button
@@ -11,6 +11,15 @@ var laps_sel: OptionSelector
 var ai_sel: OptionSelector
 var items_sel: OptionSelector
 var record_label: Label
+## 0.10.1 time of day: id -> big button.
+var tod_btns := {}
+var tod_id := TimeOfDay.DEFAULT
+## 0.11.0 track picker: id -> tab button.
+var track_btns := {}
+var track_id := "seafront_sprint"
+var track_name: Label
+var track_desc: Label
+var preview: TrackPreview
 
 
 func _init() -> void:
@@ -33,27 +42,31 @@ func build() -> void:
 	var cv := VBoxContainer.new()
 	cv.add_theme_constant_override("separation", 8)
 	card.add_child(cv)
-	var td := TrackData.load_from_file("res://data/tracks/%s.json" % TRACKS[0])
+	track_id = TrackList.valid(String(Settings.get_value("gameplay", "track", "seafront_sprint")))
+	_build_track_tabs(cv)
 	var tname := Label.new()
-	tname.text = tr(td.name_key)
+	track_name = tname
 	tname.theme_type_variation = &"Heading"
-	tname.add_theme_font_size_override("font_size", 34)
+	tname.add_theme_font_size_override("font_size", UITheme.FS_H1)
 	tname.add_theme_color_override("font_color", UITheme.GOLD)
 	tname.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	cv.add_child(tname)
-	var preview := TrackPreview.new()
-	preview.custom_minimum_size = Vector2(430, 220)
-	preview.track = td
+	preview = TrackPreview.new()
+	preview.custom_minimum_size = Vector2(430, 170)
 	cv.add_child(preview)
 	var desc := Label.new()
-	desc.text = tr("TRACK_SEAFRONT_DESC")
+	track_desc = desc
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 20)
+	desc.add_theme_font_size_override("font_size", UITheme.FS_BODY - 1)
 	cv.add_child(desc)
 	record_label = Label.new()
 	record_label.theme_type_variation = &"Dim"
-	record_label.add_theme_font_size_override("font_size", 20)
+	record_label.add_theme_font_size_override("font_size", UITheme.FS_CAPTION + 1)
 	cv.add_child(record_label)
+	var sp_l := Control.new()
+	sp_l.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cv.add_child(sp_l)
+	_build_tod(cv) # 0.10.1: big buttons in the free space of the track card
 	# Options
 	var ov := VBoxContainer.new()
 	ov.add_theme_constant_override("separation", 12)
@@ -78,13 +91,87 @@ func build() -> void:
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	ov.add_child(sp)
 	start_btn = make_button(tr("MENU_START_RACE"), _start, true)
-	start_btn.custom_minimum_size = Vector2(560, 84)
+	start_btn.custom_minimum_size = Vector2(560, UITheme.H_PRIMARY)
 	ov.add_child(start_btn)
+	_show_track()
+
+
+## Two big tab buttons with a mini picture of each layout.
+func _build_track_tabs(parent: Control) -> void:
+	var h := HBoxContainer.new()
+	h.name = "TrackTabs"
+	h.add_theme_constant_override("separation", 10)
+	parent.add_child(h)
+	for id in TRACKS:
+		var b := Button.new()
+		b.name = "Track_" + id
+		b.text = tr(TrackList.city_key(id)) # 0.11.1: same names as the city cards
+		b.custom_minimum_size = Vector2(0, 64)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.clip_text = true
+		b.focus_mode = Control.FOCUS_ALL
+		b.pressed.connect(set_track.bind(id))
+		h.add_child(b)
+		track_btns[id] = b
+
+
+func set_track(id: String) -> void:
+	track_id = TrackList.valid(id)
+	Settings.set_value("gameplay", "track", track_id) # remembered for next time
+	Game.race_config.track_id = track_id
+	_show_track()
+
+
+func _show_track() -> void:
+	var td := TrackData.load_from_file(TrackList.path(track_id))
+	track_name.text = tr(TrackList.name_key(track_id))
+	track_desc.text = tr(TrackList.desc_key(track_id))
+	preview.track = td
+	preview.queue_redraw()
+	for id in track_btns:
+		UITheme.style_button(track_btns[id], "yellow" if id == track_id else "blue", UITheme.FS_BODY - 2)
 	_update_records()
 
 
+## Three big picture buttons: Gündüz / Gün batımı / Gecə.
+func _build_tod(parent: Control) -> void:
+	tod_id = TimeOfDay.selected()
+	var h := HBoxContainer.new()
+	h.name = "TimeOfDay"
+	h.add_theme_constant_override("separation", 10)
+	parent.add_child(h)
+	for id in TimeOfDay.IDS:
+		var b := Button.new()
+		b.name = "Tod_" + id
+		b.text = tr(TimeOfDay.NAME_KEYS[id])
+		b.icon = UITheme.icon(TimeOfDay.ICONS[id])
+		b.expand_icon = true
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		b.add_theme_constant_override("icon_max_width", 58)
+		b.custom_minimum_size = Vector2(0, 112)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.focus_mode = Control.FOCUS_ALL
+		b.pressed.connect(set_time_of_day.bind(id))
+		h.add_child(b)
+		tod_btns[id] = b
+	_style_tod()
+
+
+func set_time_of_day(id: String) -> void:
+	tod_id = TimeOfDay.valid(id)
+	Settings.set_value("gameplay", "time_of_day", tod_id) # remembered for next time
+	Game.race_config.time_of_day = tod_id
+	_style_tod()
+
+
+func _style_tod() -> void:
+	for id in tod_btns:
+		UITheme.style_button(tod_btns[id], "yellow" if id == tod_id else "blue", UITheme.FS_BODY)
+
+
 func _update_records() -> void:
-	var rec := SaveManager.get_record(TRACKS[0])
+	var rec := SaveManager.get_record(track_id)
 	var laps := laps_sel.index + 1
 	var lines: Array[String] = []
 	if rec.has("best_lap_ms"):
@@ -97,8 +184,9 @@ func _update_records() -> void:
 
 func _start() -> void:
 	var cfg: Dictionary = Game.race_config
-	cfg.track_id = TRACKS[0]
+	cfg.track_id = track_id
 	cfg.laps = laps_sel.index + 1
+	cfg.time_of_day = tod_id
 	if cfg.mode == "quick":
 		cfg.difficulty = DIFFS[diff_sel.index]
 		cfg.ai_count = ai_sel.index + 1

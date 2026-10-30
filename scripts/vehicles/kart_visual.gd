@@ -5,6 +5,8 @@ extends Node3D
 ## never writes back, so visuals cannot affect the simulation.
 ## Updated on the physics tick so physics interpolation keeps it smooth.
 
+const MAX_ALIGN_TILT := deg_to_rad(28.0)
+const MAX_ROLL := deg_to_rad(20.0)
 const WHEEL_RADIUS := 0.34
 const VCOLOR_GLOSS := preload("res://assets/materials/vcolor_gloss.gdshader")
 
@@ -33,7 +35,10 @@ func setup(p_kart: KartController, def: RacerDefinition, density: float) -> void
 	model = KartModel.new()
 	model.name = "Model"
 	body_pivot.add_child(model)
+	if kart.is_player:
+		model.parts = Progression.equipped_parts(SaveManager.data)
 	model.build(def, kart.is_player)
+	_build_far_lod(def)
 	effects = KartEffects.new()
 	effects.name = "Effects"
 	body_pivot.add_child(effects)
@@ -42,6 +47,36 @@ func setup(p_kart: KartController, def: RacerDefinition, density: float) -> void
 	kart.landed.connect(_on_landed)
 	kart.wall_hit.connect(func(s): _susp_vel -= 2.0 * s)
 	kart.hopped.connect(func(): _susp_vel += 3.0)
+
+
+## 0.10.2 kart LOD: a second, low-segment copy of the kart and driver drawn
+## beyond KART_LOD metres (no wheel / driver animation needed that far away);
+## the full model stops drawing there. Roughly 3x fewer triangles per far kart.
+const KART_LOD := 28.0
+var model_lo: KartModel
+
+
+func _build_far_lod(def: RacerDefinition) -> void:
+	model_lo = KartModel.new()
+	model_lo.name = "ModelLo"
+	model_lo.parts = model.parts
+	ShapeKit.detail = 0.4
+	model_lo.build(def, false)
+	ShapeKit.detail = 1.0
+	body_pivot.add_child(model_lo)
+	model_lo.set_process(false)
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		var g := mi as GeometryInstance3D
+		g.visibility_range_end = KART_LOD if g.visibility_range_end <= 0.0 else minf(g.visibility_range_end, KART_LOD)
+		g.visibility_range_end_margin = 2.0
+	for mi in model_lo.find_children("*", "MeshInstance3D", true, false):
+		var g := mi as GeometryInstance3D
+		var small := g.visibility_range_end > 0.0
+		g.visibility_range_begin = KART_LOD
+		g.visibility_range_begin_margin = 2.0
+		g.visibility_range_end = 0.0
+		if small:
+			g.visible = false # eyes / ears / arms are invisible that far away
 
 
 ## Cheap contact shadow used when real-time shadows are off (Low preset).
@@ -67,7 +102,7 @@ func _make_blob_shadow() -> void:
 ## Grounding shadow on every preset: full strength when real-time shadows
 ## are off (Low), a soft contact darkening otherwise.
 func set_blob_strength(full: bool) -> void:
-	(blob.material_override as StandardMaterial3D).albedo_color = Color(0, 0, 0, 0.55 if full else 0.3)
+	(blob.material_override as StandardMaterial3D).albedo_color = Color(0, 0, 0, 0.6 if full else 0.42)
 	blob.visible = true
 
 
@@ -88,18 +123,17 @@ func _physics_process(delta: float) -> void:
 	var steer := kart.steer_smoothed
 	var drifting := kart.is_drifting()
 
-	# Drift angle: nose points into the turn while the body slides.
-	var target_drift := 0.0
-	if drifting:
-		var inward := kart.input.steer * kart.drift_dir
-		target_drift = -kart.drift_dir * deg_to_rad(kart.stats.drift_visual_angle + inward * 8.0)
-	_drift_yaw = lerpf(_drift_yaw, target_drift, 1.0 - exp(-(kart.stats.drift_correction if not drifting else 10.0) * delta))
+	# Drift angle: the body follows the controller's slip angle (one smooth
+	# source, so the kart never swings side to side).
+	_drift_yaw = lerpf(_drift_yaw, kart.drift_slip, 1.0 - exp(-14.0 * delta))
 
-	# Body roll (outward lean) and pitch (throttle / brake squat).
-	var target_roll := -steer * absf(speed_ratio) * deg_to_rad(5.0)
+	# Body roll: a subtle outward lean, proportional to the slide in a drift
+	# and to steering otherwise; slow enough that it never wobbles.
+	var target_roll := -steer * absf(speed_ratio) * deg_to_rad(3.0)
 	if drifting:
-		target_roll = -kart.drift_dir * deg_to_rad(7.0)
-	_roll = lerpf(_roll, target_roll, 1.0 - exp(-8.0 * delta))
+		var slip_n := clampf(absf(kart.drift_slip) / maxf(deg_to_rad(kart.stats.drift_visual_angle), 0.01), 0.0, 1.2)
+		target_roll = -kart.drift_dir * deg_to_rad(3.5) * slip_n
+	_roll = lerpf(_roll, target_roll, 1.0 - exp(-5.0 * delta))
 	var target_pitch := 0.0
 	if kart.input.brake > 0.1 and kart.speed > 1.0:
 		target_pitch = deg_to_rad(-3.0)
@@ -127,9 +161,16 @@ func _physics_process(delta: float) -> void:
 	# Align to the ground normal (yaw-free) when grounded.
 	var n := kart.get_floor_normal() if kart.grounded else Vector3.UP
 	var local_n := (Basis(Vector3.UP, kart.yaw).inverse() * n).normalized()
+	# Never tilt the body more than MAX_ALIGN_TILT, whatever the contact normal.
+	var tilt := acos(clampf(local_n.y, -1.0, 1.0))
+	if tilt > MAX_ALIGN_TILT:
+		var axis := Vector3.UP.cross(local_n)
+		local_n = Vector3.UP.rotated(axis.normalized(), MAX_ALIGN_TILT) if axis.length_squared() > 1e-6 else Vector3.UP
 	var target_align := Basis(Quaternion(Vector3.UP, local_n))
 	_align = _align.slerp(target_align, 1.0 - exp(-10.0 * delta))
 
+	_roll = clampf(_roll, -MAX_ROLL, MAX_ROLL)
+	_pitch = clampf(_pitch, -MAX_ROLL, MAX_ROLL)
 	var b := _align * Basis(Vector3.UP, _drift_yaw + _spin) * Basis(Vector3.RIGHT, _pitch) * Basis(Vector3.FORWARD, _roll)
 	body_pivot.transform = Transform3D(b, Vector3.UP * _susp * 0.5)
 	if blob.visible:
@@ -138,8 +179,10 @@ func _physics_process(delta: float) -> void:
 	# Wheels.
 	_wheel_angle -= kart.speed * delta / WHEEL_RADIUS
 	var steer_vis := steer * deg_to_rad(24.0)
-	if drifting:
-		steer_vis = -kart.drift_dir * deg_to_rad(10.0) + steer * deg_to_rad(10.0)
+	if drifting or absf(kart.drift_slip) > 0.05:
+		# Front wheels counter-steer: they point along the travel direction
+		# while the body slides, plus a little of the player's input.
+		steer_vis = kart.drift_slip * 0.7 + steer * deg_to_rad(6.0)
 	model.update_wheels(_wheel_angle, -steer_vis, _susp)
 	model.update_driver(steer, kart.state, _victory, delta, kart.boost.is_active(), not kart.grounded, -_roll * 0.6)
 	effects.update(delta)
@@ -154,6 +197,8 @@ func _physics_process(delta: float) -> void:
 		# shown by a soft bubble, see KartEffects) so it is always readable.
 		vis = fmod(kart.immunity_timer * 8.0, 1.0) < 0.7
 	model.visible = vis
+	if model_lo:
+		model_lo.visible = vis
 	_update_camera_fade(delta)
 
 

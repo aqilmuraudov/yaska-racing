@@ -1,6 +1,6 @@
 class_name AnimalDriver
 extends Node3D
-## Stylised animal driver (panda, fox, rabbit, cat, dog, lamb) built from a
+## Stylised driver (panda, fox, rabbit, cat, dog, lamb, girl) built from a
 ## few rounded meshes, with a shared lightweight procedural animation set:
 ## breathing, blinking, steering with paws held on the wheel rim, leaning,
 ## jump/landing, boost excitement, hit wobble, victory, and cheap secondary
@@ -68,7 +68,7 @@ func _flush() -> void:
 		_vcolor.shader = preload("res://assets/materials/vcolor_gloss.gdshader")
 		_vcolor.set_shader_parameter("rim_amount", 0.45)
 		_vcolor.set_shader_parameter("gloss", 0.35) # eyes / noses / helmets shine, fur stays soft
-		_vcolor.set_shader_parameter("saturation", 1.08)
+		_vcolor.set_shader_parameter("saturation", Palette.DRIVER_SAT)
 	for n in _accums.keys():
 		var mi := MeshInstance3D.new()
 		mi.mesh = _accums[n].commit(_vcolor)
@@ -102,11 +102,17 @@ func _body() -> void:
 			# Wool body: a few overlapping puffs read as fleece without fur cost.
 			for p in [Vector3(0, 0.2, 0), Vector3(-0.14, 0.26, -0.02), Vector3(0.14, 0.26, -0.02), Vector3(0, 0.33, 0.05), Vector3(-0.1, 0.12, -0.06), Vector3(0.1, 0.12, -0.06)]:
 				_add(torso, blob(Vector3(0.24, 0.22, 0.24)), main, T(p))
+		"girl":
+			# Denim-blue dress with white lace flutter sleeves
+			_add(torso, ShapeKit.superellipsoid(Vector3(0.44, 0.46, 0.36), 0.8, 0.9, Vector2(0.8, 0.8), Vector2.ONE), def.detail, T(Vector3(0, 0.2, 0)))
+			_add(torso, ShapeKit.torus(0.17, 0.235, 16, 5), Color.WHITE, T(Vector3(0, 0.04, 0), Vector3.ZERO, Vector3(1, 0.8, 0.85)))
+			for sx in [-1.0, 1.0]:
+				_add(torso, blob(Vector3(0.16, 0.1, 0.16)), Color.WHITE, T(Vector3(sx * 0.21, 0.34, -0.02), Vector3(0, 0, sx * -0.5)))
 		_:
 			_add(torso, blob(Vector3(0.42, 0.44, 0.34)), main, T(Vector3(0, 0.2, 0)))
 			_add(torso, blob(Vector3(0.28, 0.3, 0.12)), light, T(Vector3(0, 0.18, -0.13)))
 	# Neck scarf / collar in the racer's detail colour
-	_add(torso, ShapeKit.torus(0.13, 0.21, 16, 6), def.detail if def.species != "panda" else Color("6fd6a8"), T(Vector3(0, 0.39, 0), Vector3.ZERO, Vector3(1, 1.2, 1)))
+	_add(torso, ShapeKit.torus(0.13, 0.21, 16, 6), (Color.WHITE if def.species == "girl" else def.detail) if def.species != "panda" else Color("6fd6a8"), T(Vector3(0, 0.39, 0), Vector3.ZERO, Vector3(1, 1.2, 1)))
 
 
 func _head_shape() -> void:
@@ -133,6 +139,12 @@ func _head_shape() -> void:
 				_add(head, blob(Vector3(0.05, 0.03, 0.2), 0.5, 0.5), def.fur_dark, T(Vector3((i - 1) * 0.08, 0.37, -0.02 + absf(i - 1) * 0.02), Vector3(0.2, 0, 0)))
 			for i in 3:
 				_add(head, blob(Vector3(0.36, 0.035, 0.06), 0.5, 0.5), def.fur_dark, T(Vector3(0, 0.2 + i * 0.07, 0.25), Vector3(-0.3, 0, 0)))
+		"girl":
+			_add(head, blob(Vector3(0.54, 0.52, 0.5), 0.85, 0.85), main, T(Vector3(0, 0.1, 0)))
+			# Chestnut hair: cap over top/back plus soft bangs
+			_add(head, blob(Vector3(0.6, 0.42, 0.56), 0.85, 0.85), def.fur_dark, T(Vector3(0, 0.25, 0.04)))
+			for i in 4:
+				_add(head, blob(Vector3(0.16, 0.1, 0.1)), def.fur_dark, T(Vector3(-0.15 + i * 0.1, 0.3 - absf(i - 1.5) * 0.02, -0.2), Vector3(0.3, 0, 0)))
 		_: # dog
 			_add(head, blob(Vector3(0.58, 0.52, 0.52), 0.85, 0.9), main, T(Vector3(0, 0.12, 0)))
 
@@ -164,6 +176,8 @@ func _face() -> void:
 		"lamb":
 			_add(head, blob(Vector3(0.24, 0.16, 0.12)), light.lightened(0.15), T(Vector3(0, 0.02, front + 0.03)))
 			nose_col = Color("6b4a3a")
+		"girl":
+			nose_col = def.fur_main.darkened(0.05)
 	var nose_z := front - (0.17 if def.species == "fox" else 0.09)
 	_add(head, blob(Vector3(0.07, 0.05, 0.05)), nose_col, T(Vector3(0, 0.08 if def.species == "fox" else 0.07, nose_z)), 0.3)
 	# Smile
@@ -179,7 +193,7 @@ func _face() -> void:
 	for sx in [-1.0, 1.0]:
 		var c := Vector3(sx * 0.115, 0, 0)
 		_add(e, blob(Vector3(0.11, 0.13, 0.05)), Color.WHITE, T(c), 0.2)
-		_add(e, blob(Vector3(0.075, 0.095, 0.04)), Color("1d1a22"), T(c + Vector3(sx * -0.008, -0.008, -0.018)), 0.15)
+		_add(e, blob(Vector3(0.075, 0.095, 0.04)), Color("3a2010") if def.species == "girl" else Color("1d1a22"), T(c + Vector3(sx * -0.008, -0.008, -0.018)), 0.15)
 		_add(e, blob(Vector3(0.028, 0.032, 0.02)), Color.WHITE, T(c + Vector3(sx * -0.02, 0.022, -0.04)), 0.1)
 	eyes.append(e)
 
@@ -187,6 +201,8 @@ func _face() -> void:
 func _ears() -> void:
 	var main := def.fur_main
 	match def.species:
+		"girl":
+			_pigtails()
 		"panda":
 			for sx in [-1.0, 1.0]:
 				var e := _node(head, Vector3(sx * 0.22, 0.34, 0.02))
@@ -229,6 +245,15 @@ func _ears() -> void:
 				ears.append(e)
 
 
+func _pigtails() -> void:
+	for sx in [-1.0, 1.0]:
+		var e := _node(head, Vector3(sx * 0.25, 0.36, 0.05))
+		e.rotation = Vector3(0, 0, sx * -0.5)
+		_add(e, ShapeKit.torus(0.03, 0.06, 10, 4), Color("ff7fb2"), T(Vector3.ZERO))
+		_add(e, blob(Vector3(0.15, 0.2, 0.15)), def.fur_dark, T(Vector3(0, 0.1, 0)))
+		ears.append(e)
+
+
 func _tail() -> void:
 	# Tails sit above the seat back so they read from the chase camera.
 	tail = _node(torso, Vector3(0, 0.1, 0.2))
@@ -260,6 +285,8 @@ func _arms() -> void:
 	if def.species == "lamb":
 		col = def.fur_main
 		paw = def.fur_dark
+	if def.species == "girl":
+		paw = def.fur_main
 	for sx in [-1.0, 1.0]:
 		var sh := _node(torso, Vector3(sx * 0.2, 0.32, -0.03))
 		var arm := _node(sh, Vector3.ZERO)
@@ -285,6 +312,13 @@ func _accessory() -> void:
 			_add(head, blob(Vector3(0.14, 0.08, 0.06)), def.detail, T(Vector3(0.17, 0.36, 0.06), Vector3(0, 0, -0.4)))
 		"dog":
 			_add(torso, ShapeKit.cylinder(0.04, 0.015, 10), Color("ffc93c"), T(Vector3(0, 0.33, -0.17), Vector3(PI * 0.5, 0, 0)), 0.3)
+		"girl":
+			# Pink-and-yellow flower hair clip
+			var fc := Vector3(0.2, 0.4, -0.12)
+			for k in 5:
+				var a := TAU * k / 5.0
+				_add(head, blob(Vector3(0.06, 0.06, 0.03)), Color("ff7fb2"), T(fc + Vector3(cos(a) * 0.045, sin(a) * 0.045, 0)))
+			_add(head, blob(Vector3(0.045, 0.045, 0.035)), Color("ffd84d"), T(fc + Vector3(0, 0, -0.012)))
 		"lamb":
 			_add(head, blob(Vector3(0.12, 0.07, 0.06)), def.detail, T(Vector3(-0.13, 0.36, 0.0), Vector3(0, 0, 0.5)))
 			_add(head, blob(Vector3(0.12, 0.07, 0.06)), def.detail, T(Vector3(-0.03, 0.36, 0.0), Vector3(0, 0, -0.5)))

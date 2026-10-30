@@ -16,10 +16,12 @@ const USE_ITEM := &"use_item"
 const LOOK_BACK := &"look_back"
 const RECOVER := &"recover"
 const PAUSE := &"pause"
+const CAMERA := &"camera_cycle"
+const NITRO := &"nitro" ## garage add-on (0.8.0); not in the remap list
 
 ## Order used by the remapping screen.
 const GAMEPLAY_ACTIONS: Array[StringName] = [
-	ACCELERATE, BRAKE, STEER_LEFT, STEER_RIGHT, DRIFT, BOOST, USE_ITEM, LOOK_BACK, RECOVER, PAUSE,
+	ACCELERATE, BRAKE, STEER_LEFT, STEER_RIGHT, DRIFT, BOOST, USE_ITEM, LOOK_BACK, CAMERA, RECOVER, PAUSE,
 ]
 
 ## Analog actions read with strength (deadzone applied by InputMap).
@@ -35,7 +37,9 @@ const DEFAULTS := {
 	BOOST: [["key", KEY_SHIFT], ["key", KEY_J], ["joy_button", JOY_BUTTON_LEFT_SHOULDER]],
 	USE_ITEM: [["key", KEY_E], ["key", KEY_L], ["joy_button", JOY_BUTTON_B]],
 	LOOK_BACK: [["key", KEY_Q], ["key", KEY_I], ["joy_button", JOY_BUTTON_Y]],
+	CAMERA: [["key", KEY_C], ["joy_button", JOY_BUTTON_RIGHT_STICK]],
 	RECOVER: [["key", KEY_R], ["joy_button", JOY_BUTTON_BACK]],
+	NITRO: [["key", KEY_N], ["key", KEY_H]],
 	PAUSE: [["key", KEY_ESCAPE], ["key", KEY_P], ["joy_button", JOY_BUTTON_START]],
 }
 

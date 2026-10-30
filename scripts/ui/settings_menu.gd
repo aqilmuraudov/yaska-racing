@@ -1,6 +1,6 @@
 extends MenuScreen
-## Compact, child-friendly Settings: four tabs (Graphics, Audio, Controls,
-## Language) of large illustrated rows, each with a short explanation and
+## Minimal, child-friendly Settings: four tabs (Controls: 4 rows, Sound,
+## Language, Picture: one quality choice + battery saver) of large rows, each with a short explanation and
 ## big touch targets. Every change applies and saves immediately.
 ## Works standalone (from the main menu) and as an overlay in the pause menu.
 ##
@@ -20,6 +20,7 @@ const RAIL_ORDER := [2, 1, 3, 0]
 const FIRST_TAB := 2
 const LONG_PRESS := 1.0
 
+var credits_btn: Button
 var overlay_mode := false
 var tab := 0
 var tab_buttons: Array[Button] = []
@@ -71,9 +72,9 @@ func build() -> void:
 	restore.text = tr("SET2_RESTORE")
 	restore.icon = UITheme.icon("restore")
 	restore.expand_icon = false
-	restore.add_theme_constant_override("icon_max_width", 34)
-	restore.custom_minimum_size = Vector2(0, 60)
-	UITheme.style_button(restore, "coral", 22)
+	restore.add_theme_constant_override("icon_max_width", 30)
+	restore.custom_minimum_size = Vector2(0, UITheme.H_BTN_SMALL)
+	UITheme.style_button(restore, "coral", UITheme.FS_BTN_SMALL)
 	restore.pressed.connect(_confirm_restore)
 	restore.name = "Restore"
 	header.add_child(restore)
@@ -83,8 +84,8 @@ func build() -> void:
 	row.add_theme_constant_override("separation", 14)
 	body.add_child(row)
 	var rail := VBoxContainer.new()
-	rail.add_theme_constant_override("separation", 10)
-	rail.custom_minimum_size = Vector2(196, 0)
+	rail.add_theme_constant_override("separation", UITheme.GAP_S)
+	rail.custom_minimum_size = Vector2(184, 0)
 	row.add_child(rail)
 	var tab_count := TABS.size() + (1 if _dev_available() else 0)
 	tab_buttons.resize(tab_count)
@@ -97,9 +98,9 @@ func build() -> void:
 		b.text = tr(def[0]) if i < TABS.size() else "Developer"
 		b.icon = UITheme.icon(def[1])
 		b.expand_icon = false
-		b.add_theme_constant_override("icon_max_width", 52)
+		b.add_theme_constant_override("icon_max_width", 38)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.custom_minimum_size = Vector2(196, 100 if i < TABS.size() else 64)
+		b.custom_minimum_size = Vector2(184, UITheme.H_BTN if i < TABS.size() else UITheme.H_BTN_SMALL)
 		b.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		var idx := i
 		b.pressed.connect(func():
@@ -122,7 +123,7 @@ func build() -> void:
 	ScrollHint.attach(scroll)
 	content = VBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 12)
+	content.add_theme_constant_override("separation", UITheme.GAP_S)
 	scroll.add_child(content)
 	_show_tab(FIRST_TAB)
 
@@ -171,7 +172,7 @@ func _show_tab(i: int) -> void:
 		tab_buttons[i].grab_focus() # the focus ring follows the chosen tab
 	for k in tab_buttons.size():
 		var color := "yellow" if k == i else ("violet" if k == DEV_TAB else "blue")
-		UITheme.style_button(tab_buttons[k], color, 24 if k < TABS.size() else 20)
+		UITheme.style_button(tab_buttons[k], color, UITheme.FS_BTN if k < TABS.size() else UITheme.FS_BTN_SMALL)
 	for c in content.get_children():
 		content.remove_child(c)
 		c.queue_free()
@@ -208,7 +209,7 @@ func _row(icon_name: String, title_key: String, hint_key: String, control: Contr
 	ic.texture = UITheme.icon(icon_name)
 	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	ic.custom_minimum_size = Vector2(60, 60)
+	ic.custom_minimum_size = Vector2(UITheme.ICON_ROW, UITheme.ICON_ROW)
 	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(ic)
@@ -221,15 +222,19 @@ func _row(icon_name: String, title_key: String, hint_key: String, control: Contr
 	var t := Label.new()
 	t.text = tr(title_key)
 	t.add_theme_font_override("font", UITheme.heading_font())
-	t.add_theme_font_size_override("font_size", 32)
-	t.add_theme_constant_override("outline_size", 8)
+	t.add_theme_font_size_override("font_size", UITheme.FS_H2)
+	t.add_theme_constant_override("outline_size", 6)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(t)
+	# 0.8.3: no hint lines under the rows (game UI, not a form); the hint
+	# stays as a tooltip.
 	if hint_key != "":
+		card.tooltip_text = tr(hint_key)
+	if false:
 		var d := Label.new()
 		d.text = tr(hint_key)
 		d.theme_type_variation = &"Dim"
-		d.add_theme_font_size_override("font_size", 21)
+		d.add_theme_font_size_override("font_size", UITheme.FS_CAPTION)
 		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		d.custom_minimum_size = Vector2(180, 0)
 		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -239,7 +244,7 @@ func _row(icon_name: String, title_key: String, hint_key: String, control: Contr
 	reason.name = "Reason"
 	reason.visible = false
 	reason.add_theme_color_override("font_color", UITheme.YELLOW)
-	reason.add_theme_font_size_override("font_size", 19)
+	reason.add_theme_font_size_override("font_size", UITheme.FS_CAPTION)
 	reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	reason.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(reason)
@@ -279,27 +284,17 @@ func _set_reason(sc: SegmentedChoice, text: String) -> void:
 # --- Tabs ---------------------------------------------------------------------
 
 func _graphics() -> void:
+	# One plain choice; textures, shadows, effects and resolution follow it.
 	var g: Dictionary = Settings.values.graphics
-	_row("parents", "SET3_GROWNUPS", "SET3_GROWNUPS_HINT", Control.new())
-	_choice("texture", "SET2_TEXTURE", "SET2_TEXTURE_HINT", ["OPT_Q_LOW", "OPT_Q_NORMAL", "OPT_Q_HIGH"], int(g.texture_detail),
-		func(i): Settings.set_value("graphics", "texture_detail", i))
-	var caps: Array = Settings.fps_options()
-	var names: Array = []
-	for v in caps:
-		names.append(tr("SET_FPS_UNLIMITED") if int(v) == 0 else str(v))
-	var fps := _choice("fps", "SET2_FPS", "SET2_FPS_HINT", names, maxi(caps.find(int(g.fps_cap)), 0),
-		func(i): Settings.set_value("graphics", "fps_cap", caps[i]), 80.0)
-	var unsupported: Array = []
-	for i in caps.size():
-		if not Settings.fps_supported(int(caps[i])):
-			fps.set_option_disabled(i, true)
-			unsupported.append(int(caps[i]))
-	if not unsupported.is_empty():
-		var hz := int(round(Settings.display_refresh_rate()))
-		_set_reason(fps, tr("SET2_FPS_UNSUPPORTED") % [hz, unsupported[0]] if hz > 0 else tr("SET2_FPS_UNKNOWN"))
-	_switch("fps", "SET3_FPS_FALLBACK", "SET3_FPS_FALLBACK_HINT", "graphics", "fps_fallback")
-	_choice("shadows", "SET2_SHADOWS", "SET2_SHADOWS_HINT", ["OPT_OFF", "OPT_Q_LOW", "OPT_Q_NORMAL", "OPT_Q_HIGH"], int(g.shadows),
-		func(i): Settings.set_value("graphics", "shadows", i), 92.0)
+	var q := maxi(Settings.QUALITY_LEVELS.find(String(g.get("quality", "auto"))), 0)
+	_choice("tab_graphics", "SET_QUALITY", "SET_QUALITY_HINT", ["OPT_AUTO", "OPT_Q_LOW", "OPT_Q_MEDIUM", "OPT_Q_HIGH"], q,
+		func(i): Settings.set_quality(Settings.QUALITY_LEVELS[i]), 104.0)
+	var saver := _choice("fps", "SET_BATTERY", "SET_BATTERY_HINT", ["OPT_ON", "OPT_OFF"], 0 if bool(g.get("battery_saver", false)) else 1,
+		func(i): Settings.set_battery_saver(i == 0), 120.0)
+	if not Settings.fps_supported(60):
+		saver.set_option_disabled(1, true)
+	_choice("hud_nitro", "SET_SPEED_FX", "SET_SPEED_FX_HINT", ["OPT_ON", "OPT_OFF"], 0 if bool(g.get("speed_effects", true)) else 1,
+		func(i): Settings.set_value("graphics", "speed_effects", i == 0), 120.0)
 
 
 func _audio() -> void:
@@ -314,6 +309,12 @@ func _audio() -> void:
 
 func _controls() -> void:
 	var c: Dictionary = Settings.values.controls
+	var kids := _switch("kids_auto", "SET_KIDS_AUTO", "SET_KIDS_AUTO_HINT", "controls", "kids_auto")
+	kids.set_meta("kids_row", true)
+	var kcard: Control = kids.get_meta("card")
+	kcard.name = "KidsAutoRow"
+	kcard.self_modulate = Color(1.0, 0.93, 0.6)
+	kcard.custom_minimum_size.y = 88.0 # bigger row: easy for parents to find
 	var tilt_mode := String(c.touch_steer_mode) == "tilt"
 	var ct := _choice("control_type", "SET2_CONTROL_TYPE", "SET2_CONTROL_TYPE_HINT", ["OPT_BUTTONS", "OPT_TILT"], 1 if tilt_mode else 0,
 		func(i):
@@ -326,23 +327,13 @@ func _controls() -> void:
 	if tilt_mode:
 		_calibrate_row()
 	_switch("auto_accel", "SET2_AUTO_ACCEL", "SET2_AUTO_ACCEL_HINT", "controls", "touch_auto_accelerate")
-	_switch("easy_drift", "SET3_EASY_DRIFT", "SET3_EASY_DRIFT_HINT", "controls", "easy_drift")
-	_switch("steer_help", "SET3_STEER_HELP", "SET3_STEER_HELP_HINT", "gameplay", "steer_assist")
+	_choice("hud_camera", "SET_CAMERA_VIEW", "SET_CAMERA_VIEW_HINT", ChaseCamera.MODE_KEYS,
+		int(Settings.get_value("gameplay", "camera_mode", 0)),
+		func(i): Settings.set_value("gameplay", "camera_mode", i), 96.0)
 	_choice("button_size", "SET2_BUTTON_SIZE", "", ["OPT_SMALL", "OPT_MEDIUM", "OPT_LARGE"], int(c.button_size),
 		func(i): Settings.set_value("controls", "button_size", i))
-	_choice("steering", "SET2_STEER_SENS", "SET2_STEER_SENS_HINT_TILT" if tilt_mode else "SET2_STEER_SENS_HINT_BUTTONS",
-		["OPT_S_LOW", "OPT_S_NORMAL", "OPT_S_HIGH"], int(c.steer_level),
-		func(i): Settings.set_value("controls", "steer_level", i))
-	var shake_levels := [0.0, 0.6, 1.0]
-	var shake := float(Settings.get_value("accessibility", "camera_shake", 0.6))
-	var shake_idx := 0 if shake < 0.3 else (1 if shake < 0.8 else 2)
-	_choice("camera_shake", "SET3_SHAKE", "", ["OPT_OFF", "OPT_S_LOW", "OPT_S_NORMAL"], shake_idx,
-		func(i): Settings.set_value("accessibility", "camera_shake", shake_levels[i]))
-	var vib := _switch("vibration", "SET3_VIBRATION", "", "controls", "vibration")
-	var vib_reason := Settings.unsupported_reason("vibration")
-	if vib_reason != "":
-		vib.set_option_disabled(0, true)
-		_set_reason(vib, tr(vib_reason))
+	# Steering help, easy drift, sensitivity, shake and vibration keep their
+	# defaults (and saved values) but are no longer shown: fewer choices.
 
 
 ## Shown only with Tilt selected: live tilt bar + Calibrate.
@@ -357,8 +348,8 @@ func _calibrate_row() -> void:
 	b.icon = UITheme.icon("calibrate")
 	b.expand_icon = false
 	b.add_theme_constant_override("icon_max_width", 36)
-	b.custom_minimum_size = Vector2(250, 64)
-	UITheme.style_button(b, "lime", 24)
+	b.custom_minimum_size = Vector2(230, UITheme.H_BTN_SMALL)
+	UITheme.style_button(b, "lime", UITheme.FS_BTN_SMALL)
 	b.pressed.connect(func():
 		_preview_tilt.calibrate()
 		Settings.set_value("controls", "tilt_neutral_deg", _preview_tilt.neutral_deg)
@@ -400,9 +391,9 @@ func _language() -> void:
 	grid.alignment = BoxContainer.ALIGNMENT_CENTER
 	for l in langs:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(300, 220)
+		b.custom_minimum_size = Vector2(250, 160)
 		b.focus_mode = Control.FOCUS_ALL
-		UITheme.style_button(b, "yellow" if l[0] == cur else "blue", 30)
+		UITheme.style_button(b, "yellow" if l[0] == cur else "blue", UITheme.FS_H2)
 		var v := VBoxContainer.new()
 		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		v.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -413,14 +404,14 @@ func _language() -> void:
 		flag.texture = UITheme.icon(l[1])
 		flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		flag.custom_minimum_size = Vector2(176, 88)
+		flag.custom_minimum_size = Vector2(132, 66)
 		flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(flag)
 		var name_l := Label.new()
 		name_l.text = l[2]
 		name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		name_l.add_theme_font_override("font", UITheme.heading_font())
-		name_l.add_theme_font_size_override("font_size", 32)
+		name_l.add_theme_font_size_override("font_size", UITheme.FS_H2)
 		name_l.add_theme_color_override("font_color", UITheme.INK if l[0] == cur else UITheme.TEXT)
 		name_l.add_theme_constant_override("outline_size", 0 if l[0] == cur else 8)
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -436,6 +427,21 @@ func _language() -> void:
 			_first_row = b
 	_row("tab_language", "SET_TAB_LANGUAGE", "SET2_LANGUAGE_HINT", Control.new())
 	content.add_child(grid)
+	# 0.10.2: Credits moved here from the main menu.
+	var cr := Button.new()
+	cr.name = "CreditsButton"
+	cr.text = tr("MENU_CREDITS")
+	cr.icon = UITheme.icon("star")
+	cr.add_theme_constant_override("icon_max_width", 34)
+	UITheme.style_button(cr, "violet", 26)
+	cr.custom_minimum_size = Vector2(260, 64)
+	cr.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cr.pressed.connect(func():
+		UITheme.bounce(cr)
+		AudioManager.play_ui("ui_confirm")
+		Game.goto(Game.State.CREDITS))
+	content.add_child(cr)
+	credits_btn = cr
 
 
 ## Development-only tab (debug builds): renderer, profiling and tuning

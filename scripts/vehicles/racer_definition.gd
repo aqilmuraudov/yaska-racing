@@ -7,8 +7,8 @@ extends Resource
 @export var id := "havhav"
 @export var display_name := "HavHav" ## Proper name, shown as-is in every language
 @export var kart_name := "Buddy Rally"
-@export_enum("panda", "fox", "rabbit", "cat", "dog", "lamb") var species := "dog"
-@export var kart_style := "buddy" ## bamboo | amber | hop | velvet | buddy | cloud
+@export_enum("panda", "fox", "rabbit", "cat", "dog", "lamb", "girl") var species := "dog"
+@export var kart_style := "buddy" ## bamboo | amber | hop | velvet | buddy | cloud | star
 @export var personality_key := ""
 @export var specialty_key := ""
 

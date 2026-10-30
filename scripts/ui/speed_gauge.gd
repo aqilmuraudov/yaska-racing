@@ -21,9 +21,17 @@ func _process(delta: float) -> void:
 	_t += delta
 	var real := absf(kart.speed) * 3.6
 	# Critically damped spring: smooth, no overshoot, no lag at steady speed.
-	var acc := SPRING * SPRING * (real - _shown) - 2.0 * SPRING * _vel
-	_vel += acc * delta
-	_shown += _vel * delta
+	# Exact critically damped step: stable for any frame time (the explicit
+	# Euler step diverged to NaN on long frames > ~0.11 s, e.g. during a
+	# hitch, and the readout then showed -9223372036854775808).
+	var x0 := _shown - real
+	var e := exp(-SPRING * delta)
+	var tmp := (_vel + SPRING * x0) * delta
+	_shown = real + (x0 + tmp) * e
+	_vel = (_vel - SPRING * tmp) * e
+	if not is_finite(_shown) or not is_finite(_vel):
+		_shown = real
+		_vel = 0.0
 	var frac := kart.boost.time_left / maxf(kart.boost.max_stored, 0.01)
 	_boost_shown = lerpf(_boost_shown, frac, 1.0 - exp(-10.0 * delta))
 	queue_redraw()

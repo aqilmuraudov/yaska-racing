@@ -72,11 +72,19 @@ void fragment() {
 	float dash = step(0.55, fract(s / 9.0));
 	lane_line *= dash * detail * (1.0 - cob);
 	float marks = clamp(edge_line * (1.0 - cob * 0.4) + lane_line, 0.0, 1.0);
+	// 0.9.6: worn paint (patchy, thinner where tyres run) and repair patches.
+	float wear = vnoise(wp * vec2(1.6, 0.35)) * 0.6 + vnoise(wp * 3.1) * 0.4;
+	marks *= mix(1.0, smoothstep(0.18, 0.62, wear), 0.55 * detail);
+	float patch = smoothstep(0.62, 0.66, vnoise(wp * vec2(0.18, 0.06) + 7.3)) * (1.0 - cob);
+	base *= 1.0 - 0.1 * patch;
 	vec3 col = mix(base, line_color, marks * 0.92);
 	// Soft darker gutter along both edges frames the driving surface.
 	col *= 1.0 - 0.18 * smoothstep(hw - 1.4, hw - 0.1, abs(lat)) * (1.0 - edge_line);
 
 	ALBEDO = col;
-	ROUGHNESS = mix(0.82, 0.65, cob) - marks * 0.1;
-	SPECULAR = 0.35;
+	// Roughness varies with the grain; the polished racing line and painted
+	// lines are a little smoother and catch the low sun.
+	float line_polish = 1.0 - smoothstep(0.0, hw * 0.5, abs(lat));
+	ROUGHNESS = clamp(mix(0.86, 0.62, cob) - marks * 0.18 - line_polish * 0.12 * (1.0 - cob) + (n - 0.5) * 0.12 + patch * 0.06, 0.35, 1.0);
+	SPECULAR = 0.4;
 }

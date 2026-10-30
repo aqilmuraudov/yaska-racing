@@ -7,7 +7,10 @@ extends Node3D
 ## track version and physics version match the running game; otherwise it is
 ## ignored (and replaced the next time a lap is completed).
 
-const FORMAT := 1
+## 2 (0.10.0): each sample also stores the lap distance (m) for the live
+## +/- delta. Format 1 ghosts still replay (no live delta).
+const FORMAT := 2
+const OLDEST_FORMAT := 1
 const INTERVAL := 0.05
 const DIR := "user://ghosts"
 
@@ -23,6 +26,8 @@ var _ghost_model: Node3D
 var _play_time := 0.0
 var status := "none" ## none | loaded | incompatible
 var ghost_dir_override := ""
+## Last completed lap minus the best lap before it (s), NAN without a best.
+var last_lap_delta := NAN
 
 
 func setup(p_race: RaceManager, p_kart: KartController, p_track_id: String, p_track_version: int) -> void:
@@ -51,7 +56,7 @@ func ghost_path() -> String:
 
 
 static func is_compatible(d: Dictionary, p_track_id: String, p_track_version: int) -> bool:
-	return int(d.get("format", 0)) == FORMAT and String(d.get("track_id", "")) == p_track_id \
+	return int(d.get("format", 0)) >= OLDEST_FORMAT and int(d.get("format", 0)) <= FORMAT and String(d.get("track_id", "")) == p_track_id \
 		and int(d.get("track_version", -1)) == p_track_version \
 		and int(d.get("physics_version", -1)) == KartController.PHYSICS_VERSION \
 		and typeof(d.get("samples")) == TYPE_ARRAY and (d.samples as Array).size() > 2
@@ -128,12 +133,16 @@ func _apply_material(n: Node, mat: Material) -> void:
 func _on_lap(r, _lap: int, lap_time: float) -> void:
 	if not r.is_player:
 		return
-	# Autopilot (debug/demo) laps are not the player's and are never saved.
-	if bool(race.config.get("debug_autopilot", false)) and not DebugRunner.parse_args().has("keep-ghost"):
+	# Autopilot (debug/demo) and Kids controls laps are not the player's
+	# driving and are never saved as a record ghost.
+	if (race.kids_mode() or bool(race.config.get("debug_autopilot", false))) and not DebugRunner.parse_args().has("keep-ghost"):
+		last_lap_delta = (lap_time - float(best_lap_ms()) / 1000.0) if best_lap_ms() > 0 else NAN
 		_recording.clear()
 		_play_time = 0.0
+		_lap_start_time = race.race_time
 		return
 	var best_ms := int(_best.get("lap_ms", 0)) if not _best.is_empty() else 0
+	last_lap_delta = (lap_time - best_ms / 1000.0) if best_ms > 0 else NAN
 	if best_ms <= 0 or int(round(lap_time * 1000.0)) < best_ms:
 		save_ghost(_recording.duplicate(), lap_time)
 	_recording.clear()
@@ -150,7 +159,7 @@ func _physics_process(delta: float) -> void:
 	if _rec_timer <= 0.0:
 		_rec_timer += INTERVAL
 		var p := kart.global_position
-		_recording.append([snappedf(p.x, 0.01), snappedf(p.y, 0.01), snappedf(p.z, 0.01), snappedf(kart.yaw, 0.001)])
+		_recording.append([snappedf(p.x, 0.01), snappedf(p.y, 0.01), snappedf(p.z, 0.01), snappedf(kart.yaw, 0.001), snappedf(lap_distance(), 0.1)])
 	_play_time += delta
 
 
@@ -176,3 +185,59 @@ func _process(_delta: float) -> void:
 
 func best_lap_ms() -> int:
 	return int(_best.get("lap_ms", 0)) if not _best.is_empty() else 0
+
+
+## Player's distance into the current lap (m); slightly negative on the
+## grid before the first crossing.
+func lap_distance() -> float:
+	if race == null or race.player == null or race.player.tracker == null:
+		return 0.0
+	var t: RaceTracker = race.player.tracker
+	return t.race_distance - t.laps_completed() * race.track.lap_length()
+
+
+## True when the stored ghost has lap distances (format 2).
+func has_splits() -> bool:
+	if _best.is_empty():
+		return false
+	var smp: Array = _best.samples
+	return smp.size() > 2 and (smp[0] as Array).size() >= 5
+
+
+## Ghost lap time (s) at lap distance `d`, NAN when unknown.
+func ghost_time_at(d: float) -> float:
+	if not has_splits():
+		return NAN
+	var smp: Array = _best.samples
+	var interval := float(_best.get("interval", INTERVAL))
+	if d <= float(smp[0][4]):
+		return 0.0
+	var last := smp.size() - 1
+	if d >= float(smp[last][4]):
+		return NAN
+	var lo := 0
+	var hi := last
+	while hi - lo > 1:
+		var mid := (lo + hi) / 2
+		if float(smp[mid][4]) < d:
+			lo = mid
+		else:
+			hi = mid
+	var d0 := float(smp[lo][4])
+	var d1 := float(smp[hi][4])
+	var f := 0.0 if d1 <= d0 else (d - d0) / (d1 - d0)
+	return (lo + f) * interval
+
+
+## Live delta against the best lap at the same point of the lap (s):
+## negative = ahead of the record. NAN when there is nothing to compare.
+func live_delta() -> float:
+	if race == null or race.state != RaceManager.RaceState.RACING:
+		return NAN
+	var d := lap_distance()
+	if d < 20.0:
+		return NAN # the first metres of a lap say nothing yet
+	var g := ghost_time_at(d)
+	if is_nan(g):
+		return NAN
+	return (race.race_time - _lap_start_time) - g

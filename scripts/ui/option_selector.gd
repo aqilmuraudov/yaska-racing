@@ -71,9 +71,9 @@ func setup(title: String, p_options: Array, p_index: int) -> OptionSelector:
 func _arrow(text: String) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(56, 48)
+	b.custom_minimum_size = Vector2(UITheme.H_BTN_SMALL, UITheme.H_BTN_SMALL - 8)
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", 32)
+	b.add_theme_font_size_override("font_size", UITheme.FS_H1)
 	return b
 
 

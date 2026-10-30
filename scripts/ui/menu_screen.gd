@@ -50,7 +50,7 @@ func _ready() -> void:
 	_apply_safe_area()
 	root.add_child(safe)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 12)
+	col.add_theme_constant_override("separation", UITheme.GAP_M)
 	safe.add_child(col)
 	header = HBoxContainer.new()
 	header.add_theme_constant_override("separation", 16)
@@ -61,9 +61,9 @@ func _ready() -> void:
 		back_button.name = "BackButton"
 		back_button.icon = UITheme.icon("back")
 		back_button.expand_icon = false
-		back_button.add_theme_constant_override("icon_max_width", 30)
-		back_button.custom_minimum_size = Vector2(170, 62)
-		UITheme.style_button(back_button, "turquoise", 26)
+		back_button.add_theme_constant_override("icon_max_width", 28)
+		back_button.custom_minimum_size = Vector2(160, UITheme.H_BTN_SMALL)
+		UITheme.style_button(back_button, "turquoise", UITheme.FS_BTN_SMALL)
 		back_button.pressed.connect(go_back)
 		header.add_child(back_button)
 	if screen_title_key != "":
@@ -141,9 +141,9 @@ static func make_button(text: String, cb: Callable, big := false) -> Button:
 	b.text = text
 	if big:
 		b.theme_type_variation = &"BigButton"
-		b.custom_minimum_size = Vector2(380, 84)
+		b.custom_minimum_size = Vector2(380, UITheme.H_PRIMARY)
 	else:
-		b.custom_minimum_size = Vector2(300, 66)
+		b.custom_minimum_size = Vector2(300, UITheme.H_BTN)
 	b.pressed.connect(func():
 		AudioManager.play_ui("ui_confirm")
 		UITheme.bounce(b, 0.06)
@@ -156,7 +156,7 @@ static func make_toggle(title: String, value: bool, cb: Callable) -> CheckButton
 	var t := CheckButton.new()
 	t.text = title
 	t.button_pressed = value
-	t.custom_minimum_size = Vector2(0, 60)
+	t.custom_minimum_size = Vector2(0, UITheme.H_BTN_SMALL)
 	t.toggled.connect(func(on):
 		AudioManager.play_ui("ui_move")
 		cb.call(on))

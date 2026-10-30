@@ -4,7 +4,7 @@ extends Node
 
 signal state_changed(new_state: State)
 
-enum State { BOOT, MAIN_MENU, MODE_SELECT, KART_SELECT, TRACK_SELECT, LOADING, RACE, SETTINGS, CREDITS }
+enum State { BOOT, MAIN_MENU, MODE_SELECT, KART_SELECT, TRACK_SELECT, LOADING, RACE, SETTINGS, CREDITS, REWARDS, GARAGE, CUP, CITY_SELECT }
 
 const SCENES := {
 	State.MAIN_MENU: "res://scenes/menus/main_menu.tscn",
@@ -14,7 +14,13 @@ const SCENES := {
 	State.LOADING: "res://scenes/menus/loading.tscn",
 	State.SETTINGS: "res://scenes/menus/settings_menu.tscn",
 	State.CREDITS: "res://scenes/menus/credits.tscn",
+	State.REWARDS: "res://scenes/menus/rewards.tscn",
+	State.GARAGE: "res://scenes/menus/garage.tscn",
+	State.CUP: "res://scenes/menus/cup.tscn", # Bakı Kuboku standings / podium
+	State.CITY_SELECT: "res://scenes/menus/city_select.tscn", # 0.11.1 "Şəhəri seç"
 }
+## race_config keys that belong to one mode only (cleared on mode change).
+const SERIES_KEYS := ["series", "cup_race", "roster", "grid_order", "fixed_event_id", "daily"]
 const RACE_SCENE := "res://scenes/race/race.tscn"
 
 var state: State = State.BOOT
@@ -23,6 +29,8 @@ var _fade: ColorRect
 var _fade_layer: CanvasLayer
 var _changing := false
 var debug_race := false
+## Where the Garage's Back button returns (main menu or racer select).
+var garage_back: State = State.KART_SELECT
 var perf: PerfMonitor
 
 
@@ -57,7 +65,7 @@ func _ready() -> void:
 func default_race_config() -> Dictionary:
 	return {
 		"mode": "quick",
-		"track_id": "seafront_sprint",
+		"track_id": TrackList.valid(String(Settings.get_value("gameplay", "track", ""))), # 0.11.0
 		"kart_id": SaveManager.get_selected_kart() if SaveManager.data.size() > 0 else RacerRoster.DEFAULT_ID,
 		"paint": 0,
 		"difficulty": Settings.get_value("gameplay", "difficulty", "medium"),
@@ -66,7 +74,23 @@ func default_race_config() -> Dictionary:
 		"items": true,
 		"seed": 0,
 		"debug_autopilot": false,
+		"time_of_day": TimeOfDay.selected(), # 0.10.1 Race setup choice
 	}
+
+
+## Plain race settings for a mode: drops cup / daily keys left over from
+## the previous race.
+func reset_series() -> void:
+	if race_config.has("series"):
+		race_config.laps = 2
+	race_config.seed = 0
+	for k in SERIES_KEYS:
+		race_config.erase(k)
+	race_config.items = true
+	race_config.ai_count = 5
+	race_config.time_of_day = TimeOfDay.selected()
+	# 0.11.1: cup / daily set their own track; plain modes use the chosen city.
+	race_config.track_id = TrackList.valid(String(Settings.get_value("gameplay", "track", "")))
 
 
 func goto(new_state: State) -> void:
@@ -79,8 +103,20 @@ func goto(new_state: State) -> void:
 	_change_scene(path, new_state)
 
 
+## Opens the tuning garage for a racer (0.8.3: also from the main menu).
+func open_garage(racer_id: String, back: State) -> void:
+	race_config.kart_id = racer_id
+	race_config.paint = SaveManager.get_paint(racer_id)
+	garage_back = back
+	goto(State.GARAGE)
+
+
 func start_loading_race() -> void:
-	race_config.event_instance_id = _make_instance_id()
+	# 0.11.1: a city counts as played once a race on it starts ("Yeni!" badge).
+	if String(race_config.get("mode", "")) != "tutorial" and CityCards.mark_played(SaveManager.data, String(race_config.get("track_id", ""))):
+		SaveManager.save_profile()
+	# Cup races carry a fixed id ("cup:<seed>:<race>"): paid once, ever.
+	race_config.event_instance_id = String(race_config.get("fixed_event_id", _make_instance_id()))
 	if int(race_config.seed) == 0:
 		race_config.active_seed = randi()
 	else:

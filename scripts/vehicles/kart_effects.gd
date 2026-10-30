@@ -23,6 +23,10 @@ var shield_mat: ShaderMaterial
 var _flame_t := 0.0
 var landing_puff: CPUParticles3D
 var boost_burst: CPUParticles3D
+## Barrier sparks (0.9.1): one pooled emitter, burst on hit, trickle on scrape.
+var wall_sparks: CPUParticles3D
+var wall_bursts := 0
+var drift_bursts := 0
 
 
 func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void:
@@ -67,6 +71,10 @@ func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void
 	flame_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	flame_mat.albedo_color = Color(1, 0.7, 0.2, 0.9)
 	flame_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# HDR emission so the glow (bloom setting) catches boost flames (0.9.2).
+	flame_mat.emission_enabled = true
+	flame_mat.emission = Color(1, 0.7, 0.2)
+	flame_mat.emission_energy_multiplier = 2.5
 	for p in model.exhaust_points:
 		var f := MeshInstance3D.new()
 		f.mesh = ShapeKit.cone(0.1, 0.0, 0.7, 10)
@@ -107,6 +115,27 @@ func setup(p_kart: KartController, p_model: KartModel, p_density: float) -> void
 		if density > 0.05:
 			boost_burst.color = BOOST_COLORS.get(src, Color("ffb21f"))
 			boost_burst.restart())
+	# Drift release: burst in the tier's colour (blue → orange → pink).
+	kart.drift_boost.connect(func(tier, _perfect):
+		if density > 0.05:
+			drift_bursts += 1
+			boost_burst.color = GameFeel.tier_color(tier)
+			boost_burst.restart())
+	wall_sparks = _spark_particles()
+	wall_sparks.amount = maxi(6, int(18 * density))
+	wall_sparks.lifetime = 0.4
+	wall_sparks.one_shot = true
+	wall_sparks.color = Color("ffd27a")
+	wall_sparks.spread = 70.0
+	wall_sparks.initial_velocity_min = 3.0
+	wall_sparks.initial_velocity_max = 7.0
+	kart.wall_hit.connect(func(st):
+		if density <= 0.05:
+			return
+		wall_bursts += 1
+		_place_wall_sparks()
+		wall_sparks.explosiveness = 0.8 if st >= 0.6 else 0.3
+		wall_sparks.restart())
 	shield = MeshInstance3D.new()
 	shield.mesh = ShapeKit.sphere(1.0, 24, 14)
 	shield_mat = ShaderMaterial.new()
@@ -132,6 +161,9 @@ func set_density(d: float) -> void:
 
 func _particles(tex: Texture2D, amount: int, lifetime: float, color: Color, size_min: float, size_max: float) -> CPUParticles3D:
 	var p := CPUParticles3D.new()
+	# World-space particles are simulated per frame; physics interpolation on
+	# them (or their emitter) smears puffs into vertical streaks on device.
+	p.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	p.amount = maxi(2, int(amount * density))
 	p.lifetime = lifetime
 	p.local_coords = false
@@ -163,6 +195,9 @@ func _particles(tex: Texture2D, amount: int, lifetime: float, color: Color, size
 
 func _spark_particles() -> CPUParticles3D:
 	var p := CPUParticles3D.new()
+	# World-space particles are simulated per frame; physics interpolation on
+	# them (or their emitter) smears puffs into vertical streaks on device.
+	p.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	p.amount = maxi(4, int(26 * density))
 	p.lifetime = 0.35
 	p.local_coords = false
@@ -200,18 +235,27 @@ func update(delta: float) -> void:
 	var drifting := kart.is_drifting()
 	var grounded := kart.grounded
 	var fast := absf(kart.speed) > 8.0
+	# Tyre smoke while the rear slides (also the last of a slide after release).
+	var sliding := (drifting or absf(kart.drift_slip) > 0.12) and grounded and absf(kart.speed) > 5.0
 	for s in smoke:
-		s.emitting = drifting and grounded and density > 0.05
+		s.emitting = sliding and density > 0.05
 	# Sparks: colour/size = charge level (Easy Drift) or completed boosts
 	# (timing mode); bigger and faster once charged ("let go now").
 	var tier := clampi(kart.drift.level(), 0, 3)
 	var ready := kart.drift.is_charged()
 	for sp in sparks:
 		sp.emitting = drifting and grounded and (kart.drift.meter > 0.3 or ready)
-		sp.color = SPARK_COLORS[tier] if ready else Color(SPARK_COLORS[0], 0.8)
+		sp.color = GameFeel.tier_color(maxi(tier, 1)) if ready else Color(GameFeel.tier_color(0), 0.8)
 		sp.scale_amount_min = 1.1 if ready else 0.7
 		sp.scale_amount_max = 1.5 if ready else 1.0
 		sp.speed_scale = 1.6 if ready else 1.0
+	# Scraping along a barrier: a thin trickle of sparks on the wall side.
+	var scraping: bool = kart._scrape_time > 0.0 and absf(kart.speed) > 6.0 and density > 0.05
+	if scraping:
+		_place_wall_sparks()
+		if not wall_sparks.emitting:
+			wall_sparks.explosiveness = 0.0
+			wall_sparks.restart()
 	dust.emitting = grounded and fast and (kart.surface == &"offroad" or kart.surface == &"rough") and density > 0.05
 	for e in exhaust:
 		# Puffs only while pulling away; at speed they would veil the kart.
@@ -230,6 +274,7 @@ func update(delta: float) -> void:
 	var c: Color = BOOST_COLORS.get(kart.boost.last_source, Color("ffb21f"))
 	if boosting:
 		flame_mat.albedo_color = Color(c, 0.85)
+		flame_mat.emission = c
 	# Shield
 	var shielded := kart.has_shield()
 	# Player recovery window after a hit or respawn: a faint bubble says
@@ -240,3 +285,11 @@ func update(delta: float) -> void:
 		shield_mat.set_shader_parameter("fade", clampf(kart.shield_timer / 1.5, 0.25, 1.0))
 	elif protected:
 		shield_mat.set_shader_parameter("fade", clampf(kart.immunity_timer, 0.1, 0.3))
+
+
+func _place_wall_sparks() -> void:
+	var n: Vector3 = kart._last_wall_normal
+	var side := 0.0
+	if n != Vector3.ZERO:
+		side = -signf(n.dot(kart.right_dir()))
+	wall_sparks.global_position = kart.global_position + kart.right_dir() * side * 0.7 + Vector3(0, 0.3, 0)

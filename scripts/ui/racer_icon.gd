@@ -43,8 +43,21 @@ func _draw() -> void:
 		"lamb":
 			for sx in [-1.0, 1.0]:
 				_draw_ellipse(c + Vector2(sx * r * 1.0, -r * 0.1), Vector2(r * 0.36, r * 0.17), light)
+	if def.species == "girl":
+		# Pigtails with pink ties behind the head, hair cap and bangs
+		for sx in [-1.0, 1.0]:
+			draw_circle(c + Vector2(sx * r * 0.92, -r * 0.82), r * 0.34, dark)
+			draw_circle(c + Vector2(sx * r * 0.72, -r * 0.62), r * 0.12, Color("ff7fb2"))
+		draw_circle(c + Vector2(0, -r * 0.08), r * 1.04, dark)
 	# Head
 	draw_circle(c, r, main)
+	if def.species == "girl":
+		draw_colored_polygon(_arc_poly(c + Vector2(0, -r * 0.08), r * 1.04, PI * 1.08, PI * 1.92), dark)
+		var fc := c + Vector2(r * 0.62, -r * 0.62)
+		for k in 5:
+			var a := TAU * k / 5.0
+			draw_circle(fc + Vector2(cos(a), sin(a)) * r * 0.13, r * 0.11, Color("ff7fb2"))
+		draw_circle(fc, r * 0.09, Color("ffd84d"))
 	if def.species == "lamb":
 		for p in [Vector2(0, -0.85), Vector2(-0.45, -0.75), Vector2(0.45, -0.75), Vector2(-0.75, -0.4), Vector2(0.75, -0.4)]:
 			draw_circle(c + p * r, r * 0.33, def.fur_main)
@@ -67,11 +80,14 @@ func _draw() -> void:
 	for sx in [-1.0, 1.0]:
 		var e := c + Vector2(sx * r * 0.38, -r * 0.08)
 		_draw_ellipse(e, Vector2(r * 0.17, r * 0.21), Color.WHITE)
-		_draw_ellipse(e + Vector2(0, r * 0.03), Vector2(r * 0.11, r * 0.15), Color("1d1a22"))
+		_draw_ellipse(e + Vector2(0, r * 0.03), Vector2(r * 0.11, r * 0.15), Color("4a2a18") if def.species == "girl" else Color("1d1a22"))
 		draw_circle(e + Vector2(-r * 0.04, -r * 0.04), r * 0.045, Color.WHITE)
 	# Nose, smile, blush
 	var nose := Color("ff8fa3") if def.species in ["cat", "rabbit"] else Color("2b1d1a")
-	_draw_ellipse(c + Vector2(0, r * 0.28), Vector2(r * 0.11, r * 0.08), nose)
+	if def.species == "girl":
+		_draw_ellipse(c + Vector2(0, r * 0.26), Vector2(r * 0.06, r * 0.04), main.darkened(0.15))
+	else:
+		_draw_ellipse(c + Vector2(0, r * 0.28), Vector2(r * 0.11, r * 0.08), nose)
 	draw_arc(c + Vector2(0, r * 0.36), r * 0.14, 0.3, PI - 0.3, 10, Color("3a2420"), r * 0.05, true)
 	for sx in [-1.0, 1.0]:
 		_draw_ellipse(c + Vector2(sx * r * 0.62, r * 0.25), Vector2(r * 0.13, r * 0.07), Color(1, 0.6, 0.7, 0.8))
@@ -83,3 +99,11 @@ func _draw_ellipse(center: Vector2, radii: Vector2, color: Color) -> void:
 		var a := TAU * i / 20.0
 		pts.append(center + Vector2(cos(a) * radii.x, sin(a) * radii.y))
 	draw_colored_polygon(pts, color)
+
+
+func _arc_poly(center: Vector2, radius: float, a0: float, a1: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in 17:
+		var a := lerpf(a0, a1, i / 16.0)
+		pts.append(center + Vector2(cos(a), sin(a)) * radius)
+	return pts

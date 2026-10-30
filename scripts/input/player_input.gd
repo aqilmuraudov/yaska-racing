@@ -74,14 +74,12 @@ func _physics_process(delta: float) -> void:
 	if auto_accel and brake < 0.1:
 		throttle = 1.0
 	if Settings.get_value("gameplay", "steer_assist", false) and _steer_assist_target.is_valid():
-		# x: gentle pull towards the centre while the player is not steering;
-		# y: edge help, a correction that grows near the barrier/grass only
-		# while the kart heads towards it. Capped, so a child can still steer
-		# anywhere (it counters at most EDGE_ASSIST_MAX of full lock).
+		# Optional edge help only (never a centre pull, never while the
+		# player steers): a small correction near the barrier while heading
+		# into it. Off by default; the player keeps full authority.
 		var assist: Vector2 = _steer_assist_target.call()
-		if absf(steer) < 0.15:
-			steer += assist.x * 0.35
-		steer = clampf(steer + assist.y, -1.0, 1.0)
+		if absf(steer) < 0.05:
+			steer = clampf(steer + assist.y * 0.5, -1.0, 1.0)
 	inp.steer = steer
 	inp.throttle = throttle
 	inp.brake = brake

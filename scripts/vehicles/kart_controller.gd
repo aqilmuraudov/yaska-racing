@@ -61,6 +61,13 @@ var speed := 0.0
 var lateral := 0.0
 var vertical := 0.0
 var steer_smoothed := 0.0
+## Drift slip angle (rad): how far the body is rotated against the travel
+## direction while sliding (sign: -drift_dir = nose into the turn). Steering
+## into the drift opens it, counter-steering closes it; it changes smoothly
+## (DRIFT_SLIP_RATE) so the body never wobbles. KartVisual, the camera and
+## the effects read it.
+var drift_slip := 0.0
+const DRIFT_SLIP_RATE := 4.0
 var drift_dir := 0
 var airtime := 0.0
 var grounded := true
@@ -111,7 +118,10 @@ func _ready() -> void:
 	drift.configure(stats)
 	boost.started.connect(func(src): boost_started.emit(src))
 	collision_layer = 2
-	collision_mask = 1 | 2
+	# Karts do not collide physically with each other (a capsule top would
+	# count as floor and launch/tilt the kart); RaceManager resolves
+	# kart-kart contact as a flat, horizontal push instead.
+	collision_mask = 1
 	floor_max_angle = deg_to_rad(50.0)
 	floor_snap_length = 0.6
 	floor_constant_speed = true
@@ -177,6 +187,7 @@ func reset_for_race(xform: Transform3D) -> void:
 	controls_locked = true
 	finished = false
 	steer_smoothed = 0.0
+	drift_slip = 0.0
 	_pending_push = Vector3.ZERO
 	input.clear()
 
@@ -255,6 +266,9 @@ func _physics_process(delta: float) -> void:
 				state = State.NORMAL
 				immunity_timer = maxf(immunity_timer, HIT_IMMUNITY)
 
+	if state != State.DRIFT:
+		# Slide recovers smoothly after the drift (grip comes back).
+		drift_slip = lerpf(drift_slip, 0.0, 1.0 - exp(-stats.drift_correction * delta))
 	_integrate(delta, on_floor)
 
 
@@ -291,7 +305,9 @@ func _drive(delta: float, drifting: bool) -> void:
 	var offroad := surface == &"offroad" or surface == &"rough"
 	var cap := stats.top_speed * surface_speed_factor() * speed_scale
 	if drifting:
-		cap *= stats.drift_speed_factor
+		# Speed is mostly kept; a wider slip scrubs a little more.
+		var slip_n := clampf(absf(drift_slip) / maxf(deg_to_rad(stats.drift_visual_angle), 0.01), 0.0, 1.2)
+		cap *= stats.drift_speed_factor * (1.0 - 0.03 * slip_n)
 	var boosted := boost.is_active()
 	var target_cap := cap + boost.effective_bonus(offroad)
 	var throttle := input.throttle
@@ -361,6 +377,10 @@ func _steer_drift(delta: float, steer_in: float) -> void:
 	var inward := steer_in * drift_dir # +1 = steering into the drift
 	var rate := deg_to_rad(stats.drift_turn_base + inward * stats.drift_turn_range)
 	yaw -= drift_dir * rate * delta
+	# Slip angle: neutral ≈ 75 % of drift_visual_angle, full inward 110 %,
+	# full counter-steer 40 % (the slide straightens, it is never cut).
+	var target := -drift_dir * deg_to_rad(stats.drift_visual_angle * (0.75 + 0.35 * inward))
+	drift_slip = lerpf(drift_slip, target, 1.0 - exp(-DRIFT_SLIP_RATE * delta))
 	# A small outward slide sells the powerslide without losing control.
 	var slip_target := -drift_dir * speed * 0.09
 	lateral = lerpf(lateral, slip_target, 1.0 - exp(-6.0 * delta))
@@ -476,6 +496,11 @@ func apply_start_boost(quality: float) -> void:
 
 
 ## Returns true when the hit landed (not blocked by shield or immunity).
+## True while scraping or pinned against a barrier.
+func is_touching_wall() -> bool:
+	return _wall_contact > 0.0
+
+
 func apply_hit(kind: StringName) -> bool:
 	if state == State.RECOVER or finished:
 		return false
@@ -570,6 +595,7 @@ func recover_progress() -> float:
 
 func _integrate(delta: float, on_floor: bool) -> void:
 	if _pending_push != Vector3.ZERO:
+		_pending_push.y = 0.0
 		speed += _pending_push.dot(forward_dir())
 		lateral += _pending_push.dot(right_dir())
 		_pending_push = Vector3.ZERO

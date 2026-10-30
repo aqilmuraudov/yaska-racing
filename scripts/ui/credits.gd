@@ -5,7 +5,7 @@ var _scroll: ScrollContainer
 
 
 func _init() -> void:
-	back_state = Game.State.MAIN_MENU
+	back_state = Game.State.SETTINGS
 	screen_title_key = "CREDITS_TITLE"
 
 
@@ -22,12 +22,22 @@ func build() -> void:
 	_scroll.focus_mode = Control.FOCUS_ALL
 	panel.add_child(_scroll)
 	TouchScroll.attach(_scroll)
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 14)
+	_scroll.add_child(inner)
+	var logo := TextureRect.new()
+	logo.texture = load("res://assets/ui/yaska_racing_logo.png")
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.custom_minimum_size = Vector2(660, 170)
+	inner.add_child(logo)
 	var text := Label.new()
 	text.text = tr("CREDITS_BODY")
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.custom_minimum_size = Vector2(660, 0)
 	text.add_theme_font_size_override("font_size", 24)
-	_scroll.add_child(text)
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inner.add_child(text)
 
 
 func first_focus() -> Control:

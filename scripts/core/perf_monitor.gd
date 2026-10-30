@@ -71,6 +71,13 @@ func _govern() -> void:
 	if _sum < FALLBACK_WINDOW * 0.95:
 		return
 	if slow_share() > FALLBACK_SHARE:
+		# 0.10.2: on "auto" first drop one picture tier (kept for later
+		# sessions); only on Low does the steady-30 cap kick in.
+		if Settings.is_mobile() and String(Settings.get_value("graphics", "quality", "auto")) == "auto" and Settings.auto_step_down():
+			print("PerfMonitor: slow frames, auto quality now %s" % Settings.values.graphics.preset)
+			_times.clear()
+			_sum = 0.0
+			return
 		fallback_active = true
 		Engine.max_fps = 30
 		print("PerfMonitor: %.0f%% of frames over 20 ms for %.0f s, steady 30 FPS for this session" % [slow_share() * 100.0, FALLBACK_WINDOW])

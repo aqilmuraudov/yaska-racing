@@ -1,6 +1,238 @@
 # Status, verification evidence and known issues
 
-Date: 2026-10-24 · Build: 0.6.0 · Engine: Godot 4.4.1-stable
+Date: 2026-10-30 · Build: 0.11.1 · Engine: Godot 4.4.1-stable
+
+## Update 0.11.1 (versionCode 27) — "Şəhəri seç": city choice in the normal flow
+- Owner feedback: the normal Oyna flow always loaded the seafront; the new city was only reachable via Race Setup. Now Oyna → Rejim seç → Yarış / Rekord → **Şəhəri seç** → kart select → race.
+- Şəhəri seç (`scripts/ui/city_select.gd`, `scenes/menus/city_select.tscn`, `Game.State.CITY_SELECT`): two big picture cards (in-game renders `assets/ui/cities/<id>.jpg`, made with the new debug flag `--no-hud`), city name, chips for lap length (new `lap_flag` icon), best lap and city trophies (x/7), a mini map in the corner and a "Sür!" pill. Pulsing red "Yeni!" badge on Göydələnlər şəhəri until a race there starts (profile `played_tracks`; 0.11.0 saves with a downtown record/finish count as played). One tap picks + continues; the last city is pre-selected and focused.
+- Kart select header shows the city about to load (thumbnail + name, tap to change). Back from kart select returns to Şəhəri seç (cup still goes back to modes).
+- Daily card on Rejim seç shows today's city (thumbnail + name). Cup keeps its fixed 3-race sequence; Drift məktəbi is always on the seafront.
+- Sync: Settings `gameplay.track` is the single source; Race Setup tabs (now using the same city names) and the city cards read/write it; `Game.reset_series()` restores it after cup/daily races (the cause of "always seafront" after a daily/cup).
+- Shared helpers: `CityCards` (`scripts/ui/city_cards.gd`), `TrackList.CITY_KEYS` / `city_key()`; strings CITY_TITLE, CITY_NEW, CITY_SEAFRONT, CITY_GO.
+- Tests: `tests/test_round21.gd` (8 methods, 59 checks); full suite 181 methods, 5184 checks, 0 failures. Screenshots: `ui_audit_round21/sheet.jpg`.
+- Known: at 4:3 the city cards have some empty space under the chips; card art is a static render (not live 3D); with only two cities the screen has no scroll/paging yet (needed if more cities are added).
+
+## Update 0.11.0 (versionCode 26) — new map "Göydələnlər şəhəri", buying karts with manat, polish
+- New track `downtown_towers` (~1053 m, 6 checkpoints, 2 boost pads, 1 ramp, 4 item rows) in the same Baku city: Tower Avenue lined with 16-floor (57.6 m) glass skyscrapers in 4 shapes (square + antenna, setback + roof garden, round + gold crown, slab + fins), shader facades (floor bands, mullions, fresnel, random lit windows at night), 4 malls (ŞƏHƏR, GÜNƏŞ, DƏNİZ, BAKI MALL) with signs, glass fronts, entrances, canopies and parking lots with cars, and a drive-under mall bridge (8 m clearance, glowing ceiling strips). `DowntownDecor` (`scripts/track/downtown_decor.gd`), `CityKit` (`scripts/track/city_kit.gd`), `assets/materials/skyscraper.gdshader`, `data/tracks/downtown_towers.json`, `TrackList` (`scripts/track/track_list.gd`).
+- Works in all modes: track picker tabs + mini preview in race setup (saved as `gameplay.track`); Bakı Kuboku race 2 is downtown (3 laps), race 3 seafront at sunset; daily challenge picks the track per date (time goal × `LAP_SCALE`); separate records, ghosts and 5 "Göydələnlər:" trophies.
+- Buying karts: Qaraj has a "Yeni maşın" card at the top with an "Al  X ₼" button (next locked kart), confirm / not-enough dialog (`KartBuyDialog`), sparkle + "Sənindir!" after buying; kart select shows "Al X ₼" on locked karts. End-to-end tested (balance drops, kart owned, saved).
+- Fixes: main menu sea/skyline/clouds visible again, bigger glossy gear; warm kart-select floor; cinematic camera cuts when a prop occludes the kart (TrackDecor occluder boxes + `segment_hit`), the t≈15 s blob is gone.
+- Perf (autopilot, `--perf-every=2`, 1280×720, software GL; mean / max): downtown High 534/739 dc, 436k/548k prims (seafront 563/762, 583k/750k); Medium 380/500, 251k/298k (seafront 377/458, 351k/428k); Low 270/373, 122k/145k (seafront 270/354, 198k/254k).
+- Tests: `tests/test_round20.gd` (9 methods, 317 checks); full suite 173 methods, 5125 checks, 0 failures. Screenshots: `ui_audit_round20/sheet.jpg`.
+- Known: Medium/Low peak draw calls on downtown slightly above seafront; malls have no interiors; no road traffic; the daily card does not name the track; kart select still uses its own buy dialog code; mall bridge side blocks are plain glass.
+
+## Update 0.10.2 (versionCode 25) — new main menu, mobile performance, cinematic camera
+- Main menu rebuilt after the owner's mockup: busier Boulevard backdrop (benches, ornate lamps, flower beds, palms, balloons, sailboats, bigger Baku Eye), warm paving, punchier colours; kart on a glowing blue checker turntable (shader `assets/materials/turntable.gdshader`, neon ring, bulbs, 4 floor spotlights + a shadowless SpotLight); logo with a bobbing crown and a wooden-plank subtitle; round gear (Ayarlar) top-left; purple title pill (`Progression.title_for`) + balance pill with a green "+" (opens the garage) top-right; 4 chunky buttons along the bottom with icons above the labels: Oyna (→ mode select), Qaraj, Mükafatlar, Ayarlar. Staggered pop-in (scale), Play "breathes", icon bounce on press. 4:3 keeps the 16:9 horizontal view (camera KEEP_WIDTH) so the kart is never cut off. Sensor-landscape only, so portrait does not apply.
+- Credits moved into Settings → Dil ("Müəlliflər" button); Credits' back returns to Settings.
+- Performance: decor chunks 140 → 70 m plus a far LOD (low-segment meshes, no shadows) beyond `TrackDecor.lod_for(decor distance)` (~109 m on Medium); far kart LOD (`KartVisual.KART_LOD` 28 m, ~3× fewer triangles); cheaper clouds; Medium shadow distance 60 → 45 m; dynamic resolution on Low/Medium; "Avto" picks the tier from GPU name + core count on mobile and steps down one tier for good (`graphics.auto_cap`) when a race cannot hold its frame rate. 60 fps cap with 30 via the battery saver (unchanged). Profiling: `--perf-report=T`, `--perf-top`, `--hide=Node[:mm|single|name]`.
+- Measured (race t=12 s, 1280×720, compatibility renderer on software GL — fps not meaningful): Low 308 dc / 380,070 prims → 328 / 287,690; Medium 397 / 578,036 → 417 / 432,880; High 527 / 818,530 → 540 / 616,688 (≈ −25 % primitives; draw calls +2–6 % from the smaller chunks and LOD copies). Shadow casters, particles unchanged.
+- Cinematic camera ("Sinematik", 5th view in the camera cycle / Settings): TV shots that cut every 3–5 s — low trackside (fixed, zooms as the kart passes), eased helicopter orbit, front chase facing the kart, fly-by framing the Flame Towers / Heydar Aliyev Center / Crescent / Old Tower behind the kart. Ray-checked against collision geometry, camera kept within 36 m of the kart. Look-back still shows the normal chase view.
+- Tests: `tests/test_round19.gd`; full suite 164 methods, 4803 checks (the 16 failures of the first run were the old menu-fit test catching the slide-in animation, fixed by animating scale; re-run of the affected files 0 failures). Screenshots: `ui_audit_round19/sheet.jpg`.
+- Known: decor without collision (small props, billboards) can still pass in front of the cinematic camera for a moment; the menu skyline/sea is less visible than in the mockup (the flower beds hide most of it); real-device fps not measured.
+
+## Update 0.10.1 (versionCode 24) — time of day
+- Race setup has three big buttons: Gündüz / Gün batımı / Gecə (default day, saved in settings `gameplay.time_of_day`).
+- Sunset: low warm sun, purple-pink sky, long shadows. Night: dark blue sky, moonlight, glowing lamps and windows, player headlight (SpotLight, no shadows, plus emissive bulbs).
+- Flame Towers LED show (flames + Azerbaijani flag, cross-fade) at sunset/night only; HAC soft glow; Government House warm floodlight.
+- Baku Cup race 3 is at sunset; cup races 1-2 and the daily are always day.
+- Deferred: skipping the winner finish replay. Known: night ambient is flat colour, lamps glow but don't light the ground, sea stays bright.
+
+## Update 0.10.0 (versionCode 23) — game modes
+- Mode select: 4 big cards (Sərbəst yarış, Bakı Kuboku, Rekord, Gündəlik tapşırıq) with status chips (cup prize / "Yarış 2/3 · davam", best lap, daily reward / ✓ done); Drift məktəbi as a small button.
+- Bakı Kuboku: 3 races, points 10/8/6/4/2/1, animated standings screen (bars + counters grow, rows slide to new places), podium with trophy and prize. Resume after restart; damaged state resets cleanly. See TUNING.md.
+- Rekord: ghost + live delta (ghost format 2), lap delta, record bonus once; kids mode does not save records.
+- Daily challenge: deterministic per date, 1,50 ₼ once per day.
+- Fix: steering hint waits until START!/TURBO START text is gone (`RaceHUD.steer_hint_ready`) — never overlaps.
+- Fix: ghost recording start time was not reset on autopilot/kids laps.
+- Save version 5 (adds `cup_history`, `daily_challenge`; v4 saves migrate).
+- Tests: `tests/test_round17.gd`. Screenshots: `ui_audit_round17/`.
+- Known limits: ghost is the best single lap, not a full race; cup has no reverse-direction/time-of-day variation (none exists in the game); quitting an unfinished cup race lets the player re-run it (scores only on finish); daily time target is tuned from autopilot laps.
+
+## Update 0.9.8 (versionCode 22) — big landmarks remodelled
+- Heydar Aliyev Center (`LandmarkKit.hac_point/hac_height`): one smooth lofted white shell (104×30 grid, smooth normals), 196 m long, 54 m peak: rises from the plaza on the left into a tall forward-curling peak, dips, rolls into a lower second crest and sweeps back into the plaza on the right. Dark curved glass wall recessed ~10 m under the overhanging lip. White skin has a little emission so it stays white on the shaded side. Plaza with terraced lawns and pools (kept clear of the road).
+- Flame Towers: three separate teardrop-plan flames (120/109/106 m = 182/165/161 × 0.66), widest low, long taper to a sharp tip leaning over the inner side, convex faces turned outwards, ~30 m gaps; triangle of 34 m circumradius; floor lines + mullions in the glass shader; group moved 45 m back (site −175, −435) so the tips show from the Old City approach. Podium is a low stone cone (no pale disc).
+- Government House: 176 m sand/beige symmetric block — ground-floor pointed-arch arcade, two-storey tall windows with sills, projecting side wings with stepped arched tops, projecting centre with a giant pointed portal between paired columns, 4-tier stepped tower with arched loggias, spire and flag (~85 m), crenellated parapets. New plain colours `sand`, `sand_light`, `sand_shade`, `window_dark` (merged into the vertex-colour surface).
+- Baku Eye: 60 m wheel was already right; cabins now pastel and ~2.5 m.
+- Debug: `--landmark-closeups` captures front three-quarter shots of the three landmarks and the wheel.
+- Tests: `tests/test_round16.gd` (HAC wave profile and size, flame ratios/gaps/taper/tip, Government House size/symmetry/far LOD, wheel size); road clearance (round 4) passes with the larger models. Full suite: 141 methods, 4261 checks, 0 failures.
+- Screenshots: `ui_audit_round16/sheet.jpg` (round 15 vs 0.9.8 per landmark), `ui_audit_round16/final/`. Compatibility renderer only.
+
+## Update 0.9.7 (versionCode 21)
+- Flame Towers: daytime LED skin off, plain blue glass by day.
+- Old City walls: base course, rounded merlons, half-round towers every ~24 m; warmer sandstone limestone with block variation/grime (less overexposed).
+- Shadows: opacity 1.0, ambient 0.4, sun 1.75, blur 1.2. Softer sky gradient/sun halo, softer clouds.
+- Plane trees and stone pines mixed into tree placements.
+- Caspian horizon glance view added to landmark views (ships/platforms visible, faint).
+
+## Update 0.9.6 (versionCode 20) — shadows, Baku ambiance, rendering
+- Game modes work (planned 0.10.0) is paused; nothing of it ships here. Parked notes in `/workspace/game/wip_modes_r13/`.
+- Shadows: soft PCF filter per preset (`RaceEnvironment.SHADOW_FILTER`: Medium very-low, High low, Ultra medium; project mobile default now soft-very-low), Medium uses 2 PSSM splits at 60 m (was orthogonal 55 m), High 4 splits at 100 m, tuned bias (0.06 / normal 1.5) against acne; kart blob contact shadow stronger on every preset (0.42, 0.6 on Low); less ambient fill (0.5) so shadows read.
+- Rendering: ACES tonemap (exposure tuned), stronger aerial perspective; road shader gets roughness variation, polished racing line, worn paint and repair patches.
+- Baku ambiance (`scripts/track/baku_extras.gd`): Baku TV Tower on the northern hills, Crystal Hall (faceted glass ring) on the bay, oil platforms with flare and freighters on the Caspian, boulevard triple-globe cast-iron lamps (replace the old lamp everywhere), Azerbaijani flag poles along the promenade, blue street signs in Azerbaijani (Neftçilər prospekti, Dənizkənarı bulvar, İçərişəhər, Azadlıq meydanı, Üzeyir Hacıbəyov küç.).
+- Tests: `tests/test_round14.gd` (extras present, signs carry AZ names, shadow modes per preset, ACES); road-clearance check of round 4 covers the new pieces. Screenshots (before/after, landmark views): `ui_audit_round14/sheet.jpg`.
+- Limits: screenshots come from the GL Compatibility renderer (no Vulkan on the build box), so the Mobile-renderer look on phones (soft filter, ACES) is not visually verified; existing landmark meshes (Flame Towers, Heydar Aliyev Center, Maiden Tower, Government House, Old City walls) were not remodelled; no reflection probes, SSAO stays High-only.
+
+## Update 0.9.5 (versionCode 19)
+- Kids controls ("Uşaqlar üçün idarəetmə (Avto sürmə)"): first, highlighted row in Settings → İdarəetmə (opens first from the main menu). Saved as `controls.kids_auto` (default off; old settings files load as off).
+- When on, the player's kart is driven by its AIDriver (racing line, avoidance, stuck recovery/respawn), normal start (no stall), steering/gas/brake/drift buttons hidden and player input ignored; NITRO button still works. Steering tutorial hints are skipped.
+- Balance: rivals use the easy profile, auto-driver uses easy skill at 0.9 speed scale (6-seed probe: places 1,1,1,2,2,4).
+- Goals: drift / overtake / clean-lap goals swap to finish / stars / top 3 (`RaceGoals.kids_safe`). Money and goals pay normally.
+- HUD: yellow "Avto" badge with child icon under the place badge. Debug flag `--kids`.
+- Tests: `tests/test_round12.gd` (persistence, race picks setting, auto vs manual, touch ignored, full 3-lap auto race without long off-track or stalls, goal swap). Screenshots: `ui_audit_round12/sheet.jpg`.
+
+## Update 0.9.4 (versionCode 18)
+- Minimap readability fix: zoomed, player-centred radar view (~110 m ahead, ~160 m total), player at lower-centre, heading-up, tilted; clipped to the panel with a rounded border; thick track ribbon.
+- Rival markers: 15 px coloured dots with white outline and place number, decluttered so packed karts don't stack; rivals out of view clamp to the panel edge as coloured arrows with their number.
+- Tests in `tests/test_round11.gd` adapted (anchor, zoom, edge arrows, declutter); overlap tests unchanged. Sheet: `ui_audit_round11/sheet.jpg` (0.9.3 vs 0.9.4).
+
+## Update 0.9.3 (versionCode 17)
+- Minimap redesign (`scripts/ui/minimap_widget.gd`): tilted perspective "3D" look (2D projected, cheap on mobile), heading-up with smoothed stable rotation, fixed scale (no zoom while turning).
+- Track drawn with drop shadow, white edge, asphalt, centre line, shortcuts, finish checker.
+- Kart markers: shadow + white ring + paint colour, depth sorted; place numbers on 2 nearest rivals; player = gold arrow with white outline and pulse ring.
+- Minimap larger (250x180), placed by `RaceHUD.place_minimap()` clear of controls at 1100–1600x720 and 1280x960.
+- Tests: `tests/test_round11.gd` (marker mapping, player marker, no overlap with controls). Screenshots: `ui_audit_round11/`.
+
+## Update 0.9.2 (versionCode 16)
+- Fix: "TURBO START!" pop now shows below the START gantry/countdown.
+- Golden hour: lower (30°) warmer sun, softer shadow blur, warmer horizon/ambient, glow threshold 1.0 (glow follows the Bloom/quality preset).
+- Caspian water: golden sky-reflection tint at grazing angles + emissive sun glints (existing wave shader kept).
+- Boost flames emissive (HDR) so glow picks them up.
+- 4 gulls circling over the route (CPU-moved meshes, no collision), hidden on Low (decor distance 0).
+- UI: dialog pop-in (kart shop, login popup), press bounce on every styled button.
+- Already present (unchanged): kart gloss shader, driver steer/lean animation, offroad dust, flag vertex sway, grandstand crowd.
+- Trimmed (cost/risk): shore foam line, palm sway (palms are batched into merged meshes), pedestrians, crowd cheering animation.
+- Tests: tests/test_round10.gd.
+
+## Update 0.9.1 (versionCode 15)
+- Game feel (`scripts/racing/game_feel.gd`): turbo start (gas within 0.45 s of GO; ≤0.25 s full) with yellow flash + "TURBO START!", too early = stall wobble; AI sometimes does it.
+- Drift sparks coloured by tier (blue → orange → pink), release burst in the tier colour.
+- Speed lines also near top speed and during boosts, bigger boost FOV kick; new Settings → Graphics "Sürət effekti" switch (also off at effects density 0).
+- Near miss: close fast pass without contact → "Yaxından!", small shake, +0.03 ₼ (driving cap).
+- Barrier sparks on hit/scrape; landing squash/puff, boost flames, star bursts kept.
+- Kart prices now rise with shop order (9 → 13 ₼, same total). Results "Növbəti yarış" is one compact chip row (shrinks on narrow screens), unlock chips single-line.
+- aapt "android:required ... not an integer" is harmless: Godot writes the Vulkan uses-feature attributes as strings; aapt2 and Android parse them fine.
+
+## Update 0.9.0 (versionCode 14)
+- Kart shop: new profiles start with HavHav only; locked cards show price, "Al" button, confirm and "Pul çatmır" dialogs. Prices in `kart_shop.gd`; ladder in TUNING.md. Old saves keep all karts.
+- 7-day daily login popup (day 7 big prize, streak resets on skip, hidden ad "double" hook).
+- 3 race goals per race: live HUD tick, paid at race end, next goals shown on results.
+- Save version 4. Tests: 116 methods, 0 failures.
+
+## Update 0.8.3 (versionCode 13)
+
+Game-style UI pass (owner feedback: windows looked like "code windows").
+- Results: big place medal ("1-ci yer!"), podium rows with racer portraits
+  (top 3 + player), time only for the player, animated manat count-up,
+  star chip, NEW RECORD badge, at most 3 unlock cards (last "+N").
+- Rewards: two big tabs — "Günlük tapşırıqlar" (3 task cards: icon, bar,
+  reward chip, "Alındı") and "Kuboklar" (badge grid, silhouette when locked,
+  next goal + bar, tap for tiers). Title is a header badge with one bar.
+  Kart parts moved to the Garage (tap to fit/remove). Progression unchanged.
+- Main menu: Oyna, Qaraj (new, opens the garage for the selected racer and
+  returns to the menu), Mükafatlar, Ayarlar, Müəlliflər — equal-height
+  stack; money chip + title badge top-right; tiny faint version.
+- Garage: no description lines; paint price chip; parts row.
+- Racer select: personality/“Xüsusiyyət” labels dropped. Settings: hint lines
+  under rows removed (tooltips only). Mode cards: one short line. Credits:
+  logo + short lines.
+- Save v4: `owned_karts` (new profile: standard kart; old saves own every
+  kart). Helpers `owned_karts()`, `is_kart_owned()`, `own_kart()`. Nothing
+  is locked yet.
+- Tests: tests/test_round7_ui.gd (results fit 16:9/19.5:9/20:9/4:3 + 1100x720,
+  pick_rows/cards/count-up, daily claim single credit, trophy groups,
+  rewards tabs, main menu order/fit/garage navigation, owned_karts
+  migration). Full suite: 104 test methods, 3222 checks, 0 failures.
+- Screenshots: ui_audit_round7/before and /after (1560x720).
+- Audio untouched (diff against backup_before_round7).
+
+## Update 0.8.2 (versionCode 12)
+
+- New app icon: the colourful stacked "Yaska Racing" lettering (face/flag omitted so the text stays large) inside the adaptive safe zone, on a vivid pink→purple radial gradient with sunburst rays and speed streaks. Files: `assets/icons/adaptive_fg_432.png`, `adaptive_bg_432.png`, `launcher_192.png`. No other changes.
+
+## Update 0.8.1 (versionCode 11) — "Yaska Racing"
+
+- **Touch orbit fixed (root cause):** the 0.8.0 racer-select/garage orbit lived in `_unhandled_input` and reacted only to the touch-emulated mouse; the full-rect menu root Control (mouse_filter STOP) consumed those events in the GUI pass, so they never became "unhandled"; pinch never saw two tracked fingers (ScreenTouch never reaches `_gui_input`). New `scripts/ui/orbit_pad.gd` (topmost pad, `_input` for real touches, `_gui_input` for mouse/wheel/magnify, no double counting) gives 1:1 finger follow (`ORBIT_RAD_PER_PX = 0.0052`) and pinch zoom on both screens. Test: `tests/test_round6_touch.gd` (fails against 0.8.0, passes now).
+- **More vivid colours:** central `scripts/effects/palette.gd` (material/kart/driver saturation, bluer sky, env saturation 1.3 / contrast 1.13), ground shader saturation, richer water. No extra render passes.
+- Garage stat bars clipped to their track; menu stage spin inertia clamped.
+- Azerbaijani strings proofread (tutorial steer hint and 9 others fixed).
+- Verified not bugs: ₼ glyph renders correctly, balance has ₼, HUD position shows "4/6", red icon = brake button.
+- **Rebrand to Yaska Racing:** new logo (main menu, boot splash), adaptive launcher icon, app name; `package/unique_name` unchanged so it updates in place. Start gantry sign reads "YASKA RACING".
+
+## Update 0.8.0 (round 5: garage, manat economy, finish celebration) (2026-10-30)
+
+- Racer select: the hero kart idles (bob/sway); drag x orbits, drag y tilts (clamped), pinch/wheel zooms (0,7–1,35), inertia then ease back after 2,5 s. Right panel input is untouched. New buttons under Start: "Qaraj" and "Yarış ayarları" (icon + text, H_BTN).
+- Finish: the race ends for the player on the line crossing; the results open 3,4 s later (no longer waiting up to 18 s for the AI; unfinished AI get a projected "~" time). 1st place: "1-ci yer! QALİB!", confetti, fireworks, synthesized fanfare on the SFX bus. Other places: big wobbling "N-cü yer!".
+- Results: compact 540 px panel docked right, 3 columns (no best lap), money row with breakdown, rewards collapsed into "+N mükafat", buttons outside the scroll and always visible (tested 16:9, 19.5:9, 20:9, 4:3).
+- Garage (from racer select): paint, speed, engine, brakes, steering, tyres (5 levels), Nitro (fit + 3 levels) with preview bars. In-race Nitro touch button with a charge ring (keys N/H).
+- Currency is now manat/qəpik (integer qəpik, save v3, 1 old coin = 2 qəpik). Driving income: drifts, boosts, overtakes, stars, clean laps. See TUNING.md for the tables and simulation. Rewarded-ad hook (`RewardedAds.provider`), no SDK.
+- Audio: no existing file or behaviour changed; the new celebration sounds are generated at runtime.
+- Known/simplified: AI does not use nitro; overtake pay counts only new best places; the main-menu balance has no icon.
+
+## Update 0.7.2 (round 4: crash/collision bugs from the phone video) (2026-10-29)
+
+- Kart-kart bump flip: karts no longer collide physically (capsule tops were treated as floor, launching and tilting the kart). Contact is RaceManager's flat push only; pushes are forced horizontal; KartVisual ground-align tilt is capped at 28 deg and roll/pitch at 20 deg.
+- Grey slab / karts driving through the Heydar Aliyev Center: the 0.7.1 enlargement made the shell hang over the road (s ~700). HAC moved to (175, -285). New test checks every landmark and decor mesh/multimesh against the road corridor + barrier line.
+- Barriers: collision is now a closed 2 m thick, 6 m tall block per segment, overlapping its neighbours by 0.35 m (no seams), with closed end caps, and the face sits 0.3 m inside the visual face so wheels stop at the barrier instead of inside it.
+- Out of bounds: a kart (player or AI) beyond the barrier line or 2.5 m below the road for 1.5 s respawns at the last safe point facing forward (plus the existing instant rules).
+- Wrong way: not raised while pinned/grinding a wall below 9 m/s.
+- Sky streaks at the start: kart particle emitters and the Ferris wheel ring no longer use physics interpolation (they are updated per frame).
+- Tests: tests/test_round4_bugs.gd (barrier max-speed drift probes, OOB respawn, kart contact tilt, wall grind wrong-way, barrier ends/corners, landmark/decor road clearance).
+
+## Update 0.7.1 (landmarks closer to the real ones) (2026-10-29)
+
+- Maiden Tower: 29.5 m × 16.5 m smooth tapering limestone cylinder (1.3× scale in game), subtle masonry courses, wedge buttress almost full height, flat top with a low parapet (no crenellations), few slit windows, small door; Old City houses kept 46 m away so it reads from the road.
+- Flame Towers: three flame-shaped glass towers in the real 182/165/161 height ratio (120/109/106 m), the tallest at the back, convex faces outwards, blue glass with mullions; animated orange/red LED flames (glass shader `flame_led`, on when bloom or high shadows are enabled).
+- Heydar Aliyev Center: white continuous shell with three waves, the highest lifted at one end, a curling lip over dark curved glass, on stepped terraces.
+- Landmark screenshots hide the tutorial hint. Version code 8 / 0.7.1. Tests 78 methods / 2892 checks / 0 failures. Audio untouched.
+
+## Update 0.7.0 (round 3: menus, controls bug, rewards, drift, landmarks) (2026-10-29)
+
+Version code 7 / 0.7.0. Signed debug APK `/workspace/game/out/BakuTurbo-0.7.0-debug.apk`
+(apksigner v1+v2+v3 verified, cert SHA-256 726cd353…6e25d9). Tests: 78 methods,
+2892 checks, 0 failures. Audio assets and audio scripts are byte-identical to the
+pre-round-3 backup (74 files). Desktop screenshots only, in `/workspace/game/ui_audit_round3/`.
+
+- **Main menu**: four equal stacked buttons (Oyna / Mükafatlar / Ayarlar / Müəlliflər), player badge removed, coins + title + trophies + version bottom-left, desktop Quit is small at the top right.
+- **Mode select**: three big centred cards side by side, no kart behind them, sized from the available space (checked at 2400x1080, 1920x1080, 1440x1080).
+- **Auto-steer bug (root cause)**: the hidden "steer assist" was on by default and was forced on by the v3 settings migration. Its centre pull and edge correction steered the kart with no input, most visibly after a bump. Fix: default off, settings v4 migration turns it off, and the assist no longer pulls on its own. Touch: releases are processed while the controls are hidden, and a repeated press on the same finger releases the old button (no latched steering). Test: `tests/test_player_control.gd`.
+- **Rewards**: `scripts/progression/progression.gd`: 12 paints (5…520 stars), 6 kart parts (by lifetime coins), 8 titles (by stars), 33 trophies (races, podiums, wins, drift boosts, stars, daily, driving school, per track and mode), 3 daily goals per day. New Rewards screen and unlock lines on results. Old saves are seeded from their stats (SAVE_VERSION 2, backward compatible). Test: `tests/test_progression.gd`.
+- **Drift**: a subtle hop (3.0 m/s), a real slip angle that counter-steer reduces, speed mostly kept, smoke and skid marks while sliding, the camera follows the slide, subtle roll with no wobble, mini-turbo unchanged. See TUNING.md "Drift feel". Test: `tests/test_drift_feel.gd`.
+- **Racer select**: every racer is shown in a 3/4 front view (drag rotates it, then it eases back).
+- **Baku landmarks** (procedural, visible from the track): Flame Towers, Maiden Tower, Heydar Aliyev Center (existing, kept); new Government House (symmetric limestone block, stepped central tower, colonnade, arched loggias) in the infield facing the Boulevard straight; new Carpet Museum (half-rolled carpet building) in the west infield; Icherisheher entrance rebuilt as Qoşa Qala (two crenellated semicircular towers, a pointed arch over the road, blind side arches) with crenellated city walls and end towers. Screenshots: `ui_audit_round3/landmarks/`.
+- Fixed: a nil-player script error in the tutorial reward path.
+
+## Update 0.6.2 (UI round 2 + Yaska)
+
+- Racer select redesigned: big hero 3D preview of the selected racer on the left (name + kart overlay); one right panel with a 7-portrait picker on top and the chosen kart's paints, stat bars, speciality and Start/setup below. No scroll chevron, nothing clipped (2400x1080, 1920x1080, 1440x1080).
+- Touch scrolling fixed everywhere (TouchScroll): reads native ScreenTouch/ScreenDrag, ignores emulated mouse; the internal "cancel press" events are tagged by device id (their position was stretch-transformed on phones, which ended every drag at once). Momentum friction 2.6/s, clamped bounds. New test tests/test_touch_scroll.gd.
+- Settings simplified: Picture = one quality choice (Auto/Low/Medium/High) + Battery saver (30 FPS); Controls = control type (+calibrate for tilt), auto-accelerate, camera view, button size. Hidden items keep their saved values/defaults; saves stay compatible (new keys graphics.quality, graphics.battery_saver). Sound and Language unchanged.
+- New racer Yaska (species "girl", kart "Yaska Star", ratings 10/9/10/9/8 — fastest and most stable), code-built driver (chestnut pigtails, flower clip, denim dress with lace sleeves), pink star kart, procedural portrait + assets/icons/ui/racer_yaska.svg, AZ+EN strings, in AI pool, unlocked by default.
+- No audio changes.
+
+## Update 0.6.1 — UI scale, racer preview, camera views (2026-10-29)
+
+Desktop only (box, Compatibility renderer screenshots at 2400×1080, 1920×1080,
+2048×1536; no device). Audio untouched.
+
+- **UI scale / hierarchy**: one type scale and touch metrics in `UITheme`
+  (`FS_DISPLAY/TITLE/H1/H2/BODY/CAPTION`, `FS_BTN*`, `H_PRIMARY` 84,
+  `H_BTN` 72, `H_BTN_SMALL` 64, `GAP_*`) used by the theme defaults and by
+  main menu, mode select, racer select, race setup, option selector,
+  settings, segmented choices, pause and the shared back button.
+- **Settings** less bloated: rail tabs 100→72, row icons 60→44, row titles
+  32→25, hints 21→17, language cards 300×220→250×160.
+- **Racer select**: preview camera framed by aspect (4.7 m on 20:9 up to
+  8.6 m on 4:3) and centred in the free space between grid and panel.
+- **Camera views**: Chase (re-framed: 5.4 m / 2.35 m, aims 7 m ahead),
+  Drone, Right, Left. Switch in race with the new HUD camera button, **C**
+  or controller R3 (`camera_cycle` action, remappable); choice in Settings →
+  Controls → Camera View; saved as `gameplay.camera_mode`; 0.7 s blended
+  transitions; wall-avoidance ray kept for chase/side views. AZ + EN strings.
+- **Fix**: speedometer readout showed −9223372036854775808 after long frames
+  (explicit Euler spring diverged to NaN); now an exact critically damped step.
+- Debug: `--camera=0..3`.
+- Tests: 67 methods, 2818 checks, 0 failures (new camera button is covered by
+  the existing touch-layout overlap/on-screen checks).
 
 ## Update 0.6.0 — child-friendly polish from the phone recording review
 

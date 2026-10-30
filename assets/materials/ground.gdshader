@@ -6,6 +6,8 @@ render_mode cull_back, diffuse_burley;
 
 uniform float noise_scale = 0.18;
 uniform float variation = 0.18;
+// 0.8.1 vivid grade: greener grass, warmer paving (one mix, no cost).
+uniform float saturation = 1.3;
 uniform vec3 warn_color : source_color = vec3(0.96, 0.92, 0.80);
 // Painted grass (6 m tiles) and promenade paving (4 m tiles), chosen by the
 // generator's vertex tint: green → grass, light warm stone → paving.
@@ -50,6 +52,7 @@ void fragment() {
 	col = mix(col, grass * (0.9 + 0.2 * n), green);
 	float pav = 1.0 - smoothstep(0.03, 0.09, distance(tint, paving_key));
 	col = mix(col, texture(paving_tex, p / 4.0).rgb, pav);
+	col = max(mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, saturation), vec3(0.0));
 	ALBEDO = col;
 	ROUGHNESS = 0.92;
 	SPECULAR = 0.2;

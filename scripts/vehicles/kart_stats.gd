@@ -32,7 +32,7 @@ extends Resource
 @export var drift_turn_range := 34.0 ## ± deg/s from steering inside/outside
 @export var drift_visual_angle := 26.0
 @export var drift_correction := 6.0 ## visual angle return speed (1/s)
-@export var drift_speed_factor := 0.97
+@export var drift_speed_factor := 0.985
 @export var drift_charge_time := 0.85 ## seconds to fill the meter
 @export var drift_window_start := 0.72 ## meter fraction where the boost window opens
 @export var drift_perfect_start := 0.92
@@ -40,7 +40,7 @@ extends Resource
 
 @export_group("Air")
 @export var gravity := 32.0
-@export var hop_impulse := 5.2
+@export var hop_impulse := 3.0 ## subtle drift hop (was 5.2: a jump)
 @export var air_steer_rate := 40.0
 @export var air_drag := 0.6
 @export var landing_boost_airtime := 0.55

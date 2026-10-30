@@ -1,8 +1,8 @@
 class_name RacerRoster
 extends RefCounted
-## The six racer packages in display order (data/racers/*.tres).
+## The seven racer packages in display order (data/racers/*.tres).
 
-const IDS := ["posi", "bicok", "leloyun", "mestan", "havhav", "cepis"]
+const IDS := ["posi", "bicok", "leloyun", "mestan", "havhav", "cepis", "yaska"]
 const DEFAULT_ID := "havhav"
 
 static var _cache := {}

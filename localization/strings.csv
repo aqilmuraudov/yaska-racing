@@ -1,5 +1,5 @@
 keys,en,az
-GAME_TITLE,BAKU TURBO,BAKU TURBO
+GAME_TITLE,Yaska Racing,Yaska Racing
 GAME_SUBTITLE,Arcade kart racing on the Caspian shore,Xəzər sahilində arkada kart yarışı
 MENU_PLAY,Play,Oyna
 MENU_SETTINGS,Settings,Ayarlar
@@ -11,12 +11,12 @@ MENU_CONFIRM,Confirm,Təsdiqlə
 MENU_START_RACE,Start Race,Yarışa başla
 MENU_PRESS_START,Press any key or tap to start,Başlamaq üçün istənilən düyməyə bas və ya toxun
 MODE_TITLE,Choose a Mode,Rejim seç
-MODE_QUICK,Quick Race,Sürətli yarış
-MODE_QUICK_DESC,"Pick a kart, a track and your rules, then race five rivals.","Kart, trek və qaydaları seç, sonra beş rəqiblə yarış."
-MODE_TIME_TRIAL,Time Trial,Vaxta qarşı
-MODE_TIME_TRIAL_DESC,"No rivals, no items. Chase your best lap and your ghost.","Rəqib yoxdur, əşya yoxdur. Ən yaxşı dövrünü və kabusunu qov."
+MODE_QUICK,Free Race,Sərbəst yarış
+MODE_QUICK_DESC,Race five rivals!,Beş rəqiblə yarış!
+MODE_TIME_TRIAL,Record,Rekord
+MODE_TIME_TRIAL_DESC,Race your ghost!,Öz kölgənlə yarış!
 MODE_TUTORIAL,Drift School,Drift məktəbi
-MODE_TUTORIAL_DESC,"Learn hops, drifts and boost timing step by step.","Tullanma, drift və sürətlənmə zamanlamasını addım-addım öyrən."
+MODE_TUTORIAL_DESC,"Learn to drift, step by step!",Drifti addım-addım öyrən!
 KART_TITLE,Choose Your Kart,Kartını seç
 KART_BALANCED,Bulvar,Bulvar
 KART_BALANCED_DESC,Dependable all-rounder with steady speed and grip.,Sabit sürət və tutuşla etibarlı universal kart.
@@ -32,6 +32,9 @@ KART_ROTATE_HINT,Drag to rotate,Fırlatmaq üçün sürüşdür
 TRACK_TITLE,Race Setup,Yarış ayarları
 TRACK_SEAFRONT,Baku Seafront Sprint,Bakı Sahil Sprinti
 TRACK_SEAFRONT_DESC,"Race the Boulevard by the sea, climb into the Old City and dive back to the shore.","Dəniz kənarı Bulvarda yarış, İçərişəhərə qalx və yenidən sahilə en."
+TRACK_DOWNTOWN,Skyscraper City,Göydələnlər şəhəri
+TRACK_DOWNTOWN_DESC,"Zoom between 16-storey towers, under the mall and over the bridge!","16 mərtəbəli göydələnlər arasında uç, mall-un altından keç, körpüdən tullan!"
+TRACK_PICK,Pick a track,Trek seç
 OPT_DIFFICULTY,Difficulty,Çətinlik
 OPT_LAPS,Laps,Dövrlər
 OPT_OPPONENTS,Opponents,Rəqiblər
@@ -47,7 +50,7 @@ NO_RECORD,No record yet,Hələ rekord yoxdur
 LOADING,Loading…,Yüklənir…
 LOADING_TIP_1,Hold Drift and steer to powerslide. Let go when the sparks glow!,Drift düyməsini saxla və dön. Qığılcımlar parlayanda burax!
 LOADING_TIP_2,Hold a drift longer for bigger sparks and a bigger boost.,"Drifti daha uzun saxla: qığılcımlar böyüyür, sürət artır."
-LOADING_TIP_3,The Old City alley is shorter but the cobbles are rough. Bring a boost.,"İçərişəhər dalanı qısadır, amma daşlar kələ-kötürdür. Sürətləndirici götür."
+LOADING_TIP_3,The Old City alley is shorter but the cobbles are rough. Bring a boost.,"İçərişəhər küçəsi qısadır, amma daşları kələ-kötürdür. Sürətləndirici götür."
 LOADING_TIP_4,Press Accelerate just before GO for a starting boost.,Start sürəti üçün START-dan bir az əvvəl qaz ver.
 LOADING_TIP_5,A shield blocks one hit. Road Traps are dropped behind you.,Qalxan bir zərbəni dəf edir. Yol tələsi arxana atılır.
 HUD_LAP,Lap,Dövr
@@ -58,7 +61,7 @@ HUD_RECOVERING,Recovering…,Bərpa olunur…
 HUD_FINAL_LAP,FINAL LAP!,SON DÖVR!
 HUD_GO,GO!,START!
 HUD_FINISH,FINISH!,FİNİŞ!
-HUD_START_BOOST,START BOOST!,START SÜRƏTİ!
+HUD_START_BOOST,TURBO START!,TURBO START!
 HUD_START_STALL,Too early!,Çox tez!
 HUD_PERFECT,PERFECT!,ƏLA!
 HUD_BOOST,BOOST!,SÜRƏT!
@@ -82,7 +85,7 @@ RESULTS_TIME,Time,Vaxt
 RESULTS_BEST_LAP,Best lap,Ən yaxşı dövr
 RESULTS_DNF,DNF,Bitirmədi
 RESULTS_REWARD,Reward,Mükafat
-RESULTS_COINS,coins,sikkə
+RESULTS_COINS,manat,manat
 RESULTS_RETRY,Race Again,Yenidən yarış
 RESULTS_MENU,Main Menu,Əsas menyu
 RESULTS_YOU,You,Sən
@@ -127,7 +130,7 @@ SET_BLOOM,Bloom,Parıltı
 SET_MOTION_BLUR,Speed blur,Sürət bulanıqlığı
 SET_DYN_RES,Dynamic resolution,Dinamik görüntü
 SET_BRIGHTNESS,Brightness,Parlaqlıq
-SET_BRIGHTNESS_HINT,Adjust until the left square is barely visible.,Sol kvadrat zorla görünənə qədər tənzimlə.
+SET_BRIGHTNESS_HINT,Adjust until the left square is barely visible.,Soldakı kvadrat çətinliklə görünənə qədər tənzimlə.
 SET_VSYNC,VSync,VSync
 SET_WINDOW_MODE,Display mode,Ekran rejimi
 SET_WINDOWED,Windowed,Pəncərə
@@ -192,6 +195,7 @@ ACTION_drift,Hop / Drift,Tullan / Drift
 ACTION_boost,Drift boost,Drift sürəti
 ACTION_use_item,Use item,Əşyadan istifadə
 ACTION_look_back,Look behind,Arxaya bax
+ACTION_camera_cycle,Change camera,Kameranı dəyiş
 ACTION_recover,Recover kart,Kartı bərpa et
 ACTION_pause,Pause,Fasilə
 TOUCH_DRIFT,DRIFT,DRIFT
@@ -200,7 +204,7 @@ TOUCH_ITEM,ITEM,ƏŞYA
 TOUCH_BRAKE,BRAKE,ƏYLƏC
 TOUCH_GAS,GAS,QAZ
 CREDITS_TITLE,Credits,Müəlliflər
-CREDITS_BODY,"BAKU TURBO — an original arcade kart racer.\n\nDesign, code, models, sounds and music were created for this project and generated procedurally from source in the repository.\n\nFonts: Baloo 2 (EkType) and Nunito (Vernon Adams, Jacques Le Bailly), SIL Open Font License 1.1.\n\nBuilt with Godot Engine (MIT licence).\n\nInspired by the city of Baku. All characters, karts and brands are fictional.","BAKU TURBO — orijinal arkada kart yarışı.\n\nDizayn, kod, modellər, səslər və musiqi bu layihə üçün yaradılıb və repozitoriyadakı mənbədən prosedur yolla hazırlanıb.\n\nŞriftlər: Baloo 2 (EkType) və Nunito (Vernon Adams, Jacques Le Bailly), SIL Open Font License 1.1.\n\nGodot Engine ilə hazırlanıb (MIT lisenziyası).\n\nBakı şəhərindən ilhamlanıb. Bütün personajlar, kartlar və brendlər uydurmadır."
+CREDITS_BODY,"A kart race through Baku!\n\nGame, art, sounds and music: Yaska Racing team\nFonts: Baloo 2 and Nunito (SIL OFL 1.1)\nEngine: Godot (MIT)\n\nAll characters are fictional.","Bakıda kart yarışı!\n\nOyun, dizayn, səs və musiqi: Yaska Racing komandası\nŞriftlər: Baloo 2 və Nunito (SIL OFL 1.1)\nMühərrik: Godot (MIT)\n\nBütün personajlar uydurmadır."
 TUT_HOP,Tap Drift to hop.,Tullanmaq üçün Drift düyməsinə bas.
 TUT_DRIFT,Hold Drift and steer while hopping to start a powerslide.,Tullanarkən Drift düyməsini saxla və dön — drift başlayacaq.
 TUT_BOOST,"When the meter turns gold, press Boost!",Göstərici qızılı olanda Sürət düyməsinə bas!
@@ -224,7 +228,7 @@ CAP_WALL,[Crash into barrier],[Maneəyə çırpılma]
 CAP_TRAP_DROP,[Trap dropped behind],[Arxaya tələ atıldı]
 CAP_START,[Start boost],[Start sürəti]
 PERS_POSI,"Friendly, cheerful and reassuring.","Mehriban, şən və arxayın."
-SPEC_POSI,Excellent acceleration and quick recovery after slowing down.,Əla sürətlənmə və yavaşıdıqdan sonra cəld bərpa.
+SPEC_POSI,Excellent acceleration and quick recovery after slowing down.,Əla sürətlənmə və yavaşladıqdan sonra cəld bərpa.
 PERS_BICOK,"Clever, mischievous and confident.","Ağıllı, dəcəl və özünəinamlı."
 SPEC_BICOK,Strong top speed and precise steering.,Yüksək maksimal sürət və dəqiq idarəetmə.
 PERS_LELOYUN,"Energetic, playful and enthusiastic.","Enerjili, oynaq və həvəsli."
@@ -232,8 +236,10 @@ SPEC_LELOYUN,Rapid acceleration and agile cornering.,Cəld sürətlənmə və ç
 PERS_MESTAN,"Charming, relaxed and skilful.","Cazibədar, sakit və bacarıqlı."
 SPEC_MESTAN,Controlled drifting and a more forgiving boost window.,Nəzarətli drift və daha geniş sürət pəncərəsi.
 PERS_HAVHAV,"Loyal, brave and approachable.","Sadiq, cəsur və səmimi."
-SPEC_HAVHAV,Balanced performance and predictable handling.,Balanslı göstəricilər və proqnozlaşdırıla bilən idarə.
+SPEC_HAVHAV,Balanced performance and predictable handling.,"Balanslı göstəricilər və gözlənilən, rahat idarəetmə."
 PERS_CEPIS,"Sweet, fluffy and surprisingly powerful.","Şirin, yumşaq və gözlənilmədən güclü."
+PERS_YASKA,"Sweet, brave and full of sunshine.","Şirin, cəsur və gün işığı kimi şən."
+SPEC_YASKA,The fastest and most stable kart: top speed and perfect handling.,Ən sürətli və ən stabil kart: maksimal sürət və mükəmməl idarəetmə.
 SPEC_CEPIS,"Powerful, longer-lasting boosts; gentler acceleration and steering.",Güclü və uzun sürən sürətlənmə; daha zəif təkan və dönmə.
 RACER_TITLE,Choose Your Racer,Yarışçını seç
 STAT_TOP,Top speed,Maks. sürət
@@ -245,12 +251,12 @@ RACER_YOU_SUFFIX,(You),(Sən)
 HUD_TRAP_AHEAD,Trap ahead!,Qarşıda tələ!
 SET_TAB_LANGUAGE,Language,Dil
 SET2_TEXTURE,Texture Quality,Tekstura keyfiyyəti
-SET2_TEXTURE_HINT,Sharper surfaces. Low saves memory.,Səthlərin aydınlığı. Zəif yaddaşa qənaət edir.
-OPT_Q_LOW,Low,Zəif
+SET2_TEXTURE_HINT,Sharper surfaces. Low saves memory.,Səthlərin aydınlığı. Aşağı dəyər yaddaşa qənaət edir.
+OPT_Q_LOW,Low,Aşağı
 OPT_Q_NORMAL,Normal,Normal
 OPT_Q_HIGH,High,Yüksək
 SET2_FPS,Frame Rate,Kadr tezliyi
-SET2_FPS_HINT,Upper limit. Higher is smoother but uses more battery.,"Yuxarı hədd. Yüksək daha axıcıdır, amma batareyanı çox işlədir."
+SET2_FPS_HINT,Upper limit. Higher is smoother but uses more battery.,"Yuxarı hədd. Yüksək dəyər daha axıcıdır, amma batareyanı tez bitirir."
 SET2_FPS_UNSUPPORTED,"Your screen runs at %d Hz, so %d FPS is not available.","Ekranınız %d Hz-də işləyir, ona görə %d FPS mümkün deyil."
 SET2_FPS_UNKNOWN,This screen cannot show more than 60 FPS here.,Bu ekran burada 60 FPS-dən çox göstərə bilmir.
 SET2_SHADOWS,Shadows,Kölgələr
@@ -310,9 +316,9 @@ ITEM_SHORT_TRAP,TRAP,TƏLƏ
 HUD_DRIFT_STEER,Turn while holding DRIFT!,DRIFT saxlayaraq dön!
 HUD_DRIFT_SPEED,Go faster to drift!,Drift üçün sürətlən!
 HUD_PROTECTED,Safe for a moment!,Bir anlıq qorunursan!
-TUT_BOOST_EASY,"When the sparks glow, let go of Drift!","Qığılcımlar parlayanda Drift düyməsini burax!"
+TUT_BOOST_EASY,"When the sparks glow, let go of Drift!",Qığılcımlar parlayanda Drift düyməsini burax!
 TUT_CHAIN_EASY,Hold the drift longer for pink sparks — then let go!,Drifti daha uzun saxla — çəhrayı qığılcımlar çıxanda burax!
-HINT_STEER,Hold ◀ ▶ to steer. The kart drives by itself!,Dönmək üçün ◀ ▶ saxla. Kart özü sürür!
+HINT_STEER,Hold ◀ ▶ to steer. The kart drives by itself!,Dönmək üçün ◀ ▶ oxlarından istifadə et!
 HINT_DRIFT,"In a corner: hold DRIFT and turn, then let go!","Döngədə: DRIFT saxla və dön, sonra burax!"
 HINT_ITEM,Tap the item button to use it!,İstifadə üçün əşya düyməsinə toxun!
 RESULTS_PAINT_UNLOCKED,New kart paint: %s!,Yeni kart rəngi: %s!
@@ -325,3 +331,212 @@ RESULTS_STARS,Stars,Ulduz
 RACER_PAINT_LOCKED,Collect %d stars to unlock (you have %d).,Açmaq üçün %d ulduz topla (səndə %d var).
 SET3_FPS_FALLBACK,Steady 30 FPS When Needed,Lazım olanda sabit 30 FPS
 SET3_FPS_FALLBACK_HINT,"If this phone cannot keep 60 FPS in a race, switch to an even 30.","Telefon yarışda 60 FPS saxlaya bilməsə, sabit 30-a keçir."
+SET_CAMERA_VIEW,Camera View,Kamera görünüşü
+SET_CAMERA_VIEW_HINT,Change it in the race with the camera button or C.,Yarışda kamera düyməsi və ya C ilə dəyiş.
+CAM_CHASE,Behind,Arxadan
+CAM_DRONE,Drone,Dron
+CAM_RIGHT,Right,Sağdan
+CAM_LEFT,Left,Soldan
+CAM_CINEMATIC,Cinematic,Sinematik
+HUD_CAMERA_VIEW,Camera: %s,Kamera: %s
+SET_QUALITY,Picture quality,Şəkil keyfiyyəti
+SET_QUALITY_HINT,Auto picks the best for this device. Lower it if the game stutters.,"Avto bu cihaz üçün ən yaxşısını seçir. Oyun donursa, aşağı salın."
+OPT_AUTO,Auto,Avto
+OPT_Q_MEDIUM,Medium,Orta
+SET_BATTERY,Battery saver,Batareyaya qənaət
+SET_BATTERY_HINT,"Runs at 30 FPS: cooler phone, longer battery.","30 FPS: telefon az qızır, batareya daha uzun gedir."
+MENU_REWARDS,Rewards,Mükafatlar
+REWARDS_TITLE,Rewards,Mükafatlar
+REWARDS_TITLE_NOW,Your title,Sənin titulun
+REWARDS_NEXT_TITLE,Next title: %s (stars),Növbəti titul: %s (ulduz)
+REWARDS_DAILY,Daily goals (optional),Günlük tapşırıqlar (könüllü)
+REWARDS_PAINTS,Kart paints,Kart rəngləri
+REWARDS_PAINTS_COUNT,%d of %d paints unlocked,%d / %d rəng açılıb
+REWARDS_NEXT_PAINT,Next paint (stars),Növbəti rəng (ulduz)
+REWARDS_PARTS,Kart parts,Kart hissələri
+REWARDS_PART_ON,on,taxılıb
+REWARDS_PART_OFF,off,çıxarılıb
+REWARDS_PART_LOCKED,earn %s in total (%s),cəmi %s qazan (%s)
+REWARDS_TROPHIES,Trophies,Kuboklar
+REWARD_TROPHY,Trophy: %s (%s),Kubok: %s (%s)
+REWARD_DAILY_DONE,Daily goal: %s (%s),Günlük tapşırıq: %s (%s)
+REWARD_TITLE,New title: %s!,Yeni titul: %s!
+REWARD_PART,New kart part: %s!,Yeni kart hissəsi: %s!
+REWARD_MORE,+%d more rewards,+%d mükafat daha
+PART_RIMS_GOLD,Gold rims,Qızılı disklər
+PART_SPOILER,Rear wing,Arxa qanad
+PART_TWIN_EXHAUST,Twin exhausts,Qoşa egzoz
+PART_FLAG,Flag antenna,Bayraqlı antena
+PART_NEON,Neon glow,Neon işıq
+PART_CROWN,Champion crown,Çempion tacı
+TITLE_ROOKIE,Rookie driver,Yeni sürücü
+TITLE_BOULEVARD,Boulevard racer,Bulvar yarışçısı
+TITLE_BREEZE,Caspian breeze,Xəzər küləyi
+TITLE_FLAME,Flame Towers ace,Alov Qüllələri ustası
+TITLE_MAIDEN,Maiden Tower hero,Qız Qalası qəhrəmanı
+TITLE_CASPIAN,Caspian champion,Xəzər çempionu
+TITLE_LEGEND,Baku legend,Bakı əfsanəsi
+TITLE_TURBO,Turbo king,Turbo kral
+TROPHY_RACES,Finish %d races,%d yarışı bitir
+TROPHY_PODIUMS,Reach the podium %d times,%d dəfə podiuma çıx
+TROPHY_WINS,Win %d races,%d yarışda qalib gəl
+TROPHY_BOOSTS,Do %d drift boosts,%d drift sürətlənməsi et
+TROPHY_STARS,Collect %d stars,%d ulduz topla
+TROPHY_DAILY,Complete %d daily goals,%d günlük tapşırığı tamamla
+TROPHY_SCHOOL,Finish Drift School,Drift məktəbini bitir
+TROPHY_QUICK_FINISH,Seafront: finish a quick race,Dənizkənarı: sürətli yarışı bitir
+TROPHY_DT_QUICK_FINISH,Skyscrapers: finish a quick race,Göydələnlər: sürətli yarışı bitir
+TROPHY_QUICK_PODIUM,Seafront: podium in a quick race,Dənizkənarı: sürətli yarışda podium
+TROPHY_DT_QUICK_PODIUM,Skyscrapers: podium in a quick race,Göydələnlər: sürətli yarışda podium
+TROPHY_QUICK_WIN,Seafront: win %d quick races,Dənizkənarı: %d sürətli yarışda qalib gəl
+TROPHY_DT_QUICK_WIN,Skyscrapers: win %d quick races,Göydələnlər: %d sürətli yarışda qalib gəl
+TROPHY_TT_FINISH,Seafront: %d time trials,Dənizkənarı: %d vaxta qarşı yarış
+TROPHY_DT_TT_FINISH,Skyscrapers: %d time trials,Göydələnlər: %d vaxta qarşı yarış
+TROPHY_TT_RECORD,Seafront: beat your record %d times,Dənizkənarı: rekordunu %d dəfə yenilə
+TROPHY_DT_TT_RECORD,Skyscrapers: beat your record %d times,Göydələnlər: rekordunu %d dəfə yenilə
+DAILY_RACES2,Finish 2 races,2 yarış bitir
+DAILY_PODIUM1,Reach a podium,Podiuma çıx
+DAILY_STARS12,Collect 12 stars,12 ulduz topla
+DAILY_BOOSTS6,Do 6 drift boosts,6 drift sürətlənməsi et
+DAILY_TT1,Finish a time trial,Vaxta qarşı yarışı bitir
+DAILY_WIN1,Win a race,Bir yarışda qalib gəl
+PAINT_CASPIAN,Caspian,Xəzər
+PAINT_FLAME,Flame,Alov
+PAINT_POMEGRANATE,Pomegranate,Nar
+PAINT_SAND,Sandstone,Qum daşı
+PAINT_PEARL,Pearl,İnci
+PAINT_NIGHT,Night,Gecə
+PAINT_CHROME,Chrome,Xrom
+MONEY_QEPIK,qəpik,qəpik
+MONEY_BALANCE,Balance,Balans
+MENU_GARAGE,Garage,Qaraj
+GARAGE_TITLE,Garage & Tuning,Qaraj və tüninq
+GARAGE_PAINT,Paint,Rəng
+GARAGE_SPEED,Top speed,Maksimal sürət
+GARAGE_ENGINE,Engine,Mühərrik
+GARAGE_BRAKES,Brakes,Əyləclər
+GARAGE_STEERING,Steering,Sükan
+GARAGE_TYRES,Tyres,Təkərlər
+GARAGE_NITRO,Nitro,Nitro
+GARAGE_SPEED_DESC,Higher top speed,Daha yüksək maksimal sürət
+GARAGE_ENGINE_DESC,Faster acceleration,Daha sürətli sürətlənmə
+GARAGE_BRAKES_DESC,Stronger brakes,Daha güclü əyləc
+GARAGE_STEERING_DESC,Quicker turning,Daha cəld dönmə
+GARAGE_TYRES_DESC,More grip on and off road,Yolda və yoldan kənarda daha yaxşı tutuş
+GARAGE_NITRO_DESC,Add-on: a NITRO button in the race,Əlavə: yarışda NİTRO düyməsi
+GARAGE_NITRO_FIT,Fit nitro,Nitro qoş
+GARAGE_LEVEL,Level %d/%d,Səviyyə %d/%d
+GARAGE_MAX,MAX,MAKS
+GARAGE_BUY,Buy %s,Al: %s
+GARAGE_NOT_ENOUGH,Not enough money,Pul çatmır
+GARAGE_BOUGHT,Upgraded!,Təkmilləşdirildi!
+GARAGE_PAINT_BUY,Paint %s,Rəng: %s
+GARAGE_DONE,Done,Hazır
+GARAGE_STOCK,stock,standart
+RACE_SETUP_SHORT,Race setup,Yarış ayarları
+HUD_NITRO,NITRO,NİTRO
+FINISH_PLACE_1,1st place!,1-ci yer!
+FINISH_PLACE_2,2nd place!,2-ci yer!
+FINISH_PLACE_3,3rd place!,3-cü yer!
+FINISH_PLACE_4,4th place!,4-cü yer!
+FINISH_PLACE_5,5th place!,5-ci yer!
+FINISH_PLACE_6,6th place!,6-cı yer!
+FINISH_PLACE_7,7th place!,7-ci yer!
+FINISH_PLACE_8,8th place!,8-ci yer!
+FINISH_WINNER,WINNER!,QALİB!
+RESULTS_EARNED,Earned,Qazanc
+RESULTS_PLACE_PAY,Place,Yer
+RESULTS_DRIVING_PAY,Driving,Sürüş
+RESULTS_RECORD_PAY,Record,Rekord
+RESULTS_MORE_REWARDS,+%d rewards,+%d mükafat
+RESULTS_AD_DOUBLE,Double reward,Mükafatı ikiqat et
+RESULTS_EST,est.,təxm.
+EARN_DRIFT,Drift boost,Drift sürəti
+EARN_OVERTAKE,Overtake,Ötmə
+EARN_CLEAN_LAP,Clean lap,Təmiz dövr
+EARN_STAR,Star,Ulduz
+RESULTS_PLACE_BIG,%s place!,%s yer!
+CARD_PAINT,New paint,Yeni rəng
+REWARDS_TAB_DAILY,Daily tasks,Günlük tapşırıqlar
+REWARDS_CLAIMED,Collected,Alındı
+REWARDS_ALL_DONE,All done!,Hamısı alındı!
+GOAL_DRIFT,Drift boost %d times,%d dəfə drift turbo et
+GOAL_STARS,Collect %d stars,%d ulduz topla
+GOAL_OVERTAKE,Overtake %d rivals,%d rəqibi keç
+GOAL_CLEAN_LAP,Drive %d clean laps,%d təmiz dövr sür
+GOAL_TOP3,Finish in the top 3,Top 3-də bitir
+GOAL_WIN,Finish first,Birinci gəl
+GOALS_NEXT,Next race,Növbəti yarış
+GOAL_DONE_TICK,Goal done!,Hədəf tamam!
+SHOP_BUY,Buy,Al
+SHOP_CONFIRM,Buy %s?,%s alınsın?
+SHOP_NO_MONEY,Not enough money,Pul çatmır
+SHOP_MISSING,%s more needed,Daha %s lazımdır
+SHOP_BOUGHT,New kart!,Yeni kart!
+SHOP_CANCEL,Cancel,Ləğv et
+SHOP_OK,OK,Oldu
+GARAGE_NEW_KART,New kart,Yeni maşın
+GARAGE_ALL_KARTS,All karts are yours!,Bütün maşınlar sənindir!
+SHOP_YOURS,%s is yours!,%s sənindir!
+LOGIN_TITLE,Daily bonus,Gündəlik bonus
+LOGIN_DAY,Day %d,%d. gün
+LOGIN_CLAIM,Collect!,Götür!
+LOGIN_DOUBLE,Double it,İkiqat et
+HUD_NEAR_MISS,Close call!,Yaxından!
+SET_SPEED_FX,Speed effects,Sürət effekti
+SET_SPEED_FX_HINT,Speed lines and boost zoom,Sürət xətləri və zoom
+GOALS_S_DRIFT,%d drift boosts,%d drift
+GOALS_S_STARS,%d stars,%d ulduz
+GOALS_S_OVERTAKE,Pass %d,%d keç
+GOALS_S_CLEAN_LAP,%d clean laps,%d təmiz dövr
+GOALS_S_TOP3,Top 3,Top 3
+GOALS_S_WIN,1st place,1-ci yer
+SET_KIDS_AUTO,Kids Controls (Auto drive),Uşaqlar üçün idarəetmə (Avto sürmə)
+SET_KIDS_AUTO_HINT,The kart steers and drives by itself. Tap NITRO for a boost.,Kart özü sürür və dönür. Sürət üçün NİTRO-ya toxun.
+HUD_KIDS_AUTO,Auto,Avto
+GOAL_FINISH,Finish the race,Yarışı bitir
+GOALS_S_FINISH,Finish,Bitir
+MODE_CUP,Baku Cup,Bakı Kuboku
+MODE_CUP_DESC,"3 races, points, a trophy!","3 yarış, xal və kubok!"
+MODE_DAILY,Daily Challenge,Gündəlik tapşırıq
+MODE_DAILY_DESC,A new task every day!,Hər gün yeni tapşırıq!
+CUP_CARD_PRIZE,Prize %s,Mükafat %s
+CUP_CARD_PODIUM,See the podium!,Podiuma bax!
+CUP_CARD_RESUME,Race %d/%d · go on,Yarış %d/%d · davam
+DAILY_DONE,Done today!,Bu gün edildi!
+DAILY_WIN,Win the race!,Yarışı qazan!
+DAILY_PODIUM,Finish in the top 3!,İlk 3-lükdə bitir!
+DAILY_WIN_KART,Win with %s!,%s ilə qazan!
+DAILY_PODIUM_KART,Top 3 with %s!,%s ilə ilk 3-lük!
+DAILY_STARS,Collect %d stars!,%d ulduz topla!
+DAILY_TIME,Finish in under %s!,%s-dən tez bitir!
+DAILY_CLEAN,Top 3 without wall hits!,Divara dəymədən ilk 3-lük!
+CUP_LAPS,%d laps,%d dövrə
+CUP_GRID_NORMAL,Normal start grid,Adi start düzülüşü
+CUP_GRID_REVERSE,Leader starts last,Lider arxadan başlayır
+CUP_ITEMS_ON,Items on,Əşyalar var
+CUP_ITEMS_OFF,No items,Əşyasız
+CUP_HUD_RACE,Cup %d/%d,Kubok %d/%d
+CUP_POINTS_GAINED,+%d cup points,+%d kubok xalı
+CUP_STANDINGS_BTN,Standings,Xal cədvəli
+CUP_STANDINGS_AFTER,Points after race %d of %d,Xallar: %d/%d yarışdan sonra
+CUP_STANDINGS_START,Baku Cup,Bakı Kuboku
+CUP_NEXT_RACE,Race %d of %d,Yarış %d/%d
+CUP_FINAL_RACE,Final race!,Final yarışı!
+CUP_YOU_PLACE,Your place: %d,Sənin yerin: %d
+CUP_START_RACE,Start race,Yarışa başla
+CUP_RESET,Quit cup,Kubokdan çıx
+CUP_RESET_CONFIRM,Tap again to quit,Çıxmaq üçün yenə bas
+CUP_WIN,You won the cup!,Kuboku qazandın!
+CUP_DONE_PLACE,Cup over: %s place,Kubok bitdi: %s yer
+CUP_POINTS,%d pts,%d xal
+CUP_PRIZE,Cup prize,Kubok mükafatı
+CUP_NEW,New cup,Yeni kubok
+TT_KIDS_NO_RECORD,Kids mode: no record saved,Uşaq rejimi: rekord yazılmır
+TOD_DAY,Day,Gündüz
+TOD_SUNSET,Sunset,Gün batımı
+TOD_NIGHT,Night,Gecə
+CITY_TITLE,Pick a city,Şəhəri seç
+CITY_NEW,New!,Yeni!
+CITY_SEAFRONT,Seaside Baku,Dəniz sahili
+CITY_GO,Go!,Sür!

@@ -11,7 +11,7 @@
 		"ssao": false,
 		"bloom": false,
 		"fps_cap": 60,
-		"dynamic_resolution": false
+		"dynamic_resolution": true
 	},
 	"medium": {
 		"resolution_scale": 0.8,
@@ -24,7 +24,7 @@
 		"ssao": false,
 		"bloom": true,
 		"fps_cap": 60,
-		"dynamic_resolution": false
+		"dynamic_resolution": true
 	},
 	"high": {
 		"resolution_scale": 1.0,

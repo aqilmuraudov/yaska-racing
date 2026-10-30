@@ -5,7 +5,7 @@ extends Node
 signal changed(section: String, key: String)
 signal graphics_changed
 
-const SETTINGS_VERSION := 3
+const SETTINGS_VERSION := 4
 const DEFAULT_PATH := "user://settings.json"
 const PRESET_PATH := "res://data/graphics/presets.json"
 const BUTTON_SCALES := [0.85, 1.0, 1.2]
@@ -38,8 +38,7 @@ func _ready() -> void:
 
 
 func defaults() -> Dictionary:
-	var mobile := is_mobile()
-	var preset_name := "medium" if mobile else "high"
+	var preset_name := auto_preset()
 	var g: Dictionary = (presets.get(preset_name, {}) as Dictionary).duplicate()
 	g.merge({
 		"preset": preset_name,
@@ -48,6 +47,10 @@ func defaults() -> Dictionary:
 		"dynamic_resolution": false, "motion_blur": false, "brightness": 1.0, "vsync": true,
 		"fps_fallback": true, # steady 30 when 60 cannot be held (PerfMonitor)
 		"window_mode": "windowed", "dev_overlay": false, "tilt_debug": false,
+		# Player-facing picture choice (auto|low|medium|high) and 30 FPS saver;
+		# they drive the detailed keys above via the presets.
+		"quality": "auto", "battery_saver": false, "auto_cap": "high",
+		"speed_effects": true, # speed lines + boost FOV kick (0.9.1)
 	})
 	return {
 		"version": SETTINGS_VERSION,
@@ -59,6 +62,7 @@ func defaults() -> Dictionary:
 			"mute": false, "background_audio": false},
 		"controls": {
 			"touch_steer_mode": "buttons", # buttons | tilt
+			"kids_auto": false, # 0.9.5 Kids controls: the kart drives itself
 			"touch_auto_accelerate": true,
 			"touch_scale": 1.0, # derived from button_size
 			"button_size": 1, # 0 small, 1 medium, 2 large
@@ -80,12 +84,15 @@ func defaults() -> Dictionary:
 		},
 		"gameplay": {
 			"difficulty": "medium",
-			"steer_assist": true, # gentle pull away from the track edges
+			"steer_assist": false, # off: the player always has full control (0.7.0)
 			"accel_assist": false,
 			"camera_distance": 1, # 0 near, 1 normal, 2 far
+			"camera_mode": 0, # 0 chase, 1 drone (top-down), 2 right side, 3 left side, 4 cinematic
 			"speedometer": true,
 			"catchup_assist": true,
 			"language": "az",
+			"time_of_day": "day", # 0.10.1 Race setup: day / sunset / night
+			"track": "seafront_sprint", # 0.11.0 last picked track
 		},
 		"accessibility": {
 			"ui_scale": 1.0,
@@ -127,6 +134,8 @@ func load_settings() -> void:
 		_migrate_v1(loaded)
 	if from_version < 3:
 		_migrate_v2()
+	if from_version < 4:
+		_migrate_v3()
 	_sanitize()
 
 
@@ -152,6 +161,13 @@ func _migrate_v1(loaded: Dictionary) -> void:
 ## v2 → v3: steering help and camera shake were developer-only options, so
 ## their stored values are the old defaults, not player choices; they move to
 ## the new child-friendly defaults. Easy drift is new (default on).
+## v3 → v4: steering help was forced on by v3 and hidden from Settings in
+## 0.6.2, so players could not turn it off and it steered the kart by itself
+## (centre pull + edge correction). It is now off for everyone.
+func _migrate_v3() -> void:
+	values.gameplay.steer_assist = false
+
+
 func _migrate_v2() -> void:
 	values.gameplay.steer_assist = true
 	if float(values.accessibility.camera_shake) >= 0.99:
@@ -191,6 +207,84 @@ func set_value(section: String, key: String, value, persist := true) -> void:
 	changed.emit(section, key)
 
 
+const QUALITY_LEVELS := ["auto", "low", "medium", "high"]
+const TIERS := ["low", "medium", "high"]
+## GPUs that get the Low tier on "auto" (older / entry-level mobile parts).
+const WEAK_GPU_HINTS := ["Adreno (TM) 3", "Adreno (TM) 4", "Adreno (TM) 50", "Adreno (TM) 51", "Adreno (TM) 52",
+	"Adreno (TM) 60", "Adreno (TM) 61", "Mali-4", "Mali-T", "Mali-G31", "Mali-G51", "Mali-G52", "Mali-G57",
+	"PowerVR", "IMG", "llvmpipe", "SwiftShader"]
+## GPUs strong enough for High on "auto".
+const STRONG_GPU_HINTS := ["Adreno (TM) 73", "Adreno (TM) 74", "Adreno (TM) 75", "Adreno (TM) 8",
+	"Immortalis", "Mali-G715", "Mali-G720", "Mali-G925", "Xclipse"]
+
+
+## 0.10.2 automatic tier. Desktop: High. Mobile: chosen from the GPU name
+## and core count, then lowered for good by PerfMonitor (auto_step_down)
+## when a race cannot hold its frame rate; the learned cap is saved.
+func auto_preset(gpu := "", cores := -1, mobile := -1) -> String:
+	var is_mob := is_mobile() if mobile < 0 else mobile == 1
+	if gpu == "":
+		gpu = RenderingServer.get_video_adapter_name()
+	if cores < 0:
+		cores = OS.get_processor_count()
+	var tier := "high"
+	if is_mob:
+		tier = "medium"
+		for h in STRONG_GPU_HINTS:
+			if gpu.contains(h):
+				tier = "high"
+		for h in WEAK_GPU_HINTS:
+			if gpu.contains(h):
+				tier = "low"
+		if cores > 0 and cores <= 4:
+			tier = "low"
+	var cap := String(values.get("graphics", {}).get("auto_cap", "high")) if not values.is_empty() else "high"
+	if TIERS.find(cap) >= 0 and TIERS.find(tier) > TIERS.find(cap):
+		tier = cap
+	return tier
+
+
+## Called by PerfMonitor on "auto" when a race runs slow: one tier down,
+## remembered for later sessions. Returns false when already on Low.
+func auto_step_down() -> bool:
+	var cur := String(values.graphics.get("preset", "medium"))
+	var i := TIERS.find(cur)
+	if i <= 0:
+		return false
+	values.graphics.auto_cap = TIERS[i - 1]
+	apply_preset(TIERS[i - 1], false)
+	save_settings()
+	apply_graphics()
+	changed.emit("graphics", "preset")
+	return true
+
+
+## One simple picture-quality choice for players. "auto" uses the device
+## default preset; the battery saver then caps the frame rate at 30.
+func set_quality(level: String) -> void:
+	if level not in QUALITY_LEVELS:
+		level = "auto"
+	var preset_name := level
+	if level == "auto":
+		preset_name = auto_preset()
+	apply_preset(preset_name, false)
+	values.graphics.quality = level
+	if bool(values.graphics.get("battery_saver", false)):
+		values.graphics.fps_cap = 30
+	save_settings()
+	apply_graphics()
+	changed.emit("graphics", "quality")
+
+
+func set_battery_saver(on: bool) -> void:
+	values.graphics.battery_saver = on
+	values.graphics.fps_cap = 30 if on else 60
+	_sanitize()
+	save_settings()
+	apply_graphics()
+	changed.emit("graphics", "battery_saver")
+
+
 func apply_preset(preset_name: String, persist := true) -> void:
 	if not presets.has(preset_name):
 		return
@@ -217,6 +311,9 @@ func _sanitize() -> void:
 	g.fps_cap = int(g.fps_cap)
 	if g.fps_cap not in fps_options():
 		g.fps_cap = 60
+	if String(g.get("quality", "auto")) not in QUALITY_LEVELS:
+		g.quality = "auto"
+	g.battery_saver = bool(g.get("battery_saver", false))
 	var a: Dictionary = values.accessibility
 	a.ui_scale = clampf(float(a.ui_scale), 0.8, 1.4)
 	a.camera_shake = clampf(float(a.camera_shake), 0.0, 1.0)
@@ -234,8 +331,13 @@ func _sanitize() -> void:
 	c.touch_offset_y = clampf(float(c.touch_offset_y), -0.1, 0.1)
 	if values.gameplay.difficulty not in ["easy", "medium", "hard"]:
 		values.gameplay.difficulty = "medium"
+	values.gameplay.camera_mode = clampi(int(values.gameplay.get("camera_mode", 0)), 0, 4) # 4 = cinematic (0.10.2)
 	if values.gameplay.language not in ["az", "en"]:
 		values.gameplay.language = "az"
+	if not TrackList.is_valid(String(values.gameplay.get("track", ""))):
+		values.gameplay.track = "seafront_sprint"
+	if String(values.gameplay.get("time_of_day", "")) not in ["day", "sunset", "night"]:
+		values.gameplay.time_of_day = "day"
 
 
 func _load_presets() -> Dictionary:

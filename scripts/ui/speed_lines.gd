@@ -25,6 +25,12 @@ func _process(delta: float) -> void:
 	if kart == null:
 		return
 	var over := clampf((absf(kart.speed) / kart.stats.top_speed - 1.0) / 0.3, 0.0, 1.0)
+	# Faint streaks near top speed too, stronger while a boost runs.
+	over = maxf(over, clampf((absf(kart.speed) / kart.stats.top_speed - 0.85) / 0.15, 0.0, 1.0) * 0.35)
+	if kart.boost.is_active():
+		over = maxf(over, 0.6)
+	if not GameFeel.speed_fx_enabled():
+		over = 0.0
 	if Settings.get_value("accessibility", "reduced_flashing", false):
 		over *= 0.5
 	_intensity = lerpf(_intensity, over, 1.0 - exp(-6.0 * delta))

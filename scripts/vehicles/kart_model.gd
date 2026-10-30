@@ -9,6 +9,7 @@ extends Node3D
 ##   hop     – Ləlöyün's Hop Rocket: short tall body, carrot nose and carrot exhausts
 ##   velvet  – Məstan's Velvet Slide: low wide sports body, flowing pods, ear fins
 ##   buddy   – HavHav's Buddy Rally: boxy rally body, light bar, mud flaps, bone badge
+##   star    – Yaska's Yaska Star: rounded pink bubble body, star nose, heart wing, flower
 ##   cloud   – Çəpiş's Cloud Booster: bubbly body with cloud puffs, twin big boosters
 
 var def: RacerDefinition
@@ -22,6 +23,9 @@ var steering_wheel: Node3D
 var steering_spin: Node3D
 var _base_wheel_y: Array[float] = []
 var _accums := {}
+## Cosmetic kart parts (Progression.PARTS ids) to add on build; set before
+## build(). Purely visual, merged into the same batched meshes.
+var parts: Array = []
 static var _kart_vcolor: ShaderMaterial
 
 const C_TIRE := Color("1d1e22")
@@ -42,8 +46,10 @@ func build(p_def: RacerDefinition, _is_player: bool = false) -> void:
 		"hop": _hop(p, s, t, wheel_cfg)
 		"velvet": _velvet(p, s, t, wheel_cfg)
 		"cloud": _cloud(p, s, t, wheel_cfg)
+		"star": _star(p, s, t, wheel_cfg)
 		_: _buddy(p, s, t, wheel_cfg)
 	_seat_and_wheel(t)
+	_parts(p, s, wheel_cfg)
 	_wheels(wheel_cfg)
 	rear_contact_points = [Vector3(-0.66, 0.05, 0.78), Vector3(0.66, 0.05, 0.78)]
 	_flush()
@@ -76,7 +82,7 @@ func _flush() -> void:
 		_kart_vcolor.shader = preload("res://assets/materials/vcolor_gloss.gdshader")
 		_kart_vcolor.set_shader_parameter("rim_amount", 0.25)
 		_kart_vcolor.set_shader_parameter("gloss", 0.9)
-		_kart_vcolor.set_shader_parameter("saturation", 1.12)
+		_kart_vcolor.set_shader_parameter("saturation", Palette.KART_SAT)
 	for node in _accums.keys():
 		var mi := MeshInstance3D.new()
 		mi.mesh = _accums[node].commit(_kart_vcolor)
@@ -231,6 +237,43 @@ func _cloud(p: Color, s: Color, t: Color, w: Dictionary) -> void:
 	w.rim = t
 
 
+func _star(p: Color, s: Color, t: Color, w: Dictionary) -> void:
+	# Smooth pink bubble body with a denim-blue belt line
+	_add(self, _se(Vector3(1.06, 0.52, 1.62), 0.7, Vector2(0.7, 0.8), Vector2(0.95, 1.0), 0.03), p, _T(Vector3(0, 0.55, -0.04)))
+	_add(self, _se(Vector3(1.1, 0.12, 1.66), 0.5), t, _T(Vector3(0, 0.4, -0.04)))
+	# Golden five-point star on the nose
+	var star_c := Vector3(0, 0.6, -0.9)
+	for k in 5:
+		var a := TAU * k / 5.0
+		_add(self, ShapeKit.cone(0.07, 0.0, 0.2, 4), s, _T(star_c + Vector3(sin(a) * 0.09, cos(a) * 0.09, 0), Vector3(0, 0, -a), Vector3(1, 1, 0.5)))
+	_add(self, ShapeKit.sphere(0.09, 10, 6), s, _T(star_c, Vector3.ZERO, Vector3(1, 1, 0.5)))
+	# Rounded bumper with white "lace" dots
+	_add(self, _se(Vector3(1.22, 0.16, 0.2), 0.7), t, _T(Vector3(0, 0.3, -1.04)))
+	for k in 7:
+		_add(self, ShapeKit.sphere(0.04, 8, 5), Color.WHITE, _T(Vector3(-0.48 + k * 0.16, 0.4, -1.0)))
+	# Heart-shaped rear wing on two posts
+	for x in [-0.12, 0.12]:
+		_add(self, ShapeKit.sphere(0.16, 12, 8), s, _T(Vector3(x, 0.98, 0.95), Vector3.ZERO, Vector3(1, 0.85, 0.45)))
+	_add(self, ShapeKit.cone(0.2, 0.0, 0.26, 4), s, _T(Vector3(0, 0.85, 0.95), Vector3(PI, PI * 0.25, 0), Vector3(1, 1, 0.45)))
+	for x in [-0.3, 0.3]:
+		_add(self, ShapeKit.cylinder(0.03, 0.18, 6), t, _T(Vector3(x, 0.82, 0.95)))
+		_add(self, _se(Vector3(0.36, 0.06, 0.18), 0.6), p.darkened(0.08), _T(Vector3(x * 1.6, 0.9, 0.95)))
+	# Side flowers (pink petals, yellow centre)
+	for sx in [-1.0, 1.0]:
+		var fc := Vector3(sx * 0.55, 0.6, 0.1)
+		for k in 5:
+			var a := TAU * k / 5.0
+			_add(self, ShapeKit.sphere(0.06, 8, 5), Color("ff7fb2"), _T(fc + Vector3(0, sin(a) * 0.07, cos(a) * 0.07)))
+		_add(self, ShapeKit.sphere(0.05, 8, 5), Color("ffd84d"), _T(fc + Vector3(sx * 0.02, 0, 0)))
+	for x in [-0.22, 0.22]:
+		var ep := Vector3(x, 0.5, 1.05)
+		_add(self, ShapeKit.cone(0.07, 0.09, 0.24, 10), C_CHROME, _T(ep, Vector3(PI * 0.5, 0, 0)), 0.2, 0.9)
+		exhaust_points.append(ep + Vector3(0, 0, 0.14))
+	w.rf = 0.3
+	w.rr = 0.35
+	w.rim = Color.WHITE
+
+
 func _seat_and_wheel(t: Color) -> void:
 	_add(self, _se(Vector3(0.54, 0.56, 0.16), 0.4), t.darkened(0.2), _T(Vector3(0, 0.82, 0.48), Vector3(-0.25, 0, 0)))
 	steering_wheel = Node3D.new()
@@ -243,6 +286,41 @@ func _seat_and_wheel(t: Color) -> void:
 	steering_wheel.add_child(steering_spin)
 	_add(steering_spin, ShapeKit.torus(0.11, 0.15, 16, 6), Color("2a2d36"), Transform3D.IDENTITY, 0.5)
 	_add(steering_spin, _se(Vector3(0.26, 0.03, 0.05), 0.3), def.accent, Transform3D.IDENTITY)
+
+
+func _parts(p: Color, s: Color, w: Dictionary) -> void:
+	if parts.is_empty():
+		return
+	var gold := Color("f2c14e")
+	if "rims_gold" in parts:
+		w.rim = gold
+	if "spoiler" in parts:
+		for x in [-0.42, 0.42]:
+			_add(self, ShapeKit.cylinder(0.035, 0.34, 6), C_CHROME, _T(Vector3(x, 0.86, 1.02)), 0.2)
+		_add(self, _se(Vector3(1.25, 0.06, 0.32), 0.5), s, _T(Vector3(0, 1.05, 1.06), Vector3(-0.12, 0, 0)))
+		for x in [-0.64, 0.64]:
+			_add(self, PropKit.box(Vector3(0.04, 0.18, 0.34)), p.darkened(0.2), _T(Vector3(x, 1.06, 1.06)))
+	if "twin_exhaust" in parts:
+		for x in [-0.42, 0.42]:
+			var ep := Vector3(x, 0.38, 1.08)
+			_add(self, ShapeKit.cone(0.06, 0.08, 0.26, 10), C_CHROME, _T(ep, Vector3(PI * 0.5, 0, 0)), 0.2, 0.9)
+			exhaust_points.append(ep + Vector3(0, 0, 0.15))
+	if "flag" in parts:
+		# Antenna with a small Azerbaijani flag (blue / red / green).
+		_add(self, ShapeKit.cylinder(0.015, 1.0, 5), Color("2a2d36"), _T(Vector3(0.5, 1.0, 0.85)))
+		var cols := [Color("00b5e2"), Color("ef3340"), Color("509e2f")]
+		for k in 3:
+			_add(self, PropKit.box(Vector3(0.02, 0.07, 0.34)), cols[k], _T(Vector3(0.5, 1.44 - k * 0.07, 1.03)))
+	if "neon" in parts:
+		var neon := Color("3ef2ff")
+		for x in [-0.56, 0.56]:
+			_add(self, PropKit.box(Vector3(0.04, 0.03, 1.5)), neon, _T(Vector3(x, 0.19, 0.0)), 0.2)
+	if "crown" in parts:
+		var c := Vector3(0, 1.0, 1.06) if "spoiler" in parts else Vector3(0, 0.82, 0.98)
+		_add(self, ShapeKit.cylinder(0.14, 0.08, 10), gold, _T(c + Vector3(0, 0.12, 0)), 0.25, 0.8)
+		for k in 5:
+			var a := TAU * k / 5.0
+			_add(self, ShapeKit.cone(0.04, 0.0, 0.12, 4), gold, _T(c + Vector3(sin(a) * 0.12, 0.22, cos(a) * 0.12)), 0.25, 0.8)
 
 
 func _wheels(w: Dictionary) -> void:

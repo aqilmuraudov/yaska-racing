@@ -11,6 +11,11 @@ extends RefCounted
 ##  crescent       upright crescent-shaped tower on a podium in the bay
 ##  flag_square    stepped plaza, very tall pole; the flag is a separate
 ##                 waving mesh (see flag_mesh / flag_material)
+##  government_house  symmetric limestone block with a stepped central
+##                 tower, arched top-floor loggias and corner pavilions
+##  carpet_museum  long building shaped like a half-rolled carpet
+##  qosa_qala      Icherisheher double gate: two crenellated semicircular
+##                 towers, two pointed arches, battlements (walls separate)
 ##  maiden_tower   lives in PropKit (Old City prop set), refined there
 
 const GLASS_SHADER := preload("res://assets/materials/glass_tower.gdshader")
@@ -82,6 +87,11 @@ static func get_mesh(id: String) -> ArrayMesh:
 		"crescent_far": mesh = _crescent(true)
 		"flag_square": mesh = _flag_square()
 		"flag": mesh = flag_mesh(24.0, 12.0)
+		"government_house": mesh = _government_house(false)
+		"government_house_far": mesh = _government_house(true)
+		"carpet_museum": mesh = _carpet_museum(false)
+		"carpet_museum_far": mesh = _carpet_museum(true)
+		"qosa_qala": mesh = qosa_qala(22.0)
 	_meshes[id] = mesh
 	return mesh
 
@@ -126,84 +136,181 @@ static func _merge(parts: Array) -> ArrayMesh:
 
 
 # --- Flame Towers ------------------------------------------------------------------
+# Real: three flame-shaped glass towers (HOK, 2012) of 182 / 165 / 161 m on
+# the hill above the Old City, set on a triangle with the convex faces turned
+# outwards; blue glass with a mullion grid and an LED skin that shows moving
+# flames at night. Here: 0.66 scale, same height ratios and arrangement, the
+# towers clearly apart so each flame reads on its own.
 
-## One flame: egg-shaped plan that narrows to a pointed tip while the front
-## face curves backwards, like a flame licking upwards.
-static func _flame(height: float, radius: float, lean: float, lod: bool) -> ArrayMesh:
-	var nu := 12 if lod else 28
-	var nv := 6 if lod else 22
-	return grid(nu, nv, func(u: float, v: float) -> Vector3:
-		var th := u * TAU
-		var r := radius * (1.0 + 0.28 * cos(th)) # pointed-egg plan, +x is the front
-		var w := pow(maxf(1.0 - pow(v, 2.4), 0.0), 0.55)
-		var back := -radius * lean * v * v
-		return Vector3(cos(th) * r * w + back, v * height, sin(th) * r * 0.78 * w), true, true)
+static var _flame_mats: Array = []
+static var _flame_amount := 0.0
+
+
+static func flame_glass(height: float) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = GLASS_SHADER
+	m.set_shader_parameter("height", height)
+	m.set_shader_parameter("glass_low", Color(0.07, 0.24, 0.58))
+	m.set_shader_parameter("glass_high", Color(0.46, 0.72, 0.98))
+	m.set_shader_parameter("floor_h", 3.4)
+	m.set_shader_parameter("mullion_w", 2.4)
+	m.set_shader_parameter("flame_led", _flame_amount)
+	_flame_mats.append(m)
+	return m
+
+
+## LED flame animation on/off (on for the High-type presets).
+static func set_flame_led(amount: float) -> void:
+	_flame_amount = amount
+	for m in _flame_mats:
+		m.set_shader_parameter("flame_led", amount)
+
+
+## One flame: rounded-triangle (teardrop) plan, widest low down, then a long
+## taper to a sharp tip. The tip sits above the inner (-x) side, so the
+## convex outer face (+x) curls in towards it like a tongue of fire.
+static func flame_point(u: float, v: float, height: float, radius: float) -> Vector3:
+	var th := u * TAU
+	var r := radius * (1.0 + 0.17 * cos(th) - 0.07 * cos(3.0 * th))
+	var w := pow(maxf(1.0 - v, 0.0), 0.7) * (1.0 + 0.95 * v)
+	var cx := -radius * 0.75 * pow(v, 1.5)
+	return Vector3(cx + cos(th) * r * w, v * height, sin(th) * r * 0.84 * w)
+
+
+static func _flame(height: float, radius: float, lod: bool) -> ArrayMesh:
+	var nu := 14 if lod else 36
+	var nv := 8 if lod else 30
+	return grid(nu, nv, func(u: float, v: float) -> Vector3: return flame_point(u, v, height, radius), true, true)
+
+
+## Tower layout in the group's local frame: [height, radius, centre].
+## Tallest at the back (-z); centres on a triangle of 34 m circumradius.
+static func flame_defs() -> Array:
+	return [[120.0, 17.0, Vector3(0, 0, -34)], [109.0, 15.5, Vector3(-29.4, 0, 17)], [106.0, 15.0, Vector3(29.4, 0, 17)]]
 
 
 static func _flame_towers(lod: bool) -> ArrayMesh:
-	# Three towers on a triangle, each front facing outwards; middle tallest.
-	var defs := [[86.0, 15.0, 0.9, Vector3(0, 0, -16), PI * 0.5], [72.0, 13.0, 1.0, Vector3(-17, 0, 12), PI * 1.17], [66.0, 12.5, 1.0, Vector3(17, 0, 12), -PI * 0.17]]
 	var parts: Array = []
-	for d in defs:
+	for d in flame_defs():
 		var h: float = d[0]
-		var mesh := _flame(h, d[1], d[2], lod)
-		parts.append([mesh, Transform3D(Basis(Vector3.UP, d[4]), d[3]), glass(h, d[0] < 70.0)])
-	# Shared podium
-	parts.append([ShapeKit.cylinder(34.0, 3.0, 24 if not lod else 12), Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)), PropKit.m("stone_dark")])
+		var c: Vector3 = d[2]
+		# convex outer face (+x local) turned away from the triangle centre
+		var yaw := atan2(-c.z, c.x)
+		var mat: Material = flame_glass(h) # 0.10.1: far LOD shows the LED show too
+		parts.append([_flame(h, d[1], lod), Transform3D(Basis(Vector3.UP, yaw), c), mat])
+	parts.append([ShapeKit.cone(62.0, 56.0, 4.0, 28 if not lod else 14), Transform3D(Basis.IDENTITY, Vector3(0, 0.0, 0)), PropKit.m("stone_dark")])
 	return _merge(parts)
 
 
 # --- Heydar Aliyev Center ------------------------------------------------------------
+# Real (Zaha Hadid, 2012): ~74 m high, a brilliant white continuous skin with
+# no corners. Seen from the plaza it rises from the ground on the left into a
+# tall curling peak, dips, rolls up into a second lower crest and sweeps back
+# down into the plaza on the right; a huge dark curved glass wall is tucked
+# under the overhanging lip; terraced lawns step down in front. ~1:1.4 scale.
+# Local frame: length along x (left = -x seen from the front), front = +z.
 
-static func _hac_height(u: float) -> float:
-	# Three flowing crests, the tallest towards one end.
-	return 12.0 + 10.0 * exp(-pow((u - 0.2) / 0.12, 2.0)) + 18.0 * exp(-pow((u - 0.66) / 0.17, 2.0))
+const HAC_L := 196.0
+const HAC_D := 74.0
+const HAC_EDGE := 0.4 # front lip height as a fraction of the local height
 
 
-static func _hac_point(u: float, v: float, L: float, W: float) -> Vector3:
-	var env := smoothstep(0.0, 0.16, u) * smoothstep(1.0, 0.84, u)
-	var f: float
-	if v < 0.78:
-		f = pow(sin(v / 0.78 * PI * 0.5), 1.3)
-	else:
-		f = 1.0 + 0.07 * sin((v - 0.78) / 0.22 * PI) # rolled front lip
-	var y := _hac_height(u) * env * f
-	var z := (v - 0.5) * W + sin(u * PI * 1.6 + 0.4) * 7.0 * v # wavy plan
-	var x := (u - 0.5) * L - (1.0 - env) * 6.0 * (1.0 if u < 0.5 else -1.0)
-	return Vector3(x, y, z)
+static func hac_height(u: float) -> float:
+	var rise := smoothstep(0.0, 0.22, u)
+	var fall := smoothstep(1.0, 0.7, u)
+	return rise * fall * (13.0 + 41.0 * exp(-pow((u - 0.3) / 0.13, 2.0)) + 17.0 * exp(-pow((u - 0.66) / 0.1, 2.0)))
+
+
+static func _hac_theta_end() -> float:
+	return asin(HAC_EDGE)
+
+
+## Point on the shell: v = 0 at the back foot, over the crest, v = 1 at the
+## front lip. The crest leans forward over the glass like a breaking wave.
+static func hac_point(u: float, v: float) -> Vector3:
+	var h := hac_height(u)
+	var th := lerpf(PI, _hac_theta_end(), v)
+	var rz := HAC_D * 0.5
+	var zc := 5.0 * sin(u * PI * 1.4 + 0.5) - 4.0
+	var s := sin(th)
+	var curl := 0.3 * h * pow(s, 4.0) * (h / 54.0)
+	var x := (u - 0.5) * HAC_L
+	return Vector3(x, h * s + 0.25, zc + rz * cos(th) + curl)
+
+
+## Brilliant white skin that stays white on the shaded side too (the
+## building's identity), slightly glossy.
+static func hac_white() -> StandardMaterial3D:
+	if not _mats.has("hac_white"):
+		var m := StandardMaterial3D.new()
+		m.albedo_color = Color(0.97, 0.97, 0.98)
+		m.roughness = 0.28
+		m.metallic_specular = 0.75
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		m.rim_enabled = true
+		m.rim = 0.3
+		m.emission_enabled = true
+		m.emission = Color(0.8, 0.82, 0.86)
+		m.emission_energy_multiplier = 0.32
+		_mats["hac_white"] = m
+	return _mats["hac_white"]
+
+
+static func hac_glass() -> ShaderMaterial:
+	if not _mats.has("hac_glass"):
+		var m := ShaderMaterial.new()
+		m.shader = GLASS_SHADER
+		m.set_shader_parameter("height", 50.0)
+		m.set_shader_parameter("glass_low", Color(0.06, 0.1, 0.16))
+		m.set_shader_parameter("glass_high", Color(0.22, 0.32, 0.44))
+		m.set_shader_parameter("sky_tint", Color(0.55, 0.62, 0.7))
+		m.set_shader_parameter("frame_color", Color(0.55, 0.6, 0.66))
+		m.set_shader_parameter("floor_h", 5.0)
+		m.set_shader_parameter("mullion_w", 3.0)
+		m.set_shader_parameter("sparkle", 0.12)
+		_mats["hac_glass"] = m
+	return _mats["hac_glass"]
 
 
 static func _heydar_aliyev(lod: bool) -> ArrayMesh:
-	var L := 120.0
-	var W := 54.0
-	var nu := 20 if lod else 56
-	var nv := 8 if lod else 22
-	var shell := grid(nu, nv, func(u: float, v: float) -> Vector3: return _hac_point(u, v, L, W))
-	# Glass facade under the lip (front, +z), set slightly back.
+	var nu := 30 if lod else 104
+	var nv := 10 if lod else 30
+	var shell := grid(nu, nv, func(u: float, v: float) -> Vector3: return hac_point(u, v))
+	# Curved dark glass wall recessed under the lip: from the ground up to
+	# where it meets the underside of the shell, well behind the front edge.
+	var th_g := _hac_theta_end() + 0.32
+	var vg := (PI - th_g) / (PI - _hac_theta_end())
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in nu:
-		var u0 := float(i) / nu
-		var u1 := float(i + 1) / nu
-		var a := _hac_point(u0, 1.0, L, W)
-		var b := _hac_point(u1, 1.0, L, W)
-		var a0 := Vector3(a.x, 0.0, a.z - 2.5)
-		var b0 := Vector3(b.x, 0.0, b.z - 2.5)
-		var a1 := Vector3(a.x, a.y * 0.9, a.z - 1.5)
-		var b1 := Vector3(b.x, b.y * 0.9, b.z - 1.5)
-		if a.y < 0.5 and b.y < 0.5:
+		var a := hac_point(float(i) / nu, vg)
+		var b := hac_point(float(i + 1) / nu, vg)
+		if a.y < 2.0 and b.y < 2.0:
 			continue
-		for p in [a0, b1, b0, a0, a1, b1]: # clockwise seen from the front
-			st.set_normal(Vector3(0, 0, 1))
+		var a0 := Vector3(a.x, 0.0, a.z - 2.0)
+		var b0 := Vector3(b.x, 0.0, b.z - 2.0)
+		for p in [a0, b, b0, a0, a, b]:
 			st.set_uv(Vector2(p.x / 4.0, p.y / 4.0))
 			st.add_vertex(p)
+	st.generate_normals()
 	var facade := st.commit()
-	var plaza := ShapeKit.cylinder(1.0, 0.3, 24)
-	return _merge([
-		[shell, Transform3D.IDENTITY, white_shell()],
-		[facade, Transform3D.IDENTITY, dark_glass()],
-		[plaza, Transform3D(Basis.IDENTITY.scaled(Vector3(L * 0.62, 1.0, W * 0.75)), Vector3(0, 0.15, 6.0)), PropKit.m("plaster_white")],
-	])
+	var parts: Array = [
+		[shell, Transform3D.IDENTITY, hac_white()],
+		[facade, Transform3D.IDENTITY, hac_glass()],
+	]
+	# Broad plaza with terraced lawns stepping down towards the viewer.
+	var front := HAC_D * 0.5 + 4.0
+	parts.append([PropKit.box(Vector3(HAC_L * 1.05, 0.5, 12.0)), Transform3D(Basis.IDENTITY, Vector3(0, 0.25, front + 6.0)), PropKit.m("plaster_white")])
+	for k in 3:
+		var w := HAC_L * (0.78 - k * 0.12)
+		var z := front + 14.0 + k * 11.0
+		parts.append([PropKit.box(Vector3(w, 1.6 - k * 0.5, 8.0)), Transform3D(Basis.IDENTITY, Vector3(k * 8.0 + 6.0, (1.6 - k * 0.5) * 0.5, z)), PropKit.m("hedge")])
+		parts.append([PropKit.box(Vector3(w, 0.3, 3.0)), Transform3D(Basis.IDENTITY, Vector3(k * 8.0 + 6.0, 0.15, z + 5.5)), PropKit.m("plaster_white")])
+	if not lod:
+		# a few round reflecting pools on the plaza
+		for k in 3:
+			parts.append([ShapeKit.cylinder(4.5, 0.3, 20), Transform3D(Basis.IDENTITY, Vector3(-50.0 + k * 50.0, 0.55, front + 6.0)), PropKit.m("water_fountain")])
+	return _merge(parts)
 
 
 # --- Baku Crescent ---------------------------------------------------------------------
@@ -355,3 +462,230 @@ static func attach_flag(parent: Node3D) -> MeshInstance3D:
 	mi.extra_cull_margin = 4.0
 	parent.add_child(mi)
 	return mi
+
+
+# --- Government House (Hökumət Evi) ---------------------------------------------
+
+static func _government_house(lod: bool) -> ArrayMesh:
+	# Hökumət Evi: symmetric sand-coloured Stalinist-Oriental block. Front
+	# faces +z: long main block with a ground-floor arcade, two projecting
+	# side wings with their own stepped tops, a projecting centre with a
+	# giant portal and a stepped tower crowned by a spire and the flag.
+	var a := PropKit.Accum.new()
+	var sand := PropKit.m("sand")
+	var trim := PropKit.m("sand_light")
+	var shade := PropKit.m("sand_shade")
+	var win := PropKit.m("window_dark")
+	var L := 176.0
+	var D := 28.0
+	var H := 31.0
+	var fz := D * 0.5 # main front face
+	a.add(PropKit.box(Vector3(L, H, D)), PropKit.T(Vector3(0, H * 0.5, 0)), sand)
+	a.add(PropKit.box(Vector3(L + 1.6, 1.4, D + 1.6)), PropKit.T(Vector3(0, H + 0.2, 0)), trim) # cornice
+	a.add(PropKit.box(Vector3(L + 2.0, 2.2, D + 2.0)), PropKit.T(Vector3(0, 1.1, 0)), shade) # plinth
+	a.add(PropKit.box(Vector3(L + 0.6, 0.8, D + 0.6)), PropKit.T(Vector3(0, 12.6, 0)), trim) # band over the arcade
+	# Ground-floor arcade (loggia) along the main block between the wings.
+	var arc_w := 4.6
+	var nar := int((L - 64.0) / arc_w)
+	for k in nar:
+		var x := (k - (nar - 1) * 0.5) * arc_w
+		if absf(x) < 23.0:
+			continue
+		_pointed_recess(a, Vector3(x, 2.2, fz + 0.06), 3.2, 9.6, win)
+	# Rows of tall windows above (two floors per opening), arched top row.
+	if not lod:
+		for k in nar:
+			var x2 := (k - (nar - 1) * 0.5) * arc_w
+			if absf(x2) < 23.0:
+				continue
+			for f in 2:
+				a.add(PropKit.box(Vector3(1.9, 5.0, 0.2)), PropKit.T(Vector3(x2, 16.2 + f * 6.0, fz + 0.06)), win)
+			a.add(PropKit.box(Vector3(2.8, 0.4, 0.6)), PropKit.T(Vector3(x2, 13.4, fz + 0.3)), trim) # sills
+	# Crenellated parapet along the front.
+	if not lod:
+		_merlons(a, Vector3(0, H + 0.9, fz + 0.4), L, trim)
+	# Projecting side wings with stepped tops and arched corner pavilions.
+	for sx: float in [-1.0, 1.0]:
+		var wx := sx * (L * 0.5 - 13.0)
+		var WH := H + 7.0
+		var wz := fz + 8.0
+		a.add(PropKit.box(Vector3(26.0, WH, 16.0)), PropKit.T(Vector3(wx, WH * 0.5, wz)), sand)
+		a.add(PropKit.box(Vector3(27.4, 1.4, 17.4)), PropKit.T(Vector3(wx, WH + 0.2, wz)), trim)
+		a.add(PropKit.box(Vector3(26.8, 0.8, 16.8)), PropKit.T(Vector3(wx, 12.6, wz)), trim)
+		a.add(PropKit.box(Vector3(18.0, 7.0, 12.0)), PropKit.T(Vector3(wx, WH + 3.9, wz)), sand)
+		a.add(PropKit.box(Vector3(19.2, 1.0, 13.2)), PropKit.T(Vector3(wx, WH + 7.6, wz)), trim)
+		a.add(PropKit.box(Vector3(9.0, 6.0, 7.0)), PropKit.T(Vector3(wx, WH + 11.1, wz)), sand)
+		a.add(PropKit.box(Vector3(10.0, 0.8, 8.0)), PropKit.T(Vector3(wx, WH + 14.5, wz)), trim)
+		var front_w := wz + 8.0 + 0.06
+		for k in 4:
+			_pointed_recess(a, Vector3(wx - 7.5 + k * 5.0, 2.2, front_w), 3.2, 9.6, win)
+		if not lod:
+			for c in 4:
+				for f in 3:
+					a.add(PropKit.box(Vector3(1.8, 4.6, 0.2)), PropKit.T(Vector3(wx - 7.5 + c * 5.0, 16.2 + f * 6.6, front_w)), win)
+			for k in 4:
+				_pointed_recess(a, Vector3(wx - 6.0 + k * 4.0, WH + 1.2, wz + 6.06), 2.4, 5.0, win)
+			for k in 2:
+				_pointed_recess(a, Vector3(wx - 2.0 + k * 4.0, WH + 8.8, wz + 3.56), 2.0, 4.4, win)
+			_merlons(a, Vector3(wx, WH + 0.9, front_w + 0.3), 26.0, trim)
+	# Projecting centre with a giant pointed portal between paired columns.
+	var CW := 46.0
+	var CH := H + 9.0
+	var cz := fz + 5.0
+	a.add(PropKit.box(Vector3(CW, CH, 10.0)), PropKit.T(Vector3(0, CH * 0.5, cz)), sand)
+	a.add(PropKit.box(Vector3(CW + 1.4, 1.4, 11.4)), PropKit.T(Vector3(0, CH + 0.2, cz)), trim)
+	_pointed_recess(a, Vector3(0, 2.2, cz + 5.06), 13.0, 27.0, win)
+	for sx2: float in [-1.0, 1.0]:
+		for k in 2:
+			a.add(ShapeKit.cylinder(0.9, 27.0, 10 if not lod else 6), PropKit.T(Vector3(sx2 * (8.6 + k * 2.6), 15.7, cz + 6.0)), trim)
+		_pointed_recess(a, Vector3(sx2 * 17.0, 2.2, cz + 5.06), 4.0, 11.0, win)
+		if not lod:
+			for f in 3:
+				a.add(PropKit.box(Vector3(2.2, 4.6, 0.2)), PropKit.T(Vector3(sx2 * 17.0, 17.0 + f * 6.6, cz + 5.06)), win)
+	if not lod:
+		_merlons(a, Vector3(0, CH + 0.9, cz + 5.4), CW, trim)
+	# Stepped central tower ("wedding cake") with arched loggias, spire, flag.
+	var tiers := [[34.0, 10.0, 24.0], [25.0, 9.0, 18.0], [17.0, 8.0, 13.0], [10.0, 7.0, 8.0]]
+	var y := CH + 0.9
+	for t in tiers:
+		a.add(PropKit.box(Vector3(t[0], t[1], t[2])), PropKit.T(Vector3(0, y + t[1] * 0.5, 0.0)), sand)
+		a.add(PropKit.box(Vector3(t[0] + 1.4, 1.0, t[2] + 1.4)), PropKit.T(Vector3(0, y + t[1] + 0.3, 0.0)), trim)
+		var n := int(t[0] / 4.2)
+		for k in n:
+			var x3 := (k - (n - 1) * 0.5) * 4.0
+			_pointed_recess(a, Vector3(x3, y + 1.4, t[2] * 0.5 + 0.06), 2.4, t[1] - 2.8, win)
+		y += t[1] + 0.8
+	a.add(ShapeKit.cone(3.4, 0.25, 12.0, 8), PropKit.T(Vector3(0, y + 6.0, 0.0)), trim)
+	a.add(ShapeKit.cylinder(0.12, 9.0, 6), PropKit.T(Vector3(0, y + 16.0, 0.0)), PropKit.m("metal_grey"))
+	a.add(PropKit.box(Vector3(5.0, 0.9, 0.08)), PropKit.T(Vector3(2.5, y + 19.6, 0.0)), PropKit.m("blue"))
+	a.add(PropKit.box(Vector3(5.0, 0.9, 0.08)), PropKit.T(Vector3(2.5, y + 18.7, 0.0)), PropKit.m("red"))
+	a.add(PropKit.box(Vector3(5.0, 0.9, 0.08)), PropKit.T(Vector3(2.5, y + 17.8, 0.0)), PropKit.m("green"))
+	# Garden and forecourt in front.
+	a.add(PropKit.box(Vector3(L * 0.7, 0.3, 22.0)), PropKit.T(Vector3(0, 0.15, fz + 26.0)), PropKit.m("hedge"))
+	a.add(PropKit.box(Vector3(30.0, 0.32, 24.0)), PropKit.T(Vector3(0, 0.16, fz + 26.0)), PropKit.m("plaster_cream"))
+	return a.commit()
+
+
+## Row of small battlement blocks centred on c, running along x.
+static func _merlons(a: PropKit.Accum, c: Vector3, length: float, mat: Material) -> void:
+	var n := int(length / 2.8)
+	for k in n:
+		var x := c.x + (k - (n - 1) * 0.5) * 2.8
+		a.add(PropKit.box(Vector3(1.5, 1.6, 0.9)), PropKit.T(Vector3(x, c.y + 0.8, c.z)), mat)
+
+
+## Dark recess with a pointed (Islamic) arch top, front facing +z.
+static func _pointed_recess(a: PropKit.Accum, base: Vector3, w: float, h: float, mat: Material) -> void:
+	var rect_h := h - w * 0.7
+	a.add(PropKit.box(Vector3(w, rect_h, 0.2)), PropKit.T(base + Vector3(0, rect_h * 0.5, 0)), mat)
+	var steps := 4
+	for i in steps:
+		var f := float(i + 1) / steps
+		var ww := w * (1.0 - f * f * 0.9)
+		var hh := w * 0.7 / steps
+		a.add(PropKit.box(Vector3(ww, hh, 0.2)), PropKit.T(base + Vector3(0, rect_h + hh * (i + 0.5), 0)), mat)
+
+
+# --- Carpet Museum (Xalça Muzeyi) --------------------------------------------------
+
+static func _carpet_profile(u: float) -> Vector2:
+	# 0..0.62: the flat carpet lifts gently from the ground; after that it
+	# rolls into a spiral, like a carpet half rolled up. x along the length.
+	var x_end := 22.0
+	var r0 := 8.0
+	if u < 0.62:
+		var t := u / 0.62
+		return Vector2(-34.0 + t * (x_end + 34.0), r0 * 2.0 * smoothstep(0.0, 1.0, t) * 0.999)
+	var t2 := (u - 0.62) / 0.38
+	var ang := PI * 0.5 - t2 * PI * 2.6 # from the top, rolling over the front
+	var r := r0 * (1.0 - 0.45 * t2)
+	return Vector2(x_end, r0) + Vector2(r * cos(ang), r * sin(ang))
+
+
+static func _carpet_museum(lod: bool) -> ArrayMesh:
+	var W := 18.0
+	var nu := 30 if lod else 90
+	var ribbon := grid(nu, 2, func(u: float, v: float) -> Vector3:
+		var p := _carpet_profile(u)
+		return Vector3(p.x, p.y, (v - 0.5) * W))
+	var back := grid(nu, 2, func(u: float, v: float) -> Vector3:
+		var p := _carpet_profile(u)
+		return Vector3(p.x, p.y - 0.35, (v - 0.5) * W), false, true)
+	var parts: Array = [
+		[ribbon, Transform3D.IDENTITY, PropKit.carpet_material(0)],
+		[back, Transform3D.IDENTITY, PropKit.carpet_material(2)],
+	]
+	# Glass hall under the rising carpet, plus end caps of the roll.
+	parts.append([PropKit.box(Vector3(36.0, 7.0, W - 2.0)), Transform3D(Basis.IDENTITY, Vector3(2.0, 3.5, 0)), dark_glass()])
+	parts.append([PropKit.box(Vector3(14.0, 12.0, W - 2.0)), Transform3D(Basis.IDENTITY, Vector3(14.0, 6.0, 0)), dark_glass()])
+	for sz: float in [-1.0, 1.0]:
+		parts.append([ShapeKit.cylinder(8.0, 0.4, 24 if not lod else 10), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(22.0, 8.0, sz * (W * 0.5 - 0.2))), PropKit.carpet_material(1)])
+	parts.append([PropKit.box(Vector3(80.0, 0.4, W + 12.0)), Transform3D(Basis.IDENTITY, Vector3(-4.0, 0.2, 2.0)), PropKit.m("limestone")])
+	return _merge(parts)
+
+
+# --- Qoşa Qala gate -------------------------------------------------------------
+
+## Built in the gate's own frame: x across the road, z along it, y up.
+## Two crenellated semicircular towers stand outside `half` and the wall
+## over the road has a real pointed arch (clearance > 8 m) next to a second,
+## smaller blind arch on each tower side, the "double" gate.
+static func qosa_qala(span: float) -> ArrayMesh:
+	var a := PropKit.Accum.new()
+	var stone := PropKit.m("limestone_warm")
+	var light := PropKit.m("limestone")
+	var half := span * 0.5
+	var wall_h := 13.0
+	var th := 2.6
+	# Wall over the road: vertical strips whose bottoms trace a pointed arch.
+	var n := 28
+	var spring := 7.5
+	for i in n:
+		var x0 := -half + span * float(i) / n
+		var x1 := -half + span * float(i + 1) / n
+		var xm := (x0 + x1) * 0.5
+		var t := absf(xm) / half # 0 centre, 1 edge
+		var bottom := maxf(spring + (1.0 - pow(t, 1.6)) * 3.6, 8.6)
+		a.add(PropKit.box(Vector3(x1 - x0 + 0.02, wall_h - bottom, th)), PropKit.T(Vector3(xm, (wall_h + bottom) * 0.5, 0)), stone)
+	# Machicolation band and merlons on top of the gate wall
+	a.add(PropKit.box(Vector3(span, 0.8, th + 1.0)), PropKit.T(Vector3(0, wall_h - 0.6, 0)), light)
+	for k in int(span / 2.0):
+		a.add(PropKit.box(Vector3(1.1, 1.3, th + 0.6)), PropKit.T(Vector3(-half + 1.0 + k * 2.0, wall_h + 0.65, 0)), stone)
+	# Twin semicircular towers
+	for sx: float in [-1.0, 1.0]:
+		var c := Vector3(sx * (half + 3.6), 0, 0)
+		var tw_h := wall_h + 3.0
+		a.add(ShapeKit.cylinder(4.6, tw_h, 20), PropKit.T(c + Vector3(0, tw_h * 0.5, 0)), stone)
+		a.add(ShapeKit.cylinder(4.9, 0.8, 20), PropKit.T(c + Vector3(0, tw_h - 0.4, 0)), light)
+		for k in 12:
+			var ang := TAU * k / 12.0
+			a.add(PropKit.box(Vector3(1.0, 1.4, 0.8)), PropKit.T(c + Vector3(cos(ang) * 4.5, tw_h + 0.7, sin(ang) * 4.5), Vector3(0, -ang, 0)), stone)
+		# Second (smaller) gate arch beside each tower, blind
+		_pointed_recess(a, c + Vector3(sx * 6.4, 0, th * 0.5 + 0.06), 3.4, 6.0, PropKit.m("wood"))
+		_pointed_recess(a, c + Vector3(sx * 6.4, 0, -th * 0.5 - 0.06), 3.4, 6.0, PropKit.m("wood"))
+		a.add(PropKit.box(Vector3(8.0, wall_h - 1.0, th)), PropKit.T(c + Vector3(sx * 6.4, (wall_h - 1.0) * 0.5, 0)), stone)
+	return a.commit()
+
+
+## Straight crenellated wall segment along +x from the origin.
+static func city_wall(length: float) -> ArrayMesh:
+	var a := PropKit.Accum.new()
+	var stone := PropKit.m("limestone_warm")
+	var h := 9.0
+	# 0.9.7: battered base course, walkway parapet with rounded-top
+	# merlons and half-round towers every ~24 m (İçərişəhər walls).
+	a.add(PropKit.box(Vector3(length, h, 2.4)), PropKit.T(Vector3(length * 0.5, h * 0.5, 0)), stone)
+	a.add(PropKit.box(Vector3(length, 1.6, 3.2)), PropKit.T(Vector3(length * 0.5, 0.8, 0)), PropKit.m("stone_dark"))
+	a.add(PropKit.box(Vector3(length, 0.35, 2.8)), PropKit.T(Vector3(length * 0.5, h - 0.2, 0)), PropKit.m("stone_dark"))
+	for k in int(length / 2.0):
+		a.add(PropKit.box(Vector3(1.0, 1.0, 2.6)), PropKit.T(Vector3(1.0 + k * 2.0, h + 0.5, 0)), stone)
+		a.add(ShapeKit.cylinder(0.5, 2.6, 8), PropKit.T(Vector3(1.0 + k * 2.0, h + 1.0, 0), Vector3(PI * 0.5, 0, 0)), stone)
+	var nt := maxi(int(length / 24.0), 1)
+	for t in nt + 1:
+		var x := length * float(t) / nt
+		# Towers stand out on the outer (-z) face, away from the road side.
+		a.add(ShapeKit.cylinder(3.4, h + 2.5, 14), PropKit.T(Vector3(x, (h + 2.5) * 0.5, -1.6)), stone)
+		for k in 8:
+			var ang := PI + PI * float(k) / 7.0
+			a.add(PropKit.box(Vector3(0.9, 1.1, 0.9)), PropKit.T(Vector3(x + cos(ang) * 3.1, h + 3.0, -1.6 + sin(ang) * 3.1)), stone)
+	return a.commit()

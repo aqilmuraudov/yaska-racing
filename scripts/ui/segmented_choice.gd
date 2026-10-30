@@ -21,7 +21,7 @@ func setup(p_options: Array, p_index: int, min_width := 96.0) -> SegmentedChoice
 	for i in options.size():
 		var b := Button.new()
 		b.text = str(options[i])
-		b.custom_minimum_size = Vector2(min_width, 64)
+		b.custom_minimum_size = Vector2(min_width, UITheme.H_BTN_SMALL)
 		b.focus_mode = Control.FOCUS_NONE
 		b.clip_text = false
 		b.toggle_mode = false
@@ -67,7 +67,7 @@ func _refresh() -> void:
 	for i in buttons.size():
 		var b := buttons[i]
 		var color := "yellow" if i == index else "blue"
-		UITheme.style_button(b, color, 24)
+		UITheme.style_button(b, color, UITheme.FS_BTN_SMALL)
 		if _disabled[i]:
 			b.disabled = true
 		else:

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RacerDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/racer_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "yaska"
+display_name = "Yaska"
+kart_name = "Yaska Star"
+species = "girl"
+kart_style = "star"
+personality_key = "PERS_YASKA"
+specialty_key = "SPEC_YASKA"
+accent = Color(1.000, 0.478, 0.698, 1)
+kart_primary = Color(1.000, 0.616, 0.769, 1)
+kart_secondary = Color(1.000, 0.851, 0.302, 1)
+kart_trim = Color(0.310, 0.498, 0.749, 1)
+fur_main = Color(0.992, 0.855, 0.765, 1)
+fur_light = Color(1.000, 0.918, 0.863, 1)
+fur_dark = Color(0.690, 0.451, 0.271, 1)
+detail = Color(0.322, 0.522, 0.796, 1)
+top_speed = 10
+acceleration = 9
+handling = 10
+drift = 9
+boost = 8

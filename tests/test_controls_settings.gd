@@ -242,7 +242,7 @@ func test_settings_v2_migration() -> void:
 	SafeFile.write_json(TEST_SETTINGS, v2)
 	Settings.load_settings()
 	var s: Dictionary = Settings.values
-	check_eq(bool(s.gameplay.steer_assist), true, "steering help on (was a developer-only default)")
+	check_eq(bool(s.gameplay.steer_assist), false, "steering help off after v4 migration (never takes over)")
 	check_near(float(s.accessibility.camera_shake), 0.6, 0.001, "camera shake becomes gentle")
 	check_eq(bool(s.controls.easy_drift), true, "easy drift added, on")
 	check_eq(int(s.controls.button_size), 0, "player choices kept")

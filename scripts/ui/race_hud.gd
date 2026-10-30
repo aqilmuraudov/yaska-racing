@@ -20,6 +20,8 @@ var message_label: Label
 var speed_gauge: SpeedGauge
 var star_pill: PanelContainer
 var star_label: Label
+var money_label: Label ## driving income this race (subtle)
+var celebration: FinishCelebration
 ## First quick race only: three short prompts (steer, drift, item).
 var _hints_on := false
 var _hint_step := 0
@@ -40,11 +42,16 @@ var speed_blur: ColorRect
 var _blur := 0.0
 var captions: VBoxContainer
 var pos_badge: PanelContainer
+var kids_badge: PanelContainer
 var pos_arrow: Label
 var lap_pill: PanelContainer
 var trap_warning: Label
 var _last_place := 0
 var _place_flash := 0.0
+var delta_pill: PanelContainer
+var delta_label: Label
+var series_pill: PanelContainer
+var _delta_timer := 0.0
 
 
 func setup(p_race: RaceManager) -> void:
@@ -103,6 +110,31 @@ func setup(p_race: RaceManager) -> void:
 	pos_arrow.add_theme_font_size_override("font_size", 30)
 	pos_row.add_child(pos_arrow)
 
+	# Kids controls badge (0.9.5): tells parents the kart drives itself.
+	kids_badge = PanelContainer.new()
+	kids_badge.name = "KidsBadge"
+	kids_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	kids_badge.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.YELLOW, 0.92), 16, 2, Color.WHITE, 8))
+	kids_badge.position = Vector2(140, 68)
+	kids_badge.visible = race.kids_mode()
+	frame.add_child(kids_badge)
+	var kb_row := HBoxContainer.new()
+	kb_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	kb_row.add_theme_constant_override("separation", 4)
+	kids_badge.add_child(kb_row)
+	var kb_icon := TextureRect.new()
+	kb_icon.texture = UITheme.icon("kids_auto")
+	kb_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	kb_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	kb_icon.custom_minimum_size = Vector2(34, 34)
+	kb_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	kb_row.add_child(kb_icon)
+	var kb_label := _label(tr("HUD_KIDS_AUTO"), &"HudSmall")
+	kb_label.add_theme_font_size_override("font_size", 22)
+	kb_label.add_theme_color_override("font_color", UITheme.NAVY_DEEP)
+	kb_label.add_theme_constant_override("outline_size", 0)
+	kb_row.add_child(kb_label)
+
 	# Stars collected this race, beside the position badge.
 	star_pill = PanelContainer.new()
 	star_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -124,6 +156,17 @@ func setup(p_race: RaceManager) -> void:
 	star_label.add_theme_font_size_override("font_size", 30)
 	star_label.custom_minimum_size = Vector2(36, 0)
 	star_row.add_child(star_label)
+	var money_icon := TextureRect.new()
+	money_icon.texture = UITheme.icon("manat")
+	money_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	money_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	money_icon.custom_minimum_size = Vector2(34, 34)
+	money_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_row.add_child(money_icon)
+	money_label = _label(Money.format(0), &"HudSmall")
+	money_label.add_theme_font_size_override("font_size", 22)
+	money_label.add_theme_color_override("font_color", UITheme.YELLOW)
+	star_row.add_child(money_label)
 
 	# Upper right: lap pill, compact timer pill and the pause button
 	var tr_box := VBoxContainer.new()
@@ -163,6 +206,25 @@ func setup(p_race: RaceManager) -> void:
 	best_label = _label("", &"Dim")
 	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	tr_box.add_child(best_label)
+	# Rekord (0.10.0): live +/- against the best lap at the same point.
+	delta_pill = PanelContainer.new()
+	delta_pill.name = "DeltaPill"
+	delta_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	delta_pill.size_flags_horizontal = Control.SIZE_SHRINK_END
+	delta_pill.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.INK, 0.7), 22, 3, Color(1, 1, 1, 0.3), 10))
+	delta_pill.visible = false
+	tr_box.add_child(delta_pill)
+	delta_label = _label("", &"HudSmall")
+	delta_label.add_theme_font_size_override("font_size", 34)
+	delta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	delta_label.custom_minimum_size = Vector2(130, 0)
+	delta_pill.add_child(delta_label)
+	# Cup race number / today's challenge, small, under the timer.
+	series_pill = GameUI.chip("trophy", "", 22, Color(UITheme.INK, 0.66), UITheme.YELLOW)
+	series_pill.name = "SeriesPill"
+	series_pill.size_flags_horizontal = Control.SIZE_SHRINK_END
+	series_pill.visible = false
+	tr_box.add_child(series_pill)
 	trap_warning = _label("! " + tr("HUD_TRAP_AHEAD"), &"HudSmall")
 	trap_warning.add_theme_color_override("font_color", Color("ff6b6b"))
 	trap_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -185,10 +247,9 @@ func setup(p_race: RaceManager) -> void:
 
 	# Minimap: lower-left corner; with touch controls it sits above them.
 	minimap = MinimapWidget.new()
-	minimap.custom_minimum_size = Vector2(210, 156)
+	minimap.custom_minimum_size = Vector2(250, 180)
 	minimap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	minimap.set_anchors_preset(Control.PRESET_TOP_LEFT if _uses_touch else Control.PRESET_BOTTOM_LEFT)
-	minimap.position = Vector2(0, 146) if _uses_touch else Vector2(0, -156)
+	place_minimap(_uses_touch)
 	frame.add_child(minimap)
 	minimap.setup(race)
 
@@ -272,27 +333,43 @@ func setup(p_race: RaceManager) -> void:
 	touch = TouchControls.new()
 	touch.name = "TouchControls"
 	root.add_child(touch)
+	touch.kids = race.kids_mode()
 	touch.setup(race.player.player_input)
 	touch.visible = _uses_touch
 	pause_menu = PauseMenu.new()
 	pause_menu.name = "PauseMenu"
 	root.add_child(pause_menu)
 	pause_menu.setup(race)
+	celebration = FinishCelebration.new()
+	celebration.name = "FinishCelebration"
+	root.add_child(celebration)
+	race.player_crossed_finish.connect(func(place: int):
+		for w in [item_panel, drift_meter, trap_warning]:
+			w.visible = false
+		touch.release_all()
+		touch.visible = false
+		celebration.play(place))
+	race.money_earned.connect(func(total: int, _gain: int, _kind: String):
+		money_label.text = Money.format(total)
+		money_label.pivot_offset = money_label.size * 0.5
+		money_label.scale = Vector2.ONE * 1.25
+		create_tween().tween_property(money_label, "scale", Vector2.ONE, 0.25))
 	results = ResultsScreen.new()
 	results.name = "Results"
 	root.add_child(results)
 	results.setup(race)
 
 	race.countdown_tick.connect(_on_countdown)
-	race.player_message.connect(func(k, kind): show_message(tr(k), kind))
+	race.player_message.connect(func(k, kind): show_message(tr(k), kind, k == "HUD_START_BOOST"))
 	race.lap_completed.connect(_on_lap)
 	race.results_ready.connect(func(res):
 		touch.release_all()
 		touch.visible = false
-		if _hints_on and not bool(race.config.get("debug_autopilot", false)):
+		if _hints_on and not race.auto_drive():
 			SaveManager.set_tutorial_flag("basics_done", true)
 		for w in [pos_badge, star_pill, item_panel, minimap, drift_meter, speed_gauge, lap_pill, trap_warning, captions]:
 			w.visible = false
+		celebration.dismiss()
 		results.show_results(res))
 	race.state_changed.connect(_on_state)
 	if race.stars:
@@ -318,6 +395,9 @@ func setup(p_race: RaceManager) -> void:
 	pk.got_hit.connect(func(_k): caption(tr("CAP_HIT")))
 	pk.shield_blocked.connect(func(): caption(tr("CAP_SHIELD")))
 	pk.boost_started.connect(_on_player_boost)
+	race.near_miss.connect(func(_k):
+		near_pops += 1
+		show_message(tr("HUD_NEAR_MISS"), "good"))
 	pk.wall_hit.connect(func(st): if st >= 0.6: caption(tr("CAP_WALL")))
 	race.items.item_used.connect(func(k, it): if k == pk and it == &"trap": caption(tr("CAP_TRAP_DROP")))
 	Settings.changed.connect(_on_settings_changed)
@@ -385,8 +465,10 @@ func reset() -> void:
 		w.visible = true
 	item_panel.visible = not _uses_touch
 	star_label.text = "0"
+	money_label.text = Money.format(0)
+	celebration.visible = false
 	star_pill.visible = race.config.mode != "tutorial"
-	_hints_on = race.config.mode == "quick" and not SaveManager.get_tutorial_flag("basics_done")
+	_hints_on = race.config.mode == "quick" and not SaveManager.get_tutorial_flag("basics_done") and not race.kids_mode()
 	_hint_step = 0
 	_update_static()
 
@@ -399,6 +481,25 @@ func _update_static() -> void:
 		best_label.text = "%s %s" % [tr("BEST_LAP"), format_time(float(rec.best_lap_ms) / 1000.0)]
 	else:
 		best_label.text = ""
+	if race.config.mode == "time_trial" and race.kids_mode():
+		best_label.text = tr("TT_KIDS_NO_RECORD")
+	var series := String(race.config.get("series", ""))
+	series_pill.visible = series == "cup" or series == "daily"
+	var sl: Label = series_pill.get_meta("value")
+	if series == "cup":
+		sl.text = tr("CUP_HUD_RACE") % [int(race.config.get("cup_race", 0)) + 1, BakuCup.RACES]
+	elif series == "daily":
+		var ic := series_pill.get_child(0).get_child(0) as TextureRect
+		if ic:
+			ic.texture = UITheme.icon("mode_daily")
+		sl.text = DailyChallenge.text(DailyChallenge.effective(race.config.get("daily", {}), race.kids_mode()))
+
+
+## "+0.42" / "−0.31" (seconds, two decimals).
+static func format_delta(d: float) -> String:
+	if absf(d) < 0.005:
+		return "0.00" # dead even with the ghost: no sign
+	return ("−" if d < 0.0 else "+") + "%.2f" % absf(d)
 
 
 static func format_time(t: float) -> String:
@@ -409,8 +510,21 @@ static func format_time(t: float) -> String:
 	return "%d:%06.3f" % [m, s]
 
 
-func show_message(text: String, kind: String = "info") -> void:
+## low = below the countdown / START gantry (turbo start pop, 0.9.2).
+## Touch: under the position badge (the left steer buttons sit low);
+## keyboard/pad: bottom-left corner.
+func place_minimap(touch_layout: bool) -> void:
+	var h := minimap.custom_minimum_size.y
+	minimap.set_anchors_preset(Control.PRESET_TOP_LEFT if touch_layout else Control.PRESET_BOTTOM_LEFT)
+	minimap.offset_left = 0.0
+	minimap.offset_right = minimap.custom_minimum_size.x
+	minimap.offset_top = 146.0 if touch_layout else -h
+	minimap.offset_bottom = minimap.offset_top + h
+
+
+func show_message(text: String, kind: String = "info", low := false) -> void:
 	message_label.text = text
+	message_label.offset_top = maxf(140.0, message_label.get_parent().size.y * 0.56) if low else 140.0
 	var col := Color.WHITE
 	match kind:
 		"good":
@@ -437,7 +551,13 @@ func _on_countdown(value: int) -> void:
 
 func _on_lap(r, lap: int, lap_time: float) -> void:
 	if r.is_player:
-		show_message("%s %d  %s" % [tr("HUD_LAP"), lap, format_time(lap_time)], "info")
+		var txt := "%s %d  %s" % [tr("HUD_LAP"), lap, format_time(lap_time)]
+		var kind := "info"
+		if race.ghosts and not is_nan(race.ghosts.last_lap_delta):
+			txt += "  " + format_delta(race.ghosts.last_lap_delta)
+			kind = "good" if race.ghosts.last_lap_delta < 0.0 else "info"
+		show_message(txt, kind)
+		_update_static.call_deferred()
 
 
 func _on_state(s) -> void:
@@ -453,6 +573,41 @@ func _on_player_boost(src: StringName) -> void:
 			caption(tr("CAP_LANDING"))
 		&"start":
 			caption(tr("CAP_START"))
+			flash(UITheme.YELLOW)
+
+
+## Full-screen colour flash (turbo start); softer with Reduce Flashing.
+var near_pops := 0
+var flashes := 0
+func flash(col: Color) -> void:
+	flashes += 1
+	var a := 0.16 if Settings.get_value("accessibility", "reduced_flashing", false) else 0.38
+	var r := ColorRect.new()
+	r.name = "Flash"
+	r.color = Color(col, a)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(r)
+	move_child(r, 0)
+	var tw := r.create_tween()
+	tw.tween_property(r, "color:a", 0.0, 0.45)
+	tw.tween_callback(r.queue_free)
+
+
+## Tiny "goal done" tick (0.9.0): a small lime badge that fades out.
+var goal_ticks := 0
+func goal_tick(text: String) -> void:
+	goal_ticks += 1
+	var b := GameUI.badge("✓ " + text, Color(UITheme.LIME.darkened(0.25), 0.92), 20)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.name = "GoalTick"
+	captions.add_child(b)
+	AudioManager.play_ui("ui_confirm")
+	var tw := b.create_tween()
+	tw.tween_interval(1.8)
+	tw.tween_property(b, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(b.queue_free)
 
 
 func caption(text: String) -> void:
@@ -488,12 +643,18 @@ func _on_item_changed(it: StringName) -> void:
 	_last_item = it if it != &"?rolling" else _last_item
 
 
+## The steering hint waits until the big START! has faded (and any
+## TURBO START message is gone) so the two never overlap (0.10.0).
+static func steer_hint_ready(t: float, countdown_text: String, msg_time: float) -> bool:
+	return t > 0.6 and countdown_text == "" and msg_time <= 0.0
+
+
 ## First-race prompts, each once: steer at the start, drift on the first
 ## long straight-to-corner, the item button when the first item arrives.
 func _tick_hints() -> void:
 	var t := race.race_time
 	var p := race.player
-	if _hint_step == 0 and t > 0.6:
+	if _hint_step == 0 and steer_hint_ready(t, countdown_label.text, _msg_time):
 		_hint_step = 1
 		show_message(tr("HINT_STEER"), "info")
 		_msg_time = 3.0
@@ -520,6 +681,11 @@ func release_touches() -> void:
 
 
 func _process(delta: float) -> void:
+	if touch and race.nitro:
+		if touch.nitro_level != race.nitro.level:
+			touch.nitro_level = race.nitro.level
+			touch.apply_settings()
+		touch.nitro_charge = race.nitro.charge
 	if race == null or race.player == null:
 		return
 	var p := race.player
@@ -551,6 +717,10 @@ func _process(delta: float) -> void:
 	star_pill.scale = star_pill.scale.lerp(Vector2.ONE, 1.0 - exp(-8.0 * delta))
 	if _hints_on and race.state == RaceManager.RaceState.RACING:
 		_tick_hints()
+	_delta_timer -= delta
+	if _delta_timer <= 0.0:
+		_delta_timer = 0.2
+		_update_delta()
 	trap_warning.visible = race.state == RaceManager.RaceState.RACING and race.items.threat_near(p.kart)
 	pos_label.text = str(p.place)
 	pos_total.text = "/%d" % race.racers.size()
@@ -599,3 +769,11 @@ func _process(delta: float) -> void:
 		(speed_blur.material as ShaderMaterial).set_shader_parameter("strength", _blur)
 	var shield_on := p.kart.has_shield()
 	item_panel.modulate = Color(0.75, 0.95, 1.0) if shield_on else Color.WHITE
+
+
+func _update_delta() -> void:
+	var d := race.ghosts.live_delta() if race.ghosts else NAN
+	delta_pill.visible = not is_nan(d) and not race.player.tracker.finished
+	if delta_pill.visible:
+		delta_label.text = format_delta(d)
+		delta_label.add_theme_color_override("font_color", Color.WHITE if absf(d) < 0.005 else (Color("6dff8f") if d < 0.0 else Color("ff8080")))
