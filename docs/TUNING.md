@@ -284,7 +284,7 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 - Old City: 757 m, width 17 m (Boulevard) / 15 m (streets), offroad 2.5 m, `LAP_SCALE` 0.5 (autopilot lap ~26 s), house fill grid 12 m within 70 m of the track, 34 m clear round the Maiden Tower.
 
 
-## Blender-made karts (0.14.0 pilot: Yaska Star)
+## Blender-made karts (0.14.0 pilot: Yaska Star; 0.14.1: all seven, shared `tools/blender/kart_common.py`)
 - Source: `tools/blender/yaska_star.py` (Blender 4.5, `blender --background --factory-startup --python tools/blender/yaska_star.py -- [--preview] [--no-bake]`, ~90 s on the RTX 3070). Writes `assets/models/yaska/{yaska_star.glb, yaska_star_far.glb, albedo.png, normal.png, orm.png}`; editable `tools/blender/out/yaska_star.blend` (git-ignored).
 - Budget: near 11,038 triangles / 12 draws (procedural Yaska Star was 14,804 / 12); far LOD (beyond `KartVisual.KART_LOD` 28 m) 1,846 (was 4,772). Godot also generates mesh LODs on import (`generate_lods`) for the 0-28 m range.
 - Textures: one 1024² set (baked at 2048², coverage-weighted downsample, islands dilated into the empty atlas so mipmaps never pick up the background). `orm.png` = R occlusion, G roughness, B metallic, A garage-paint mask (import: VRAM, mipmaps, `fix_alpha_border=false`).
@@ -293,3 +293,4 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 - Tyre tread blur: `KartModel.spin_blur_for(step)` = smoothstep(0.04, 0.16 rad per physics tick); shader samples the colour with mip bias `spin_blur × 2.5` and flattens the normal map. Without it the chevron tread (34 per turn) strobes at race speed.
 - Exhaust tips for smoke / flames: `KartModel.GLTF_EXHAUST` (±0.235, 1.0, 1.11).
 - Rig contract (kart space, rest pose): wheels FL/FR pivots (∓0.62, 0.30, −0.72) radius 0.30 width 0.28, rear axle (0, 0.35, 0.68) tyres at ±0.66 radius 0.35 width 0.36; steering column (0, 0.88, −0.30) tilted −55°; shoulders (±0.20, 0.98, 0.17), arms authored along −Z (length 0.40); head pivot (0, 1.06, 0.18); eyes pivot y 1.22; braid pivots (±0.25, 1.42, 0.23). Debug A/B: `--no-gltf`.
+- 0.14.1 per-racer glTF + exhaust tips: `KartModel.GLTF_MODELS / GLTF_FAR / GLTF_EXHAUST` keyed by `kart_style` (star, buddy, bamboo, amber, hop, velvet, cloud). Wheel radii follow the procedural styles (front/rear: buddy 0.31/0.36, bamboo 0.31/0.36, amber 0.27/0.35, hop 0.28/0.32, velvet 0.28/0.34, cloud 0.30/0.34; widths 0.26/0.34). Ear pivots (head-local): dog (±0.27, 0.26, 0.03), panda (±0.22, 0.34, 0.02), fox (±0.16, 0.33, 0.02), rabbit (±0.1, 0.34, 0.04), cat (±0.18, 0.31, 0.02), lamb (±0.24, 0.16, 0.02).

@@ -2,6 +2,20 @@
 
 Date: 2026-10-31 · Build: 0.14.0 · Engine: Godot 4.4.1-stable
 
+## 0.14.1 wip (not released, APK still 0.14.0 / 31) — all seven karts as Blender models
+Owner: convert every kart + driver like Yaska, part by part. Shared pipeline `tools/blender/kart_common.py` (helpers, wheels, steering, eyes, legs, bake, export) + one short script per racer (`yaska_star.py`, `havhav_buddy.py`, `posi_bamboo.py`, `bicok_amber.py`, `leloyun_hop.py`, `mestan_velvet.py`, `cepis_cloud.py`); `tools/blender/fix_imports.py` sets the phone import options; `tools/kart_stats.gd -- <id> [procedural]` counts triangles. `KartModel` now also maps `EarL/EarR` (animal ears) and `Tail` to the AnimalDriver pivots.
+| racer | kart | near tris procedural → glTF | far tris | draws |
+|---|---|---|---|---|
+| Yaska | Yaska Star | 14,804 → 11,038 | 4,772 → 1,846 | 12 |
+| HavHav | Buddy Rally | 12,684 → 10,766 | 3,890 → 1,785 | 13 |
+| Posi | Bamboo Sprint | 12,436 → 10,882 | 3,534 → 1,751 | 12 (13) |
+| Bicok | Amber Dash | 11,876 → 8,670 | 3,384 → 1,534 | 13 |
+| Ləlöyün | Hop Rocket | 12,728 → 9,268 | 3,370 → 1,560 | 12 (13) |
+| Məstan | Velvet Slide | 12,064 → 8,442 | 3,568 → 1,474 | 13 |
+| Çəpiş | Cloud Booster | 15,024 → 11,826 | 4,120 → 1,793 | 12 (13) |
+Each racer adds one 1024² texture set (ETC2 in the APK, ~3.5 MB per racer incl. mipmaps; 7 sets ≈ 24 MB of VRAM if all are on screen). Panda, rabbit and lamb tails hide behind the seat, so they have no mesh (one draw less). Screenshots: `docs/screenshots/0.14.0/all_racers_new.jpg`, `blender_<racer>_front.jpg`. Strict suite: 212 methods, 5619 checks, 0 failures.
+Known / not verified: designs are the scripted first pass (owner has not reviewed HavHav→Çəpiş yet); eyes share one style (lashes on every racer); small AO smudges where ears touch heads (Posi); APK not rebuilt; no phone FPS.
+
 ## Update 0.14.0 (versionCode 31) — Blender pilot: Yaska Star + Yaska
 Plan step 1 + 3 on the owner's Windows PC (RTX 3070). Owner's art calls: CTR-Nitro-Fueled-like quality (own design), 12-15k triangle budget + normal map, two brown side braids, brighter pink/purple metallic kart.
 - **Local toolchain checked:** Godot 4.4.1 + templates, Temurin 17, SDK 34 / build-tools 34.0.0, adb 37. Godot's debug keystore now points to `%USERPROFILE%/.android/yaska-debug.keystore` (copy of `_setup/`; the old `debug.keystore` files there are other keys and were left alone). Strict suite on real GPU before any change: 205 methods, 5542 checks, 0 failures. `_builds/YaskaRacing-0.13.0-v30-local-debug.apk` signed with SHA-256 726cd353…6e25d9 (apksigner v1/v2/v3 verified).
