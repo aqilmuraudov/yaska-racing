@@ -26,6 +26,8 @@ var _greet := 0.0
 var _ear_rest: Array[Vector3] = []
 var _tail_rest := Vector3.ZERO
 var _land := 0.0
+## 0.14.0: build the pivots only (KartModel attaches glTF meshes to them).
+var rig_only := false
 static var _vcolor: ShaderMaterial
 static var _eye_mat: StandardMaterial3D
 
@@ -57,6 +59,8 @@ func _node(parent: Node3D, pos: Vector3) -> Node3D:
 
 
 func _add(parent: Node3D, mesh: Mesh, color: Color, xform: Transform3D, rough := 0.75) -> void:
+	if rig_only:
+		return
 	if not _accums.has(parent):
 		_accums[parent] = PropKit.Accum.new()
 	_accums[parent].add(mesh, xform, ShapeKit.mat(color, rough))

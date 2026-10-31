@@ -27,6 +27,23 @@ var _accums := {}
 ## build(). Purely visual, merged into the same batched meshes.
 var parts: Array = []
 static var _kart_vcolor: ShaderMaterial
+## 0.14.0 Blender-made models (tools/blender/): kart_style -> glTF scene. Each
+## part is a mesh named after the procedural rig pivot it rides on, authored in
+## kart space; build() still makes the rig (wheels, steering, driver nodes) and
+## only skips the procedural meshes, so all animation code is shared. Missing
+## file -> the procedural model, as before.
+const GLTF_MODELS := {"star": "res://assets/models/yaska/yaska_star.glb"}
+const GLTF_FAR := {"star": "res://assets/models/yaska/yaska_star_far.glb"}
+## Exhaust tips of the glTF models (smoke and boost flames start here).
+const GLTF_EXHAUST := {"star": [Vector3(-0.235, 1.0, 1.11), Vector3(0.235, 1.0, 1.11)]}
+const BAKED_SHADER := preload("res://assets/materials/kart_baked.gdshader")
+static var gltf_enabled := true
+static var _baked_mats := {}
+## Set by KartVisual on its far copy: use the far glTF instead of the near one.
+var lod_far := false
+var from_gltf := false
+## While true, _add() records nothing: the rig is built without meshes.
+var _rig_only := false
 
 const C_TIRE := Color("1d1e22")
 const C_CHROME := Color("d9dde3")
@@ -34,6 +51,9 @@ const C_CHROME := Color("d9dde3")
 
 func build(p_def: RacerDefinition, _is_player: bool = false) -> void:
 	def = p_def
+	var src := _gltf_parts()
+	from_gltf = not src.is_empty()
+	_rig_only = from_gltf
 	var p := def.kart_primary
 	var s := def.kart_secondary
 	var t := def.kart_trim
@@ -49,15 +69,23 @@ func build(p_def: RacerDefinition, _is_player: bool = false) -> void:
 		"star": _star(p, s, t, wheel_cfg)
 		_: _buddy(p, s, t, wheel_cfg)
 	_seat_and_wheel(t)
+	_rig_only = false
 	_parts(p, s, wheel_cfg)
+	_rig_only = from_gltf
 	_wheels(wheel_cfg)
+	_rig_only = false
 	rear_contact_points = [Vector3(-0.66, 0.05, 0.78), Vector3(0.66, 0.05, 0.78)]
 	_flush()
 	driver = AnimalDriver.new()
 	driver.position = Vector3(0, 0, 0.2)
 	add_child(driver)
+	driver.rig_only = from_gltf
 	driver.build(def)
 	driver.steering_wheel = steering_spin
+	if from_gltf:
+		_attach_gltf(src)
+		if GLTF_EXHAUST.has(def.kart_style):
+			exhaust_points.assign(GLTF_EXHAUST[def.kart_style])
 
 
 static func _T(pos: Vector3, rot := Vector3.ZERO, scl := Vector3.ONE) -> Transform3D:
@@ -69,6 +97,8 @@ static func _se(size: Vector3, r := 0.4, front := Vector2.ONE, back := Vector2.O
 
 
 func _add(parent: Node3D, mesh: Mesh, color: Color, xform: Transform3D, rough := 0.35, _metal := 0.0) -> void:
+	if _rig_only:
+		return
 	# Metallic looks are approximated with low roughness so every part merges
 	# into the single vertex-coloured surface (one draw per animated node).
 	if not _accums.has(parent):
@@ -90,6 +120,92 @@ func _flush() -> void:
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF # contact blob grounds them
 		node.add_child(mi)
 	_accums.clear()
+
+
+# --- glTF models (0.14.0) ---------------------------------------------------------
+
+## name -> [Mesh, Transform3D in kart space] from this style's glTF, or {}.
+func _gltf_parts() -> Dictionary:
+	var table := GLTF_FAR if lod_far else GLTF_MODELS
+	if not gltf_enabled or not table.has(def.kart_style) or not ResourceLoader.exists(table[def.kart_style]):
+		return {}
+	var scene := load(table[def.kart_style]) as PackedScene
+	if scene == null:
+		return {}
+	var inst := scene.instantiate()
+	var out := {}
+	for mi in inst.find_children("*", "MeshInstance3D", true, false):
+		var xf := Transform3D.IDENTITY
+		var n: Node = mi
+		while n != inst:
+			xf = (n as Node3D).transform * xf
+			n = n.get_parent()
+		out[String(mi.name)] = [(mi as MeshInstance3D).mesh, xf]
+	inst.free()
+	return out
+
+
+## Shared material per texture folder: baked colour / normal / ORM maps.
+static func baked_material(dir: String) -> ShaderMaterial:
+	if not _baked_mats.has(dir):
+		var m := ShaderMaterial.new()
+		m.shader = BAKED_SHADER
+		m.set_shader_parameter("albedo_tex", load(dir + "/albedo.png"))
+		m.set_shader_parameter("normal_tex", load(dir + "/normal.png"))
+		m.set_shader_parameter("orm_tex", load(dir + "/orm.png"))
+		m.set_shader_parameter("saturation", Palette.KART_SAT * 0.9)
+		_baked_mats[dir] = m
+	return _baked_mats[dir]
+
+
+## Rest transform of a rig node in kart space (works before entering the tree).
+func _rest_xform(n: Node3D) -> Transform3D:
+	var xf := Transform3D.IDENTITY
+	while n != null and n != self:
+		xf = n.transform * xf
+		n = n.get_parent() as Node3D
+	return xf
+
+
+func _attach_gltf(src: Dictionary) -> void:
+	var table := GLTF_FAR if lod_far else GLTF_MODELS
+	var mat := baked_material(String(table[def.kart_style]).get_base_dir())
+	# Garage paint: KartPaints.painted() hands us a copy with another body colour.
+	var own := RacerRoster.get_def(def.id).kart_primary
+	var paint := Color(0, 0, 0, 0)
+	if not def.kart_primary.is_equal_approx(own):
+		paint = def.kart_primary
+	var targets := {"Body": self, "WheelFL": wheel_spinners[0], "WheelFR": wheel_spinners[1],
+		"WheelRear": wheel_spinners[2], "SteeringWheel": steering_spin,
+		"Torso": driver.torso, "Head": driver.head}
+	if not driver.eyes.is_empty():
+		targets["Eyes"] = driver.eyes[0]
+	if driver.ears.size() == 2:
+		targets["BraidL"] = driver.ears[0]
+		targets["BraidR"] = driver.ears[1]
+	if driver.arms.size() == 2:
+		targets["ArmL"] = driver.arms[0].get_child(0)
+		targets["ArmR"] = driver.arms[1].get_child(0)
+	for key in src.keys():
+		if not targets.has(key):
+			push_warning("KartModel: glTF part '%s' has no rig node" % key)
+			continue
+		var node: Node3D = targets[key]
+		var mi := MeshInstance3D.new()
+		mi.name = "Gltf" + String(key)
+		mi.mesh = src[key][0]
+		mi.material_override = mat
+		if key == "Body" and paint.a > 0.0:
+			mi.set_instance_shader_parameter(&"paint", paint)
+		mi.transform = _rest_xform(node).affine_inverse() * (src[key][1] as Transform3D)
+		if String(key).begins_with("Wheel"):
+			_tyres.append(mi)
+		var big: bool = key in ["Body", "Torso", "Head"]
+		if not big:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if driver.is_ancestor_of(node):
+				mi.visibility_range_end = 45.0 # as AnimalDriver: small detail far away
+		node.add_child(mi)
 
 
 func _exhaust(pos: Vector3, radius: float, length: float, color: Color = C_CHROME) -> void:
@@ -358,7 +474,25 @@ func _wheels(w: Dictionary) -> void:
 		_base_wheel_y.append(d[0].y)
 
 
+## 0.14.0 glTF tyres: tread blur from the spin per tick (see kart_baked.gdshader).
+## The tread repeats every ~0.18 rad; past ~0.06 rad per tick it starts to strobe.
+var _tyres: Array[GeometryInstance3D] = []
+var _last_spin := 0.0
+var _blur := -1.0
+
+
+static func spin_blur_for(step: float) -> float:
+	return smoothstep(0.04, 0.16, absf(step))
+
+
 func update_wheels(spin_angle: float, steer_yaw: float, susp: float) -> void:
+	if not _tyres.is_empty():
+		var b := spin_blur_for(spin_angle - _last_spin)
+		_last_spin = spin_angle
+		if absf(b - _blur) > 0.02:
+			_blur = b
+			for t in _tyres:
+				t.set_instance_shader_parameter(&"spin_blur", b)
 	for i in wheels.size():
 		var w := wheels[i]
 		if i < 2:

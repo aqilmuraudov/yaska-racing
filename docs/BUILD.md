@@ -61,6 +61,9 @@ Arguments after `--` (see `scripts/core/debug_runner.gd`):
 | `--startup-trace [--trace-secs=S]` | every 0.1 s print scene + frame brightness (black-frame check); frames saved with `--capture` |
 | `--nitro-at=T`, `--give-item=ID` | fire the player's nitro at race time T / give an item at the start (captures) |
 | `--fake-load-ms=N` | add N ms of CPU work per frame (weak-device simulation for the steady-30 fallback) |
+| `--no-gltf` | 0.14.0: procedural karts only (A/B against the Blender models in `assets/models/`) |
+
+Blender karts: `blender --background --factory-startup --python tools/blender/yaska_star.py -- [--preview]` (see TUNING.md); triangle/draw counts: `godot --headless --path . -s tools/kart_stats.gd -- yaska`.
 
 Art: `python tools/gen_splash.py` (splash + launcher icons), `python tools/gen_icons.py`.
 

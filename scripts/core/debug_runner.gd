@@ -26,6 +26,7 @@ extends Node
 ##   --give-item=ID         give the player an item when the race starts
 ##   --fake-load-ms=N       add N ms of CPU work per frame (weak-device simulation)
 ##   --startup-trace        print scene + frame brightness every 0.1 s (black-frame check)
+##   --no-gltf              procedural karts only (A/B against the Blender models)
 ##   --chaos                player kart driven erratically (wall rams, reversing,
 ##                          drift spam) to expose snags, falls and stuck states
 ## Used for screenshots, soak tests and reproducible AI races.
@@ -75,6 +76,8 @@ func _ready() -> void:
 			_capture_times.append(float(t))
 	_quit_after = float(args.get("quit-after", "-1"))
 	_stats = args.has("stats")
+	if args.has("no-gltf"):
+		KartModel.gltf_enabled = false # 0.14.0 A/B: procedural karts only
 	if args.has("timescale"):
 		Engine.time_scale = float(args.timescale)
 	if args.has("graphics"):
@@ -452,7 +455,7 @@ func _process(delta: float) -> void:
 				_captured[t] = true
 				if args.has("no-hud") and race.hud: # 0.11.1: clean renders for the city cards
 					race.hud.visible = false
-				_save_shot("race_%05.1fs.png" % t)
+				_save_shot(("race_%07.3fs.png" if t != snappedf(t, 0.1) else "race_%05.1fs.png") % t)
 	# 0.11.0: --perf-every=S samples draw calls / primitives every S seconds of
 	# racing and prints the peak and mean at quit (fair map-vs-map numbers).
 	if args.has("perf-every") and race != null and race.state >= RaceManager.RaceState.RACING:

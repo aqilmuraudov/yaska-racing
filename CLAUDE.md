@@ -16,18 +16,19 @@ Həmişə Azərbaycan dilində cavab ver.
 2. UI oyun stilində, sadə, vizual, az mətnli — kiçik uşaq üçün.
 3. Əvvəl test et, ekran görüntülərini tənqidi yoxla, yalnız sonra APK çıxar.
 4. Hər buraxılışda `export_presets.cfg`-də versionCode-u 1 artır; STATUS.md və TUNING.md-ni yenilə;
-   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 24).
+   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 25).
 5. Dəyişiklikdən əvvəl backup (git commit və ya zip).
 6. Zəif yerləri dürüst de; ölçülməyəni ölçülmüş kimi göstərmə.
 7. Aqil bir neçə xüsusiyyəti **bir APK-da** almağı üstün tutur (hər addıma ayrı APK yox).
 
 ## Testlər və build
 - Strict testlər: `GODOT="<godot console exe>" python tools/run_tests.py` — skript xətası olan testi də uğursuz sayır.
-  Əvvəlki tam qaçış: 205 metod, 5542 yoxlama, 0 uğursuz.
+  Əvvəlki tam qaçış: 212 metod, 5618 yoxlama, 0 uğursuz (0.14.0 wip).
 - Debug runner bayraqları `docs/BUILD.md`-də (`--race --autopilot --track=old_city --tod=night --capture=DIR ...`).
 - Android export: `--export-debug "Android" <apk>`. JDK 17 PATH-da olmalıdır, yoxsa APK imzasız çıxır.
 - İmza açarı: `_setup/yaska-debug.keystore` (alias `androiddebugkey`, şifrə `android`).
-  `%USERPROFILE%\.android\debug.keystore`-a köçür, Godot Editor Settings > Android > Debug Keystore.
+  Bu PC-də: `%USERPROFILE%\.android\yaska-debug.keystore` (oradakı `debug.keystore` başqa açardır, toxunma),
+  Godot Editor Settings > Export > Android > Debug Keystore ona yönəlib.
   Yoxlama: `apksigner verify --print-certs` → SHA-256 `726cd3535a49ffa4e7d8562fea1a2868e01194afa460ee38a0c0f2866d6e25d9`.
   Yeni açar YARATMA — yoxsa telefonda köhnə oyunun üstünə quraşdırılmaz.
 - `_builds/` və `_setup/` git-ə düşmür.

@@ -283,3 +283,13 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 - Stickers (stars): 3, 8, 15, 25, 40, 55, 75, 100, 130, 165, 205, 250.
 - Old City: 757 m, width 17 m (Boulevard) / 15 m (streets), offroad 2.5 m, `LAP_SCALE` 0.5 (autopilot lap ~26 s), house fill grid 12 m within 70 m of the track, 34 m clear round the Maiden Tower.
 
+
+## Blender-made karts (0.14.0 pilot: Yaska Star)
+- Source: `tools/blender/yaska_star.py` (Blender 4.5, `blender --background --factory-startup --python tools/blender/yaska_star.py -- [--preview] [--no-bake]`, ~90 s on the RTX 3070). Writes `assets/models/yaska/{yaska_star.glb, yaska_star_far.glb, albedo.png, normal.png, orm.png}`; editable `tools/blender/out/yaska_star.blend` (git-ignored).
+- Budget: near 11,038 triangles / 12 draws (procedural Yaska Star was 14,804 / 12); far LOD (beyond `KartVisual.KART_LOD` 28 m) 1,846 (was 4,772). Godot also generates mesh LODs on import (`generate_lods`) for the 0-28 m range.
+- Textures: one 1024² set (baked at 2048², coverage-weighted downsample, islands dilated into the empty atlas so mipmaps never pick up the background). `orm.png` = R occlusion, G roughness, B metallic, A garage-paint mask (import: VRAM, mipmaps, `fix_alpha_border=false`).
+- Palette (sRGB): body `E8409E` (metallic 0.55, rough 0.24), purple `8B3FD9`, gold tubes `F5B82E`, chrome `DDE1E6`, tyres `2B2830` + tread `4A4452`, hair `8C5530`, dress `5285CB`, skin `FCD7BF`. Albedo is pre-darkened by 50 % of the AO (Godot's AO only touches ambient light).
+- `kart_baked.gdshader`: saturation `Palette.KART_SAT × 0.9`, rim 0.3, clear-coat 0.85 on rough < 0.6, AO light affect 0.6. Garage paint: `paint` instance uniform recolours the mask with luminance ratio `paint_ref_lum` 0.31.
+- Tyre tread blur: `KartModel.spin_blur_for(step)` = smoothstep(0.04, 0.16 rad per physics tick); shader samples the colour with mip bias `spin_blur × 2.5` and flattens the normal map. Without it the chevron tread (34 per turn) strobes at race speed.
+- Exhaust tips for smoke / flames: `KartModel.GLTF_EXHAUST` (±0.235, 1.0, 1.11).
+- Rig contract (kart space, rest pose): wheels FL/FR pivots (∓0.62, 0.30, −0.72) radius 0.30 width 0.28, rear axle (0, 0.35, 0.68) tyres at ±0.66 radius 0.35 width 0.36; steering column (0, 0.88, −0.30) tilted −55°; shoulders (±0.20, 0.98, 0.17), arms authored along −Z (length 0.40); head pivot (0, 1.06, 0.18); eyes pivot y 1.22; braid pivots (±0.25, 1.42, 0.23). Debug A/B: `--no-gltf`.

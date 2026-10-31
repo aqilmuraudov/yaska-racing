@@ -1,6 +1,16 @@
 # Status, verification evidence and known issues
 
-Date: 2026-10-31 · Build: 0.13.0 · Engine: Godot 4.4.1-stable
+Date: 2026-10-31 · Build: 0.13.0 (+ 0.14.0 wip) · Engine: Godot 4.4.1-stable
+
+## 0.14.0 wip (no release yet, still versionCode 30) — Blender pilot: Yaska Star + Yaska
+Plan step 1 + 3 on the owner's Windows PC (RTX 3070). Owner's art calls: CTR-Nitro-Fueled-like quality (own design), 12-15k triangle budget + normal map, two brown side braids, brighter pink/purple metallic kart.
+- **Local toolchain checked:** Godot 4.4.1 + templates, Temurin 17, SDK 34 / build-tools 34.0.0, adb 37. Godot's debug keystore now points to `%USERPROFILE%/.android/yaska-debug.keystore` (copy of `_setup/`; the old `debug.keystore` files there are other keys and were left alone). Strict suite on real GPU before any change: 205 methods, 5542 checks, 0 failures. `_builds/YaskaRacing-0.13.0-v30-local-debug.apk` signed with SHA-256 726cd353…6e25d9 (apksigner v1/v2/v3 verified).
+- **Model:** `tools/blender/yaska_star.py` builds a high model (143k triangles: tyre tread, sidewall "YASKA", hair strands, face decals) and the game model from the same parametric surfaces, one 1024² colour/normal/ORM bake (Cycles OptiX, ~90 s). Game model 11,038 triangles / 12 draws (procedural Yaska Star 14,804 / 12), far LOD 1,846 (was 4,772). Parts are named after the procedural rig pivots, so wheels, steering, head, eyes (blink), braids (swing), arms (grip) use the existing animation code unchanged (`KartModel._attach_gltf`, `AnimalDriver.rig_only`). New shader `kart_baked.gdshader` keeps the painted-toy look (saturation, rim, clear-coat, camera dither) and supports garage paints through a baked mask. Missing glTF -> procedural fallback; `--no-gltf` for A/B.
+- **Tyre strobing fix (owner spotted it in the test windows):** the new chevron tread turned more than one block per frame at speed and looked like shaking. Confirmed with 8 consecutive 60 Hz frames; tyres now blur their tread with spin speed (`spin_blur`), and the atlas is dilated so the blur / far mipmaps never pick up the background. `docs/screenshots/0.14.0/tyre_burst_*.jpg`.
+- **Measured (Mobile renderer, desktop GPU, seafront, autopilot seed 5, `--perf-every=2`):** draw calls mean 291 -> 291 (day), 289 -> 290 (night); primitives mean 346k -> 335k (day), 342k -> 331k (night). Phone FPS: not measured (no phone attached).
+- Screenshots: `docs/screenshots/0.14.0/` (old vs new close-ups and race, Blender previews). Yaska colours in `yaska.tres` follow the new body (primary `E8409E`, trim `8B3FD9`).
+- Tests: `tests/test_round25.gd` (7 methods, 76 checks). Full strict suite: 212 methods, 5618 checks, 0 failures, 0 script errors.
+- Known / not verified: scripted, not sculpted — the face is clean but simpler than CTR's hand-made characters; eyes read bluish under the blue menu lighting (the old procedural eyes do the same: clear-coat reflects the sky); text decals are small at 1024² ("YASKA" on the pods is barely legible up close); cosmetic garage parts (spoiler, crown, …) are still procedural and placed for the old body; gold rims part does not change the glTF rims; Godot's auto mesh LODs for 0-28 m not inspected visually; no phone check. Other six karts unchanged until the owner approves this look.
 
 ## Update 0.13.0 (versionCode 30) — one release with the rest of the approved list
 Owner asked for one combined APK instead of one per step. Contents:

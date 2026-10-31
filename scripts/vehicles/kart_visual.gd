@@ -82,6 +82,7 @@ func _build_far_lod(def: RacerDefinition) -> void:
 	model_lo = KartModel.new()
 	model_lo.name = "ModelLo"
 	model_lo.parts = model.parts
+	model_lo.lod_far = true
 	ShapeKit.detail = 0.4
 	model_lo.build(def, false)
 	ShapeKit.detail = 1.0
@@ -293,7 +294,7 @@ func _set_transparency(n: Node, t: float) -> void:
 	if n is MeshInstance3D:
 		var mi := n as MeshInstance3D
 		var m := mi.get_active_material(0) if mi.mesh else null
-		if m is ShaderMaterial and (m as ShaderMaterial).shader == VCOLOR_GLOSS:
+		if m is ShaderMaterial and (m as ShaderMaterial).shader in [VCOLOR_GLOSS, KartModel.BAKED_SHADER]:
 			mi.set_instance_shader_parameter(&"occlusion_fade", t)
 		elif m is StandardMaterial3D:
 			mi.transparency = t # standard materials honour instance transparency
