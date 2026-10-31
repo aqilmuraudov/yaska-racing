@@ -103,6 +103,7 @@ var paused := false
 var headless_test := false ## set by tests to skip UI
 var auto_pause_on_focus_loss := true
 var tutorial: TutorialDirector
+var lesson: LessonDirector ## 0.13.0 wordless first lesson (config "lesson")
 var ghosts: GhostSystem
 var skid_marks: SkidMarks
 var stars: StarField
@@ -268,6 +269,11 @@ func _build_racers() -> void:
 			tutorial.name = "Tutorial"
 			add_child(tutorial)
 			tutorial.setup(self)
+	if bool(config.get("lesson", false)):
+		lesson = LessonDirector.new()
+		lesson.name = "Lesson"
+		add_child(lesson)
+		lesson.setup(self)
 
 
 func _spawn_racers(seed_value: int) -> void:

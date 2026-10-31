@@ -257,7 +257,7 @@ func _build_bottom_row(lay: Control) -> void:
 	row.anchor_bottom = 1.0
 	row.offset_top = -TILE_H
 	row.offset_bottom = 0
-	play_btn = _tile(row, tr("MENU_PLAY"), "yellow", "menu_play", func(): Game.goto(Game.State.MODE_SELECT))
+	play_btn = _tile(row, tr("MENU_PLAY"), "yellow", "menu_play", func(): Game.play_pressed()) # 0.13.0: first time -> the lesson
 	garage_btn = _tile(row, tr("MENU_GARAGE"), "blue", "menu_garage", open_garage)
 	rewards_btn = _tile(row, tr("MENU_REWARDS"), "violet", "menu_trophy", func(): Game.goto(Game.State.REWARDS))
 	settings_btn = _tile(row, tr("MENU_SETTINGS"), "lime", "menu_gear", func(): Game.goto(Game.State.SETTINGS))

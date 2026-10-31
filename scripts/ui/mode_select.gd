@@ -15,6 +15,7 @@ var _first: Button
 var cards := {} ## id -> Button (tests)
 var status_chips := {} ## id -> PanelContainer
 var school_btn: Button
+var lesson_btn: Button ## 0.13.0
 
 
 func _init() -> void:
@@ -84,7 +85,22 @@ func build() -> void:
 	UITheme.style_button(school_btn, "yellow", UITheme.FS_BTN_SMALL)
 	school_btn.custom_minimum_size = Vector2(300, UITheme.H_BTN_SMALL)
 	school_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	col.add_child(school_btn)
+	# 0.13.0: the first lesson can be played again from here.
+	var small_row := HBoxContainer.new()
+	small_row.name = "SmallModes"
+	small_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	small_row.add_theme_constant_override("separation", 16)
+	small_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(small_row)
+	small_row.add_child(school_btn)
+	lesson_btn = make_button(tr("MODE_LESSON"), func(): Game.start_lesson())
+	lesson_btn.name = "Mode_lesson"
+	lesson_btn.icon = UITheme.icon("hint_tap")
+	lesson_btn.expand_icon = false
+	lesson_btn.add_theme_constant_override("icon_max_width", 40)
+	UITheme.style_button(lesson_btn, "yellow", UITheme.FS_BTN_SMALL)
+	lesson_btn.custom_minimum_size = Vector2(240, UITheme.H_BTN_SMALL)
+	small_row.add_child(lesson_btn)
 	# Four cards side by side; they scale with the space really available
 	# so 20:9, 16:9 and 4:3 all fit without scrolling.
 	var fit := func():

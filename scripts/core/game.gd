@@ -20,7 +20,7 @@ const SCENES := {
 	State.CITY_SELECT: "res://scenes/menus/city_select.tscn", # 0.11.1 "Şəhəri seç"
 }
 ## race_config keys that belong to one mode only (cleared on mode change).
-const SERIES_KEYS := ["series", "cup_race", "roster", "grid_order", "fixed_event_id", "daily"]
+const SERIES_KEYS := ["series", "cup_race", "roster", "grid_order", "fixed_event_id", "daily", "lesson"]
 const RACE_SCENE := "res://scenes/race/race.tscn"
 
 var state: State = State.BOOT
@@ -109,6 +109,31 @@ func open_garage(racer_id: String, back: State) -> void:
 	race_config.paint = SaveManager.get_paint(racer_id)
 	garage_back = back
 	goto(State.GARAGE)
+
+
+## 0.13.0: the ~30 s wordless first lesson (LessonDirector) on the seafront,
+## by day, two calm rivals, items only from the lesson itself.
+func start_lesson() -> void:
+	reset_series()
+	race_config.mode = "quick"
+	race_config.lesson = true
+	race_config.track_id = TrackList.IDS[0]
+	race_config.time_of_day = "day"
+	race_config.laps = 1
+	race_config.ai_count = 2
+	race_config.items = false
+	race_config.difficulty = "easy"
+	race_config.kart_id = SaveManager.get_selected_kart()
+	race_config.paint = SaveManager.get_paint(race_config.kart_id)
+	start_loading_race()
+
+
+## First "Oyna" on a new profile opens the lesson once; later, mode select.
+func play_pressed() -> void:
+	if not SaveManager.get_tutorial_flag(LessonDirector.FLAG):
+		start_lesson()
+	else:
+		goto(State.MODE_SELECT)
 
 
 func start_loading_race() -> void:

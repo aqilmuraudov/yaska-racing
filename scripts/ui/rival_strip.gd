@@ -32,6 +32,7 @@ func _slot(up: bool) -> Control:
 	box.name = "Ahead" if up else "Behind"
 	box.custom_minimum_size = Vector2(PX + 8, PX + 8)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.visible = false # shown once a racer is really there (no lone arrow)
 	var mark := Label.new()
 	mark.name = "Mark"
 	mark.text = "▲" if up else "▼"
