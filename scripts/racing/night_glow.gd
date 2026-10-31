@@ -60,6 +60,10 @@ static func build(root: Node3D, tod_id: String, lamp_xforms: Array, karts: Array
 		var pools := _build_pools(lamp_xforms, k)
 		root.add_child(pools)
 		out.append(pools)
+		if k >= 0.99: # 0.13.0 wet-road lamp reflections, night only
+			var streaks := _build_streaks(lamp_xforms)
+			root.add_child(streaks)
+			out.append(streaks)
 	for kart in karts:
 		if not (kart is Node3D):
 			continue
@@ -104,6 +108,68 @@ static func _build_pools(xforms: Array, k: float) -> MultiMeshInstance3D:
 	mmi.multimesh = mm
 	mmi.material_override = pool_material(k)
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mmi
+
+
+## 0.13.0: a lamp's reflection on the wet road - a narrow warm streak from
+## the foot of the lamp towards the camera, re-aimed every frame in the
+## vertex shader (one MultiMesh, one draw call).
+const STREAK_LEN := 12.0
+const STREAK_W := 1.5
+const STREAK_SHADER := """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled, skip_vertex_transform;
+uniform vec3 tint : source_color = vec3(1.0, 0.72, 0.38);
+uniform float strength = 0.46;
+uniform float len = 12.0;
+uniform float width = 1.5;
+varying float vis;
+void vertex() {
+	vec3 o = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	vec2 to_cam = CAMERA_POSITION_WORLD.xz - o.xz;
+	float d = length(to_cam);
+	vec2 dir = to_cam / max(d, 0.001);
+	vec2 side = vec2(-dir.y, dir.x);
+	float along = (VERTEX.z + 0.5) * min(len, d * 0.8);
+	vec2 xz = o.xz + dir * along + side * VERTEX.x * width;
+	vec3 w = vec3(xz.x, o.y, xz.y);
+	VERTEX = (VIEW_MATRIX * vec4(w, 1.0)).xyz;
+	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+	vis = 1.0 - smoothstep(60.0, 110.0, d); // far lamps: no streak
+}
+void fragment() {
+	float u = abs(UV.x * 2.0 - 1.0);
+	float v = UV.y; // 0 at the camera end, 1 at the lamp (PlaneMesh UV)
+	float a = pow(1.0 - u, 2.0) * smoothstep(0.0, 0.45, v) * smoothstep(1.0, 0.85, v);
+	ALBEDO = tint * a * strength * vis;
+}
+"""
+
+
+static func _build_streaks(xforms: Array) -> MultiMeshInstance3D:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(1, 1)
+	pm.subdivide_depth = 2
+	mm.mesh = pm
+	mm.instance_count = xforms.size()
+	for i in xforms.size():
+		var t: Transform3D = xforms[i]
+		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, t.origin + Vector3(0, POOL_LIFT + 0.03, 0)))
+	var sh := Shader.new()
+	sh.code = STREAK_SHADER
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("len", STREAK_LEN)
+	m.set_shader_parameter("width", STREAK_W)
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = "LampStreaks"
+	mmi.multimesh = mm
+	mmi.material_override = m
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# The vertex shader moves the quads up to 12 m: keep them from being culled.
+	mmi.custom_aabb = AABB(Vector3(-2000, -50, -2000), Vector3(4000, 100, 4000))
 	return mmi
 
 

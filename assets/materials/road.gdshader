@@ -38,6 +38,7 @@ float band(float x, float a, float b) {
 }
 
 varying vec2 road_xz;
+global uniform float yaska_night; // 0.13.0: wet asphalt at night
 // 0.13.0 contact shadows painted at load time (AoMap): 1 = open ground.
 global uniform sampler2D yaska_ao : filter_linear_mipmap, repeat_disable;
 global uniform vec4 yaska_ao_rect; // x0, z0, 1/width, 1/depth; z = 0 -> off
@@ -101,5 +102,9 @@ void fragment() {
 	// lines are a little smoother and catch the low sun.
 	float line_polish = 1.0 - smoothstep(0.0, hw * 0.5, abs(lat));
 	ROUGHNESS = clamp(mix(0.86, 0.62, cob) - marks * 0.18 - line_polish * 0.12 * (1.0 - cob) + (n - 0.5) * 0.12 + patch * 0.06, 0.35, 1.0);
+	// Night: damp road - smoother and a touch darker, so the moon, the headlight
+	// and the lamp streaks (NightGlow) read as reflections.
+	ROUGHNESS = mix(ROUGHNESS, ROUGHNESS * 0.42, yaska_night * 0.85);
+	ALBEDO *= 1.0 - 0.14 * yaska_night;
 	SPECULAR = 0.4;
 }
