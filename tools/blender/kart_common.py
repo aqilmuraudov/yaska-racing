@@ -446,6 +446,18 @@ def facing(pos, normal, up=(0, 1, 0), size=1.0):
     return m @ Matrix.Diagonal((size, size, size, 1.0))
 
 
+def bbox(name, size, center, mat, g, hi, bevel=0.05, rot=(0, 0, 0)):
+    """Box with bevelled edges (1 segment low, 3 high)."""
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    xform(bm, Matrix.Diagonal((size[0], size[1], size[2], 1.0)))
+    if bevel > 0:
+        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=min(bevel, min(size) * 0.3), segments=L(hi, 1, 3),
+                        profile=0.5, affect="EDGES", clamp_overlap=True)
+    xform(bm, trs(center, rot))
+    return finish(bm, name, mat, g, hi, smooth=False)
+
+
 # --- Shared parts ----------------------------------------------------------------------
 
 def L(hi, lo_val, hi_val):

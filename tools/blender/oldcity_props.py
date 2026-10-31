@@ -74,18 +74,6 @@ def add_bump():
         nt.links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
 
 
-def bbox(name, size, center, mat, g, hi, bevel=0.05, rot=(0, 0, 0)):
-    """Box with bevelled edges (1 segment low, 3 high)."""
-    bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=1.0)
-    K.xform(bm, Matrix.Diagonal((size[0], size[1], size[2], 1.0)))
-    if bevel > 0:
-        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=min(bevel, min(size) * 0.3), segments=L(hi, 1, 3),
-                        profile=0.5, affect="EDGES", clamp_overlap=True)
-    K.xform(bm, K.trs(center, rot))
-    return K.finish(bm, name, mat, g, hi, smooth=False)
-
-
 def arch_outline(w, h, n):
     hw = w * 0.5
     pts = [(-hw, 0.0), (hw, 0.0)]

@@ -287,11 +287,16 @@ const GLTF_PROPS := {
 	"house_c": "res://assets/models/oldcity/oldcity_props",
 	"house_d": "res://assets/models/oldcity/oldcity_props",
 	"maiden_tower": "res://assets/models/oldcity/oldcity_props",
+	"baluster": "res://assets/models/street/street_props",
+	"lamp": "res://assets/models/street/street_props",
 }
+## Which TimeOfDay light drives each set's glow mask (orm alpha).
+const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps"}
+const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true
 static var _baked := {}
-static var _window_glow := 0.0
+static var _glow := {"windows": 0.0, "lamps": 0.8 / 1.4}
 
 
 static func baked_material(dir: String) -> ShaderMaterial:
@@ -301,7 +306,10 @@ static func baked_material(dir: String) -> ShaderMaterial:
 		sm.set_shader_parameter("albedo_tex", load(dir + "/albedo.png"))
 		sm.set_shader_parameter("normal_tex", load(dir + "/normal.png"))
 		sm.set_shader_parameter("orm_tex", load(dir + "/orm.png"))
-		sm.set_shader_parameter("window_glow", _window_glow)
+		var kind: String = PROP_GLOW.get(dir, "windows")
+		sm.set_shader_parameter("window_glow", _glow[kind])
+		sm.set_shader_parameter("glow_color", GLOW_COLOR[kind])
+		sm.set_meta("glow", kind)
 		TextureLibrary.bind(sm, "stone_tex", "limestone")
 		_baked[dir] = sm
 	return _baked[dir]
@@ -309,9 +317,19 @@ static func baked_material(dir: String) -> ShaderMaterial:
 
 ## Night windows of the baked props (TimeOfDay.apply_materials).
 static func set_window_glow(v: float) -> void:
-	_window_glow = v
+	_set_glow("windows", v)
+
+
+## Lamp globes: the old globe material's emission energy (0.8 day .. 5 night).
+static func set_lamp_glow(energy: float) -> void:
+	_set_glow("lamps", energy / 1.4)
+
+
+static func _set_glow(kind: String, v: float) -> void:
+	_glow[kind] = v
 	for sm in _baked.values():
-		(sm as ShaderMaterial).set_shader_parameter("window_glow", v)
+		if (sm as ShaderMaterial).get_meta("glow", "") == kind:
+			(sm as ShaderMaterial).set_shader_parameter("window_glow", v)
 
 
 static func _gltf_mesh(id: String, far: bool) -> ArrayMesh:
