@@ -36,18 +36,21 @@ const GLTF_MODELS := {"star": "res://assets/models/yaska/yaska_star.glb",
 	"buddy": "res://assets/models/havhav/buddy_rally.glb",
 	"bamboo": "res://assets/models/posi/bamboo_sprint.glb",
 	"amber": "res://assets/models/bicok/amber_dash.glb",
-	"hop": "res://assets/models/leloyun/hop_rocket.glb"}
+	"hop": "res://assets/models/leloyun/hop_rocket.glb",
+	"velvet": "res://assets/models/mestan/velvet_slide.glb"}
 const GLTF_FAR := {"star": "res://assets/models/yaska/yaska_star_far.glb",
 	"buddy": "res://assets/models/havhav/buddy_rally_far.glb",
 	"bamboo": "res://assets/models/posi/bamboo_sprint_far.glb",
 	"amber": "res://assets/models/bicok/amber_dash_far.glb",
-	"hop": "res://assets/models/leloyun/hop_rocket_far.glb"}
+	"hop": "res://assets/models/leloyun/hop_rocket_far.glb",
+	"velvet": "res://assets/models/mestan/velvet_slide_far.glb"}
 ## Exhaust tips of the glTF models (smoke and boost flames start here).
 const GLTF_EXHAUST := {"star": [Vector3(-0.235, 1.0, 1.11), Vector3(0.235, 1.0, 1.11)],
 	"buddy": [Vector3(0.33, 0.525, 1.18)],
 	"bamboo": [Vector3(-0.2, 0.6, 1.15), Vector3(0.2, 0.6, 1.15)],
 	"amber": [Vector3(-0.17, 0.6, 1.19), Vector3(0.17, 0.6, 1.19)],
-	"hop": [Vector3(-0.2, 0.635, 1.16), Vector3(0.2, 0.635, 1.16)]}
+	"hop": [Vector3(-0.2, 0.635, 1.16), Vector3(0.2, 0.635, 1.16)],
+	"velvet": [Vector3(-0.24, 0.48, 1.19), Vector3(0.24, 0.48, 1.19)]}
 const BAKED_SHADER := preload("res://assets/materials/kart_baked.gdshader")
 static var gltf_enabled := true
 static var _baked_mats := {}
