@@ -816,6 +816,11 @@ func _apply_rewards(res: Dictionary) -> void:
 		"coins": granted, "track_id": res.track_id, "record": improved.lap or improved.race})
 	res.unlocks = prog.unlocks
 	res.unlock_cards = prog.get("cards", [])
+	# 0.13.0: new album stickers come first, with their picture.
+	var new_stk := Stickers.unlocked_between(int(res.stars_total), SaveManager.get_stars())
+	res.new_stickers = new_stk
+	for sid in new_stk:
+		res.unlock_cards = [{"icon": "star", "image": Stickers.DIR + String(sid) + ".png", "text": tr(Stickers.name_key(String(sid)))}] + res.unlock_cards
 	res.bonus_coins = int(prog.coins)
 	if granted > 0:
 		_settle_goals(res)

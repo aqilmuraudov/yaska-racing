@@ -66,7 +66,7 @@ func build() -> void:
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", UITheme.GAP_M)
 	col.add_child(tabs)
-	for t in [["REWARDS_TAB_DAILY", "star"], ["REWARDS_TROPHIES", "trophy"]]:
+	for t in [["REWARDS_TAB_DAILY", "star"], ["REWARDS_TROPHIES", "trophy"], ["REWARDS_ALBUM", "star"]]: # 0.13.0 album
 		var b := Button.new()
 		b.text = tr(t[0])
 		b.icon = UITheme.icon(t[1])
@@ -85,6 +85,7 @@ func build() -> void:
 	col.add_child(holder)
 	pages.append(_build_daily())
 	pages.append(_build_trophies())
+	pages.append(_build_album())
 	for pg in pages:
 		holder.add_child(pg)
 	_build_detail()
@@ -93,6 +94,11 @@ func build() -> void:
 
 func show_tab(i: int) -> void:
 	current_tab = i
+	if i == 2: # 0.13.0: stickers count as seen once the album is really opened
+		var stars := Progression.stat(SaveManager.data, "stars")
+		if Stickers.new_count(SaveManager.data, stars) > 0:
+			Stickers.mark_seen(SaveManager.data, stars)
+			SaveManager.save_profile()
 	for k in pages.size():
 		pages[k].visible = k == i
 		UITheme.style_button(tab_buttons[k], "yellow" if k == i else "blue", UITheme.FS_BTN)
@@ -175,6 +181,64 @@ func _build_daily() -> Control:
 
 
 # --- Trophies -------------------------------------------------------------------
+
+# --- Album (0.13.0) ---------------------------------------------------------------
+
+## Sticker album: 12 Baku stickers in a 4×3 grid. Open ones show the sticker
+## and its name; locked ones a dark silhouette and the star goal. Opening
+## the page clears the "new" count.
+func _build_album() -> Control:
+	var data := SaveManager.data
+	var stars := Progression.stat(data, "stars")
+	var scroll := ScrollContainer.new()
+	scroll.name = "Album"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	TouchScroll.attach(scroll)
+	var grid := GridContainer.new()
+	grid.name = "Grid"
+	grid.columns = 6
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", UITheme.GAP_M)
+	grid.add_theme_constant_override("v_separation", UITheme.GAP_M)
+	scroll.add_child(grid)
+	var new_from := int(data.get(Stickers.SEEN_KEY, 0))
+	for i in Stickers.LIST.size():
+		var s: Dictionary = Stickers.LIST[i]
+		var open := Stickers.is_unlocked(i, stars)
+		var card := PanelContainer.new()
+		card.name = "Sticker_" + String(s.id)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.add_theme_stylebox_override("panel", UITheme.art_box("panel_card_selected" if open else "panel_card", 12, 6))
+		var v := VBoxContainer.new()
+		v.alignment = BoxContainer.ALIGNMENT_CENTER
+		v.add_theme_constant_override("separation", 2)
+		card.add_child(v)
+		var pic := TextureRect.new()
+		pic.texture = Stickers.texture(String(s.id), not open)
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		pic.custom_minimum_size = Vector2(118, 118)
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(pic)
+		if open:
+			var l := GameUI.label(tr(Stickers.name_key(String(s.id))), 18, UITheme.TEXT, 5)
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			l.clip_text = true
+			l.custom_minimum_size = Vector2(110, 0)
+			v.add_child(l)
+			if i >= new_from:
+				var nb := GameUI.badge(tr("CITY_NEW"), Color("e8384f"), 16)
+				nb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+				v.add_child(nb)
+		else:
+			var chip := GameUI.chip("star", str(int(s.stars)), 20)
+			chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			v.add_child(chip)
+		grid.add_child(card)
+	return scroll
+
 
 func _build_trophies() -> Control:
 	var data := SaveManager.data

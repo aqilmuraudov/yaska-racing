@@ -325,7 +325,17 @@ func _card(cd: Dictionary) -> Control:
 	if bool(cd.get("more", false)):
 		h.add_child(GameUI.label(String(cd.text), 24, UITheme.YELLOW, 8))
 		return c
-	var ic := GameUI.icon_rect(String(cd.get("icon", "trophy")), 28)
+	var ic: Control
+	if cd.has("image"): # 0.13.0 sticker unlock: the sticker itself
+		var tr_img := TextureRect.new()
+		tr_img.texture = load(String(cd.image)) if ResourceLoader.exists(String(cd.image)) else null
+		tr_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tr_img.custom_minimum_size = Vector2(40, 40)
+		tr_img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ic = tr_img
+	else:
+		ic = GameUI.icon_rect(String(cd.get("icon", "trophy")), 28)
 	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(ic)
 	var l := GameUI.label(String(cd.text), 17, UITheme.TEXT, 5)
