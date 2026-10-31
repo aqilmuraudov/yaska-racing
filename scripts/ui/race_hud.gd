@@ -24,7 +24,8 @@ var money_label: Label ## driving income this race (subtle)
 var celebration: FinishCelebration
 var replay_layer: Control ## 0.12.0 finish replay overlay
 var replay_skip: Button
-var tap_hint: TapHint ## 0.12.0 wordless item hint on touch screens
+var tap_hint: TapHint
+var rival_strip: RivalStrip ## 0.13.0 portraits of the racers just ahead / behind ## 0.12.0 wordless item hint on touch screens
 ## First quick race only: three short prompts (steer, drift, item).
 var _hints_on := false
 var _hint_step := 0
@@ -138,6 +139,12 @@ func setup(p_race: RaceManager) -> void:
 	kb_label.add_theme_constant_override("outline_size", 0)
 	kb_row.add_child(kb_label)
 
+	# 0.13.0: who is just ahead / behind, as portraits, under the star pill.
+	rival_strip = RivalStrip.new()
+	rival_strip.name = "RivalStrip"
+	rival_strip.position = Vector2(146, 82)
+	frame.add_child(rival_strip)
+	rival_strip.setup(race)
 	# Stars collected this race, beside the position badge.
 	star_pill = PanelContainer.new()
 	star_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -765,6 +772,7 @@ func _process(delta: float) -> void:
 	var mode: String = race.config.mode
 	var in_results := race.state == RaceManager.RaceState.RESULTS
 	pos_badge.visible = mode == "quick" and not in_results
+	rival_strip.visible = mode == "quick" and not in_results and not p.tracker.finished
 	lap_pill.visible = mode != "tutorial" and not in_results
 	if p.place != _last_place:
 		if _last_place != 0 and race.state == RaceManager.RaceState.RACING:
