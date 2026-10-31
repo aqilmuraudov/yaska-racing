@@ -41,6 +41,10 @@ GROUPS = []
 UV_SCALE = {}
 FAR_RATIO = {}
 MODEL = ""
+# Materials marked in albedo.png alpha (props: world-space stone detail).
+STONE_MATS = []
+# Callables run after the bake, before the far copies / export: f(groups).
+PRE_EXPORT = []
 # Kart space rig shared by every racer (KartModel / AnimalDriver).
 STEER_POS = Vector((0.0, 0.88, -0.30))
 STEER_TILT = math.radians(-55.0)
@@ -50,8 +54,9 @@ HEAD_PIVOT = Vector((0.0, 1.06, 0.18))
 EYES_Y = 1.22
 
 
-def setup(model, out_dir, palette, paint_mat, groups, uv_scale, far_ratio):
-    global MODEL, OUT_DIR, PALETTE, PAINT_MAT, GROUPS, UV_SCALE, FAR_RATIO
+def setup(model, out_dir, palette, paint_mat, groups, uv_scale, far_ratio, stone_mats=()):
+    global MODEL, OUT_DIR, PALETTE, PAINT_MAT, GROUPS, UV_SCALE, FAR_RATIO, STONE_MATS
+    STONE_MATS = list(stone_mats)
     MODEL = model
     OUT_DIR = os.path.join(ROOT, arg_value("--out-dir", out_dir))
     PALETTE, PAINT_MAT, GROUPS, UV_SCALE, FAR_RATIO = palette, paint_mat, groups, uv_scale, far_ratio
@@ -733,6 +738,8 @@ def set_emit(mode):
             v = (rough,) * 3
         elif mode == "paint":
             v = (1.0 if m.name == PAINT_MAT else 0.0,) * 3
+        elif mode == "stone":
+            v = (1.0 if m.name in STONE_MATS else 0.0,) * 3
         elif mode == "cover":
             v = (1.0, 1.0, 1.0)
         else:
@@ -752,6 +759,7 @@ def bake_all(groups, highs):
         "ao": new_image("bake_ao", (1, 1, 1, 1), True),
         "paint": new_image("bake_paint", (0, 0, 0, 1), True),
         "cover": new_image("bake_cover", (0, 0, 0, 1), True),
+        "stone": new_image("bake_stone", (0, 0, 0, 1), True),
     }
     bake_mat = bpy.data.materials.new("bake_target")
     bake_mat.use_nodes = True
@@ -771,6 +779,8 @@ def bake_all(groups, highs):
     # "cover" (margin 0) marks the texels the islands really use, for dilation.
     passes = [("albedo", "EMIT", 4), ("rough", "EMIT", 1), ("metal", "EMIT", 1), ("paint", "EMIT", 4),
               ("normal", "NORMAL", 4), ("ao", "AO", 96), ("cover", "EMIT", 1)]
+    if STONE_MATS:
+        passes.append(("stone", "EMIT", 1))
     for pname, ptype, samples in passes:
         bpy.context.scene.cycles.samples = samples
         node.image = imgs[pname]
@@ -855,7 +865,9 @@ def bake_all(groups, highs):
         img.file_format = "PNG"
         img.save(filepath=img.filepath_raw)
         print("WROTE", img.filepath_raw)
-    save(alb, "albedo", False)
+    if STONE_MATS:
+        alb[..., 3] = px(imgs["stone"])[..., 0]
+    save(alb, "albedo", False, alpha=bool(STONE_MATS))
     save(px(imgs["normal"]), "normal", True)
     save(orm, "orm", True, alpha=True)
 
@@ -994,6 +1006,8 @@ def run(build):
     print(f"HIGH total: {sum(tri_count(o) for o in highs)} tris ({time.time() - t0:.0f}s)")
     if BAKE:
         bake_all(groups, highs)
+    for f in PRE_EXPORT:
+        f(groups)
     far = far_copies(groups)
     print(f"FAR total: {sum(tri_count(o) for o in far)} tris")
     to_blender_up(groups + highs + far)
@@ -1016,7 +1030,7 @@ def run(build):
     for c in far:
         c.hide_render = True
         c.hide_set(True)
-    if PREVIEW and BAKE:
+    if PREVIEW and BAKE and "Body" in GROUPS:
         preview(groups, WORK_DIR)
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(WORK_DIR, MODEL + ".blend"))
     print(f"DONE in {time.time() - t0:.0f}s")

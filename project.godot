@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Yaska Racing"
 config/description="Arcade kart racing in a stylized Baku."
-config/version="0.14.0"
+config/version="0.14.1"
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://assets/icons/icon.svg"

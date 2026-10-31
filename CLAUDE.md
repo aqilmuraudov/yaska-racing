@@ -16,14 +16,14 @@ Həmişə Azərbaycan dilində cavab ver.
 2. UI oyun stilində, sadə, vizual, az mətnli — kiçik uşaq üçün.
 3. Əvvəl test et, ekran görüntülərini tənqidi yoxla, yalnız sonra APK çıxar.
 4. Hər buraxılışda `export_presets.cfg`-də versionCode-u 1 artır; STATUS.md və TUNING.md-ni yenilə;
-   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 25).
+   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 26).
 5. Dəyişiklikdən əvvəl backup (git commit və ya zip).
 6. Zəif yerləri dürüst de; ölçülməyəni ölçülmüş kimi göstərmə.
 7. Aqil bir neçə xüsusiyyəti **bir APK-da** almağı üstün tutur (hər addıma ayrı APK yox).
 
 ## Testlər və build
 - Strict testlər: `GODOT="<godot console exe>" python tools/run_tests.py` — skript xətası olan testi də uğursuz sayır.
-  Əvvəlki tam qaçış: 212 metod, 5618 yoxlama, 0 uğursuz (0.14.0).
+  Əvvəlki tam qaçış: 217 metod, 5762 yoxlama, 0 uğursuz (0.14.1).
 - Debug runner bayraqları `docs/BUILD.md`-də (`--race --autopilot --track=old_city --tod=night --capture=DIR ...`).
 - Android export: `--export-debug "Android" <apk>`. JDK 17 PATH-da olmalıdır, yoxsa APK imzasız çıxır.
 - İmza açarı: `_setup/yaska-debug.keystore` (alias `androiddebugkey`, şifrə `android`).
@@ -33,11 +33,11 @@ Həmişə Azərbaycan dilində cavab ver.
   Yeni açar YARATMA — yoxsa telefonda köhnə oyunun üstünə quraşdırılmaz.
 - `_builds/` və `_setup/` git-ə düşmür.
 
-## Vəziyyət (0.14.0, versionCode 31)
+## Vəziyyət (0.14.1, versionCode 32)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 3 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,
-Yaska Star + Yaska Blender modeli (pilot, `tools/blender/yaska_star.py`; digər 6 maşın hələ prosedurdur).
+7 maşın + sürücünün hamısı və İçərişəhər evləri / Qız Qalası Blender modelidir (`tools/blender/`, ümumi `kart_common.py`).
 Əvvəlki iş GPU-suz bulud mühitində aparılıb — **heç bir rəqəm real telefonda ölçülməyib.**
 
 ## İndiki plan (Aqil ilə razılaşdırılıb)

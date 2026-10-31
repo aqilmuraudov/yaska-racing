@@ -1,8 +1,17 @@
 # Status, verification evidence and known issues
 
-Date: 2026-10-31 · Build: 0.14.0 · Engine: Godot 4.4.1-stable
+Date: 2026-11-01 · Build: 0.14.1 · Engine: Godot 4.4.1-stable
 
-## 0.14.1 wip (not released, APK still 0.14.0 / 31) — all seven karts as Blender models
+## Update 0.14.1 (versionCode 32) — all seven karts + Old City houses / Maiden Tower as Blender models
+- **Old City props** (`tools/blender/oldcity_props.py`, 4096² bake → one 2048² set in `assets/models/oldcity/`): house_a..d and maiden_tower keep PropKit's footprints, heights and +Z facade (placement, occluders, AoMap unchanged). Houses: bevelled stone block, plinth, cornice and parapet, arched door / shop / windows with stone surrounds and sills, a window on each side wall per floor, the wooden şüşəbənd balcony with mullions, side posts and carved diamonds, domes / roof kiosks. Stone relief = Cycles Voronoi bump baked into the normal map (no dense geometry). Tower: tapering body, 14 masonry courses, beak buttress, parapet, slits, door, rock base (4,368 → 1,811 triangles).
+- `PropKit.GLTF_PROPS` overrides those ids (one surface = one draw per MultiMesh chunk instead of three; `@lo` from the far glTF); `prop_baked.gdshader` multiplies the world-space limestone texture back in on stone (albedo alpha mask, relative to its mean colour E3CEA4, faded beyond 60 m) and lights window glass at night (orm alpha, `PropKit.set_window_glow` from `TimeOfDay`). `--no-gltf` turns props off too.
+- Low houses: house_a 580 → 1,084, house_b 1,360 → 1,576, house_c 676 → 784, house_d 1,120 → 1,424 triangles (more detail, but 1 draw instead of 3).
+- **Measured** (old_city, Mobile renderer, desktop GPU, autopilot seed 5, `--perf-every=2`, procedural → glTF karts + props): primitives mean 358k → 216k by day, 347k → 213k at night; draw calls mean 306 → 306 / 305 → 303. Screenshots `docs/screenshots/0.14.0/oldcity_old_vs_new.jpg`.
+- Tests: `tests/test_round26.gd` (5 methods, 143 checks). Full strict suite: 217 methods, 5762 checks, 0 failures, 0 script errors.
+- Build: `_builds/YaskaRacing-0.14.1-v32-debug.apk`, **84.0 MB** (0.14.0: 43.6 MB; +39 MB are the baked ETC2 texture sets: 7 karts × 1024² + Old City 2048²), apksigner verified, SHA-256 726cd353…6e25d9. Size could be cut later (e.g. 512² rival sets, RG-only ORM for karts).
+- Known: houses read a little paler than the procedural ones in strong sun; the tower's shaded side looks bluish under the sky; seafront / downtown props are still procedural; no phone FPS.
+
+## 0.14.1 part 1 — all seven karts as Blender models
 Owner: convert every kart + driver like Yaska, part by part. Shared pipeline `tools/blender/kart_common.py` (helpers, wheels, steering, eyes, legs, bake, export) + one short script per racer (`yaska_star.py`, `havhav_buddy.py`, `posi_bamboo.py`, `bicok_amber.py`, `leloyun_hop.py`, `mestan_velvet.py`, `cepis_cloud.py`); `tools/blender/fix_imports.py` sets the phone import options; `tools/kart_stats.gd -- <id> [procedural]` counts triangles. `KartModel` now also maps `EarL/EarR` (animal ears) and `Tail` to the AnimalDriver pivots.
 | racer | kart | near tris procedural → glTF | far tris | draws |
 |---|---|---|---|---|

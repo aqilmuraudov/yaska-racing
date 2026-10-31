@@ -78,6 +78,7 @@ func _ready() -> void:
 	_stats = args.has("stats")
 	if args.has("no-gltf"):
 		KartModel.gltf_enabled = false # 0.14.0 A/B: procedural karts only
+		PropKit.gltf_enabled = false # 0.14.1 and procedural props
 	if args.has("timescale"):
 		Engine.time_scale = float(args.timescale)
 	if args.has("graphics"):

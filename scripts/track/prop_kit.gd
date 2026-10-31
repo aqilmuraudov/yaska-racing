@@ -277,9 +277,68 @@ static func rbox(size: Vector3, r: float = 0.3) -> Mesh:
 
 # --- Public ------------------------------------------------------------------
 
+## 0.14.1 Blender-made props (tools/blender/oldcity_props.py): PropKit id ->
+## glTF base path; each scene holds one mesh node per id, the "_far" scene the
+## @lo meshes. One baked material (prop_baked.gdshader) per texture folder.
+## Missing file -> the procedural prop, as before.
+const GLTF_PROPS := {
+	"house_a": "res://assets/models/oldcity/oldcity_props",
+	"house_b": "res://assets/models/oldcity/oldcity_props",
+	"house_c": "res://assets/models/oldcity/oldcity_props",
+	"house_d": "res://assets/models/oldcity/oldcity_props",
+	"maiden_tower": "res://assets/models/oldcity/oldcity_props",
+}
+const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
+static var gltf_enabled := true
+static var _baked := {}
+static var _window_glow := 0.0
+
+
+static func baked_material(dir: String) -> ShaderMaterial:
+	if not _baked.has(dir):
+		var sm := ShaderMaterial.new()
+		sm.shader = PROP_BAKED_SHADER
+		sm.set_shader_parameter("albedo_tex", load(dir + "/albedo.png"))
+		sm.set_shader_parameter("normal_tex", load(dir + "/normal.png"))
+		sm.set_shader_parameter("orm_tex", load(dir + "/orm.png"))
+		sm.set_shader_parameter("window_glow", _window_glow)
+		TextureLibrary.bind(sm, "stone_tex", "limestone")
+		_baked[dir] = sm
+	return _baked[dir]
+
+
+## Night windows of the baked props (TimeOfDay.apply_materials).
+static func set_window_glow(v: float) -> void:
+	_window_glow = v
+	for sm in _baked.values():
+		(sm as ShaderMaterial).set_shader_parameter("window_glow", v)
+
+
+static func _gltf_mesh(id: String, far: bool) -> ArrayMesh:
+	var path: String = GLTF_PROPS[id] + ("_far" if far else "") + ".glb"
+	if not ResourceLoader.exists(path):
+		return null
+	var scene := load(path) as PackedScene
+	if scene == null:
+		return null
+	var inst := scene.instantiate()
+	var mi := inst.find_child(id, true, false) as MeshInstance3D
+	var mesh: ArrayMesh = mi.mesh as ArrayMesh if mi else null
+	inst.free()
+	if mesh:
+		mesh.surface_set_material(0, baked_material(path.get_base_dir()))
+	return mesh
+
+
 static func get_mesh(id: String) -> ArrayMesh:
 	if _meshes.has(id):
 		return _meshes[id]
+	var base_id := id.trim_suffix(LO_SUFFIX)
+	if gltf_enabled and GLTF_PROPS.has(base_id):
+		var gm := _gltf_mesh(base_id, id.ends_with(LO_SUFFIX))
+		if gm:
+			_meshes[id] = gm
+			return gm
 	if id.ends_with(LO_SUFFIX):
 		# 0.10.2 far LOD: the same prop rebuilt with half the segments.
 		ShapeKit.detail = 0.5

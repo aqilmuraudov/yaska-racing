@@ -78,6 +78,7 @@ static func apply_materials(id: String) -> void:
 		g.emission = Color(1.0, 0.78, 0.42)
 		g.emission_energy_multiplier = w * 1.4
 	CityKit.set_window_glow(float(p.windows)) # 0.11.0 downtown towers
+	PropKit.set_window_glow(float(p.windows)) # 0.14.1 baked Old City houses
 	NightGlow.set_global_night(id) # 0.11.2 water darkens at night
 	# Heydar Aliyev Center: soft warm-white uplight on the white skin.
 	var hac := LandmarkKit.hac_white()
