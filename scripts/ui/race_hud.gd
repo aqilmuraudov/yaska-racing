@@ -699,12 +699,14 @@ func _tick_hints() -> void:
 	var p := race.player
 	if _hint_step == 0 and steer_hint_ready(t, countdown_label.text, _msg_time):
 		_hint_step = 1
-		show_message(tr("HINT_STEER"), "info")
 		_msg_time = 3.0
+		if not show_tap_hint(["steer_left", "steer_right"], "alternate", 3.0): # 0.13.0 wordless
+			show_message(tr("HINT_STEER"), "info")
 	elif _hint_step == 1 and t > 9.0:
 		_hint_step = 2
-		show_message(tr("HINT_DRIFT"), "info")
 		_msg_time = 3.5
+		if not show_tap_hint("drift", "hold", 4.0): # 0.13.0: hold, then let go
+			show_message(tr("HINT_DRIFT"), "info")
 	elif _hint_step == 2 and p.kart.item != &"" and p.kart.item_roll_timer <= 0.0:
 		_hint_step = 3
 		if not show_tap_hint("item"):
@@ -714,20 +716,28 @@ func _tick_hints() -> void:
 
 ## 0.12.0: on touch screens a pulsing ring + tapping hand on the button
 ## replaces the sentence. Returns false when there is no such button shown.
-func show_tap_hint(button_id: String) -> bool:
+func show_tap_hint(ids, mode := "tap", duration := 3.2) -> bool:
 	if touch == null or not touch.visible:
 		return false
-	var b = touch.get_button(button_id)
-	if b == null or not b.visible:
-		return false
+	var id_list: Array = ids if ids is Array else [ids]
+	var to_root := root.get_global_transform().affine_inverse() * touch.get_global_transform()
+	var sc := touch.get_global_transform().get_scale().x
+	var tgs: Array = []
+	for id in id_list:
+		var b = touch.get_button(String(id))
+		if b == null or not b.visible:
+			return false
+		tgs.append([to_root * b.center, b.radius * sc])
 	if is_instance_valid(tap_hint):
 		tap_hint.queue_free()
 	tap_hint = TapHint.new()
 	tap_hint.name = "TapHint"
+	tap_hint.mode = mode
+	tap_hint.duration = duration
+	tap_hint.targets = tgs
+	tap_hint.target = tgs[0][0]
+	tap_hint.radius = tgs[0][1]
 	root.add_child(tap_hint)
-	var to_root := root.get_global_transform().affine_inverse() * touch.get_global_transform()
-	tap_hint.target = to_root * b.center
-	tap_hint.radius = b.radius * touch.get_global_transform().get_scale().x
 	return true
 
 
