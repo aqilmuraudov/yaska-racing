@@ -1,6 +1,20 @@
 # Status, verification evidence and known issues
 
-Date: 2026-10-31 · Build: 0.12.0 · Engine: Godot 4.4.1-stable
+Date: 2026-10-31 · Build: 0.13.0 · Engine: Godot 4.4.1-stable
+
+## Update 0.13.0 (versionCode 30) — one release with the rest of the approved list
+Owner asked for one combined APK instead of one per step. Contents:
+- **Wordless hints:** steering = a hand tapping ◀ and ▶ in turn; drift = a hand holding DRIFT while a ring fills, then letting go with a burst (`TapHint` modes "alternate" / "hold"); near the bottom edge the hand comes from above. Keyboard/controller keep the sentences.
+- **Rival portraits** (`RivalStrip`) under the star pill: the racer just ahead (green ▲) and just behind (red ▼) as animal portraits, quick races only.
+- **Contact shadows** (`AoMap`): while the race loads, a 1024² top-down darkening map is painted from every instanced prop / landmark footprint (seafront 439 blobs, 26 ms; downtown 201, 21 ms) and read by the ground, road, prop (`vcolor`) and tower shaders through global uniforms - zero extra draw calls. Honest note: the effect is subtle at race-camera distance; it shows mostly at the foot of walls and trees.
+- **Wet road at night:** road roughness ×0.42 and 14 % darker at night, plus warm lamp reflection streaks on the asphalt (one MultiMesh aimed at the camera in the vertex shader).
+- **Cartoon outline** on the kart body and driver (inverted hull `material_overlay`, near LOD only, off on Low). Same draw-call count measured (222 → 222 in the mobile renderer); it does add vertex work for those parts.
+- **First lesson** (`LessonDirector`, ~30 s): the first "Oyna" on a new profile starts a short seafront race with 2 easy rivals: steer → drift → use a nitro, each shown with the hand; each step also ends by itself after 9-11 s so nobody gets stuck; three dots fill; "Əla!" then mode select. Replayable from mode select ("Dərs"). Remembered (`lesson_done`).
+- **Sticker album:** 12 free Baku stickers rendered from the game's own models (`tools/gen_stickers.gd` + `.py`), unlocked by total stars (3 → 250), new tab "Albom" in Mükafatlar with "Yeni!" badges, new stickers shown with their picture on the results. No purchases, no randomness.
+- **New city İçərişəhər** (`old_city`, 757 m, 2 laps): Boulevard start straight by the sea through Qoşa Qala into narrow 15 m cobbled streets, an S-bend, the Maiden Tower in the middle of a dense block of Old City houses with carpets, market umbrellas, the Flame Towers on the far hill. 6 checkpoints, 2 boost pads, 4 item rows, 7 trophies, city card, works in Yarış / Rekord / daily. Autopilot: all 6 karts finish a lap in 25-28 s with 0 respawns (2 seeds). Not in Bakı Kuboku yet.
+- Fixes: `Progression` per-track trophy names no longer assume "second track = downtown".
+- Tests: `tests/test_round24.gd` (8 methods, 148 checks). Full suite (strict runner): 205 methods, 5542 checks, 0 script errors; the first run had 7 failed checks, all old tests that hard-coded "2 cities" / "2 reward tabs" (round 20, round 7) - updated to 3 and re-run: 0 failures.
+- Known / not verified: no phone - all of the above is checked in the Mobile renderer on software Vulkan only. The Old City has no night-specific extras beyond the shared ones. Sticker art is generated from low-poly models (matches the game, not hand-drawn). The lesson uses existing SFX only (audio untouched).
 
 ## Update 0.12.0 (versionCode 29) — finish replay, wordless item hint, strict tests
 First batch of the owner-approved list (replay, less text in the HUD, test runner).

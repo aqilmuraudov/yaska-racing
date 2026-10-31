@@ -139,7 +139,7 @@ func test_rewards_screen_tabs_fit() -> void:
 		host.add_child(scr)
 		for k in 4:
 			await tree.process_frame
-		check_eq(scr.tab_buttons.size(), 2, "two tabs")
+		check_eq(scr.tab_buttons.size(), 3, "three tabs (0.13.0: + Albom)")
 		check_eq(scr.daily_cards.size(), 3, "three daily cards")
 		check(scr.trophy_cards.size() >= 1, "trophy badges")
 		var area := Rect2(Vector2.ZERO, sz)

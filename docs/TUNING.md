@@ -273,3 +273,13 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 - Item notice: `RaceHUD.item_caption` — item icon (44 px) + item name in a dark pill, 0.25 s pop, 1.8 s, 0.4 s fade (was the text line "[Əşya: …]").
 - Item hint on touch screens: `TapHint` — yellow ring pulsing at 1.1 Hz around the ITEM button and a tapping hand (`hint_tap.svg`), 3.2 s or until the item is used. Keyboard/controller keeps the sentence.
 
+## 0.13.0
+- TapHint: CYCLE_ALT 0.9 s per button; HOLD_TIME 1.3 s fill + 0.7 s release burst; hand flips above when `c.y + r + 110 > height`.
+- RivalStrip: portraits 48 px, refresh 0.25 s.
+- AoMap: RES 1024 over track bounds + 140 m; blob = footprint × 1.05 + 5 m; plateau 0.62 of the radius; strength 0.24 + 0.018·h (max 0.5); MAX_DARK 0.6 in 6 levels; props below 1.6 m or 2.5 m² skipped. Vertical fade on walls 0.2 → 1.8 m (props), 0.2 → 2.5 m (towers); road uses 75 %.
+- Wet road (night): roughness ×(1 − 0.58·0.85), albedo ×0.86. Lamp streaks: 12 m × 1.5 m, strength 0.46, hidden beyond 60-110 m.
+- Outline: width 0.028 m at 8 m, scaled 0.7-2.2× with distance; parts with no range limit that cast shadows; off when effects density < 0.5.
+- Lesson: start delay 0.8 s; timeouts steer 9 s, drift 11 s, item 9 s; end 2.6 s. Seafront, day, 1 lap, 2 easy rivals, no item boxes.
+- Stickers (stars): 3, 8, 15, 25, 40, 55, 75, 100, 130, 165, 205, 250.
+- Old City: 757 m, width 17 m (Boulevard) / 15 m (streets), offroad 2.5 m, `LAP_SCALE` 0.5 (autopilot lap ~26 s), house fill grid 12 m within 70 m of the track, 34 m clear round the Maiden Tower.
+

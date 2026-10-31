@@ -49,7 +49,8 @@ func _host() -> Control:
 # --- Track list / data ----------------------------------------------------------
 
 func test_track_list() -> void:
-	check_eq(TrackList.IDS, ["seafront_sprint", "downtown_towers"], "two tracks, seafront first")
+	# 0.13.0: İçərişəhər added as the third city.
+	check_eq(TrackList.IDS, ["seafront_sprint", "downtown_towers", "old_city"], "three tracks, seafront first")
 	check_eq(TrackList.valid("nope"), "seafront_sprint", "unknown -> seafront")
 	TranslationServer.set_locale("az")
 	check_eq(tr(TrackList.name_key("downtown_towers")), "Göydələnlər şəhəri", "Azerbaijani name")
@@ -203,7 +204,7 @@ func test_track_select_picker() -> void:
 	host.add_child(screen)
 	for k in 6:
 		await tree.process_frame
-	check_eq(screen.track_btns.size(), 2, "two track tabs")
+	check_eq(screen.track_btns.size(), TrackList.IDS.size(), "one tab per track")
 	screen.set_track("downtown_towers")
 	check_eq(screen.track_id, "downtown_towers", "picked")
 	check_eq(Game.race_config.track_id, "downtown_towers", "config follows")
@@ -237,7 +238,7 @@ func test_cup_and_daily_tracks() -> void:
 			check(ch.n < 60 * 3, "time goal fits a 2-lap race")
 		var cfg := DailyChallenge.apply_config(Game.default_race_config(), ch, "havhav")
 		check_eq(cfg.track_id, ch.track, "daily race uses its track")
-	check_eq(days.size(), 2, "daily rotates both tracks")
+	check_eq(days.size(), TrackList.IDS.size(), "daily rotates every track")
 
 
 func test_downtown_trophies() -> void:
