@@ -135,6 +135,7 @@ func apply_graphics() -> void:
 		if kv and kv.has_method("set_blob_strength"):
 			kv.set_blob_strength(blob_shadows_enabled)
 	get_tree().call_group("kart_effects_density", "set_density", float(g.effects_density))
+	get_tree().call_group("kart_outline", "set_outline", KartVisual.outline_wanted()) # 0.13.0
 
 
 func decor_distance() -> float:

@@ -55,6 +55,27 @@ func setup(p_kart: KartController, def: RacerDefinition, density: float) -> void
 const KART_LOD := 28.0
 var model_lo: KartModel
 var shadow_proxies := 0 ## 0.11.2 shadows-only low-detail copies (tests)
+## 0.13.0 cartoon outline (inverted hull overlay) on the big near parts.
+var outlined: Array = []
+static var _outline_mat: ShaderMaterial
+
+
+static func outline_material() -> ShaderMaterial:
+	if _outline_mat == null:
+		_outline_mat = ShaderMaterial.new()
+		_outline_mat.shader = preload("res://assets/materials/outline.gdshader")
+	return _outline_mat
+
+
+## Off on the Low preset (effects density < 0.5): it redraws the outlined parts.
+static func outline_wanted() -> bool:
+	return float(Settings.get_value("graphics", "effects_density", 0.7)) >= 0.5
+
+
+func set_outline(on: bool) -> void:
+	for g in outlined:
+		if is_instance_valid(g):
+			(g as GeometryInstance3D).material_overlay = outline_material() if on else null
 
 
 func _build_far_lod(def: RacerDefinition) -> void:
@@ -66,6 +87,15 @@ func _build_far_lod(def: RacerDefinition) -> void:
 	ShapeKit.detail = 1.0
 	body_pivot.add_child(model_lo)
 	model_lo.set_process(false)
+	# 0.13.0: the big near parts (body, driver head and torso: no range limit
+	# and casting shadows) get the cartoon outline overlay.
+	outlined.clear()
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		var g0 := mi as GeometryInstance3D
+		if g0.visibility_range_end <= 0.0 and g0.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			outlined.append(g0)
+	set_outline(outline_wanted())
+	add_to_group("kart_outline")
 	for mi in model.find_children("*", "MeshInstance3D", true, false):
 		var g := mi as GeometryInstance3D
 		g.visibility_range_end = KART_LOD if g.visibility_range_end <= 0.0 else minf(g.visibility_range_end, KART_LOD)
