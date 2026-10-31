@@ -9,3 +9,5 @@ Thumbs.db
 .DS_Store
 __pycache__/
 tools/**/out/
+_setup/
+_builds/
