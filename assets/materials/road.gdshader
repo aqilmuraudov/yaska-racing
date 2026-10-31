@@ -37,6 +37,21 @@ float band(float x, float a, float b) {
 	return smoothstep(a - w, a + w, x) * (1.0 - smoothstep(b - w, b + w, x));
 }
 
+varying vec2 road_xz;
+// 0.13.0 contact shadows painted at load time (AoMap): 1 = open ground.
+global uniform sampler2D yaska_ao : filter_linear_mipmap, repeat_disable;
+global uniform vec4 yaska_ao_rect; // x0, z0, 1/width, 1/depth; z = 0 -> off
+float ao_at(vec2 xz) {
+	vec2 uv = (xz - yaska_ao_rect.xy) * yaska_ao_rect.zw;
+	float a = texture(yaska_ao, uv).r; // fetched unconditionally: uniform control flow
+	bool inside = yaska_ao_rect.z > 0.0 && uv.x > 0.0 && uv.y > 0.0 && uv.x < 1.0 && uv.y < 1.0;
+	return inside ? a : 1.0;
+}
+
+void vertex() {
+	road_xz = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
+}
+
 void fragment() {
 	float lat = UV2.x;
 	float hw = UV2.y;
@@ -80,7 +95,8 @@ void fragment() {
 	// Soft darker gutter along both edges frames the driving surface.
 	col *= 1.0 - 0.18 * smoothstep(hw - 1.4, hw - 0.1, abs(lat)) * (1.0 - edge_line);
 
-	ALBEDO = col;
+	// Buildings and trees right beside the road shade its edge a little.
+	ALBEDO = col * mix(1.0, ao_at(road_xz), 0.75);
 	// Roughness varies with the grain; the polished racing line and painted
 	// lines are a little smoother and catch the low sun.
 	float line_polish = 1.0 - smoothstep(0.0, hw * 0.5, abs(lat));

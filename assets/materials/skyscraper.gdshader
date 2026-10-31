@@ -17,8 +17,19 @@ uniform float window_glow = 0.0; // 0 day .. 1 night
 uniform vec3 glow_color : source_color = vec3(1.0, 0.8, 0.45);
 
 varying vec3 lpos;
+varying vec3 ao_wpos;
+// 0.13.0 contact shadows (AoMap) at the foot of towers and malls.
+global uniform sampler2D yaska_ao : filter_linear_mipmap, repeat_disable;
+global uniform vec4 yaska_ao_rect;
+float ao_at(vec2 xz) {
+	vec2 uv = (xz - yaska_ao_rect.xy) * yaska_ao_rect.zw;
+	float a = texture(yaska_ao, uv).r;
+	bool inside = yaska_ao_rect.z > 0.0 && uv.x > 0.0 && uv.y > 0.0 && uv.x < 1.0 && uv.y < 1.0;
+	return inside ? a : 1.0;
+}
 
 void vertex() {
+	ao_wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	lpos = VERTEX;
 }
 
@@ -44,7 +55,7 @@ void fragment() {
 	float mull = smoothstep(0.86 - aax, 0.86 + aax, fx) * fade;
 	vec3 col = mix(glass, band_color * 0.82, mull * 0.7);
 	col = mix(col, band_color, is_band * mix(0.55, 1.0, fade));
-	ALBEDO = col;
+	ALBEDO = col * mix(1.0, ao_at(ao_wpos.xz), 1.0 - smoothstep(0.2, 2.5, ao_wpos.y));
 	ROUGHNESS = mix(0.1, 0.7, is_band);
 	METALLIC = mix(0.35, 0.0, is_band);
 	SPECULAR = mix(0.9, 0.4, is_band);

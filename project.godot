@@ -80,3 +80,11 @@ yaska_night={
 "type": "float",
 "value": 0.0
 }
+yaska_ao={
+"type": "sampler2D",
+"value": "res://assets/textures/noise_value.png"
+}
+yaska_ao_rect={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}

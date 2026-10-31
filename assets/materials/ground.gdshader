@@ -29,6 +29,15 @@ float vnoise(vec2 p) {
 }
 
 varying vec3 world_pos;
+// 0.13.0 contact shadows painted at load time (AoMap): 1 = open ground.
+global uniform sampler2D yaska_ao : filter_linear_mipmap, repeat_disable;
+global uniform vec4 yaska_ao_rect; // x0, z0, 1/width, 1/depth; z = 0 -> off
+float ao_at(vec2 xz) {
+	vec2 uv = (xz - yaska_ao_rect.xy) * yaska_ao_rect.zw;
+	float a = texture(yaska_ao, uv).r; // fetched unconditionally: uniform control flow
+	bool inside = yaska_ao_rect.z > 0.0 && uv.x > 0.0 && uv.y > 0.0 && uv.x < 1.0 && uv.y < 1.0;
+	return inside ? a : 1.0;
+}
 varying vec3 lin_tint; // 0.11.2: sRGB->linear once per vertex, not twice per pixel
 
 vec3 srgb_to_linear(vec3 c) {
@@ -54,7 +63,7 @@ void fragment() {
 	float pav = 1.0 - smoothstep(0.03, 0.09, distance(tint, paving_key));
 	col = mix(col, texture(paving_tex, p / 4.0).rgb, pav);
 	col = max(mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, saturation), vec3(0.0));
-	ALBEDO = col;
+	ALBEDO = col * ao_at(world_pos.xz);
 	ROUGHNESS = 0.92;
 	SPECULAR = 0.2;
 }

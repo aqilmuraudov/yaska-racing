@@ -86,6 +86,7 @@ func _begin(td: TrackData) -> void:
 
 func _finish(env: RaceEnvironment) -> void:
 	_flush_carpets()
+	_build_ao_map()
 	if env:
 		env.decor_distance_changed.connect(set_decor_distance)
 		set_decor_distance(env.decor_distance())
@@ -135,6 +136,50 @@ var skyline_min := {}
 
 
 ## 0.11.2: every placed transform of one prop (e.g. "lamp" for NightGlow).
+## 0.13.0 contact shadows (AoMap): footprints of every instanced prop that is
+## tall and wide enough, plus the landmarks, painted into one ground map.
+var ao_blobs: Array = []
+var ao_texture: ImageTexture
+var ao_rect := Rect2()
+
+
+func _collect_ao_blobs() -> void:
+	for prop in _instances.keys():
+		var mesh := PropKit.get_mesh(prop)
+		if mesh == null:
+			continue
+		var aabb := mesh.get_aabb()
+		if aabb.size.y < AoMap.MIN_H:
+			continue
+		for key in _instances[prop].keys():
+			for xf in _instances[prop][key]:
+				var b := AoMap.blob_for((xf as Transform3D) * aabb)
+				if not b.is_empty():
+					ao_blobs.append(b)
+
+
+func _build_ao_map() -> void:
+	if data == null or data.main == null:
+		return
+	if "landmarks" in self:
+		for lm in landmarks.values():
+			if not (lm is Node3D) or not is_instance_valid(lm):
+				continue
+			for mi in ([lm] + (lm as Node).find_children("*", "MeshInstance3D", true, false)):
+				if mi is MeshInstance3D and (mi as MeshInstance3D).mesh:
+					var b := AoMap.blob_for((mi as Node3D).global_transform * (mi as MeshInstance3D).mesh.get_aabb())
+					if not b.is_empty() and (b.r as Vector2).x < 140.0 and (b.r as Vector2).y < 140.0:
+						ao_blobs.append(b)
+	ao_rect = AoMap.rect_for(data.main.points)
+	ao_texture = AoMap.build(ao_rect, ao_blobs)
+	AoMap.apply(ao_rect, ao_texture)
+
+
+func _exit_tree() -> void:
+	if ao_texture != null:
+		AoMap.clear() # menus and the next race start without the old map
+
+
 ## _instances is cleared after the MultiMeshes are built, so the props listed
 ## in KEEP_TRANSFORMS are copied into _kept first.
 const KEEP_TRANSFORMS := ["lamp"]
@@ -247,6 +292,7 @@ func _flush_instances() -> void:
 						mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 					_chunk_nodes.append(mmi)
 				add_child(mmi)
+	_collect_ao_blobs()
 	for kp in KEEP_TRANSFORMS:
 		if _instances.has(kp):
 			var keep: Array = _kept.get(kp, [])
