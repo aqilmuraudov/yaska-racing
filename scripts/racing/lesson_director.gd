@@ -37,6 +37,10 @@ var leave_to_menu := true ## tests turn this off
 func setup(p_race: RaceManager) -> void:
 	race = p_race
 	kart = race.player.kart
+	# 0.14.2: the lesson is shown once per profile even if it is left early
+	# (pause → menu, or the lap ends first); owner report: it kept coming back.
+	if not race.headless_test:
+		SaveManager.set_tutorial_flag(FLAG, true)
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 	kart.drift_boost.connect(func(_t, _p): _drifted = true)
 	kart.boost_started.connect(func(src): if String(src).begins_with("drift"): _drifted = true)

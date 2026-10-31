@@ -62,8 +62,13 @@ var hero_kart: Label
 
 
 func build() -> void:
-	defs = RacerRoster.all()
-	current = maxi(RacerRoster.IDS.find(SaveManager.get_selected_kart()), 0)
+	# 0.14.2 (owner): only the karts this profile owns can be picked; new ones
+	# are bought with manat in the garage (the "+" card leads there).
+	defs.clear()
+	for d in RacerRoster.all():
+		if SaveManager.is_kart_owned(d.id):
+			defs.append(d)
+	current = maxi(_index_of(SaveManager.get_selected_kart()), 0)
 	_frame_preview()
 	get_viewport().size_changed.connect(_frame_preview)
 	# Fixed 3/4 front view facing the camera for every racer (drag to turn;
@@ -146,6 +151,8 @@ func build() -> void:
 		b.focus_entered.connect(func(): _select(idx))
 		grid.add_child(b)
 		cards.append(b)
+	if defs.size() < RacerRoster.IDS.size():
+		grid.add_child(_more_card())
 	var sep := HSeparator.new()
 	sep.add_theme_constant_override("separation", 2)
 	outer.add_child(sep)
@@ -302,6 +309,49 @@ func build() -> void:
 	money_chip = GameUI.money_chip(SaveManager.get_money(), 28)
 	header.add_child(money_chip)
 	_select(current, true)
+
+
+func _index_of(racer_id: String) -> int:
+	for k in defs.size():
+		if defs[k].id == racer_id:
+			return k
+	return -1
+
+
+## "+" card after the owned karts: opens the garage, whose "Yeni maşın" card
+## sells the next kart for manat.
+func _more_card() -> Button:
+	var b := Button.new()
+	b.name = "MoreKarts"
+	b.custom_minimum_size = CARD
+	b.focus_mode = Control.FOCUS_ALL
+	b.tooltip_text = tr("GARAGE_NEW_KART")
+	var v := VBoxContainer.new()
+	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	b.add_child(v)
+	var plus := Label.new()
+	plus.text = "+"
+	plus.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	plus.add_theme_font_override("font", UITheme.heading_font())
+	plus.add_theme_font_size_override("font_size", UITheme.FS_H1)
+	plus.add_theme_constant_override("outline_size", 6)
+	plus.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(plus)
+	var icon := TextureRect.new()
+	icon.texture = UITheme.icon("manat")
+	icon.custom_minimum_size = Vector2(0, 22)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(icon)
+	UITheme.style_button(b, "lime", UITheme.FS_CAPTION)
+	b.pressed.connect(func():
+		AudioManager.play_ui("ui_confirm")
+		_commit_if_owned()
+		Game.open_garage(defs[current].id, Game.State.KART_SELECT))
+	return b
 
 
 func is_owned(i: int) -> bool:
@@ -533,7 +583,7 @@ func _commit_if_owned() -> void:
 
 func _setup() -> void:
 	if not is_owned(current):
-		current = maxi(RacerRoster.IDS.find(SaveManager.get_selected_kart()), 0)
+		current = maxi(_index_of(SaveManager.get_selected_kart()), 0)
 	_commit()
 	Game.goto(Game.State.TRACK_SELECT)
 

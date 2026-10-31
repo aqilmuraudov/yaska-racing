@@ -4,7 +4,7 @@ extends Node
 
 signal profile_changed
 
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 const DEFAULT_PATH := "user://profile.json"
 const LEDGER_LIMIT := 200
 
@@ -108,6 +108,19 @@ func _migrate(d: Dictionary) -> Dictionary:
 		if d.has("cup_progress"):
 			d.cup_progress = BakuCup.sanitize(d.cup_progress)
 		d.version = 5
+	# v5 → v6 (0.14.2): the v4 migration gave old profiles every kart for free,
+	# so any kart could be raced without buying it. Owner's rule: one kart to
+	# start, the rest bought with manat in the garage. A profile owning (nearly)
+	# the whole roster keeps the starter kart and the one it races with.
+	if int(d.get("version", 1)) < 6:
+		var owned: Array = d.get("owned_karts", []) if typeof(d.get("owned_karts")) == TYPE_ARRAY else []
+		if owned.size() >= RacerRoster.IDS.size() - 1:
+			var keep: Array = [RacerRoster.DEFAULT_ID]
+			var sel := String(d.get("selected_kart", RacerRoster.DEFAULT_ID))
+			if RacerRoster.is_valid(sel) and not (sel in keep):
+				keep.append(sel)
+			d.owned_karts = keep
+		d.version = 6
 	return d
 
 

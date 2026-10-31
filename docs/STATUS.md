@@ -1,6 +1,16 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-01 · Build: 0.14.1 · Engine: Godot 4.4.1-stable
+Date: 2026-11-01 · Build: 0.14.2 · Engine: Godot 4.4.1-stable
+
+## Update 0.14.2 (versionCode 33) — owner fixes + mobile optimisation of the street props
+Owner reports after playing 0.14.1:
+- **Wheels spun far too fast (most visible on Yaska, the player's kart):** the true rate at race speed is ~106 rad/s, more than 90° per frame, which reads as frantic / backwards spinning (chrome dish, lug nuts and sidewall text strobe even with the 0.14.0 tread blur). `KartVisual.MAX_WHEEL_RATE` caps the visible spin at 19 rad/s (~3 turns/s); above ~6.5 m/s the tread blur is full.
+- **The first lesson came back every time:** `lesson_done` was only written when all three steps were completed, so leaving the lesson (pause → menu) or a lap ending first brought it back on the next "Oyna". It is now remembered when the lesson starts (and still when it completes). After it: mode select → city select, as designed.
+- **Any kart could be raced without buying it:** the v3→v4 save migration (0.8.3) gave every old profile the whole roster for free. Save v6 takes that back: a profile owning (nearly) every kart keeps the starter kart (HavHav) and the kart it races with; profiles with real purchases are untouched, balance untouched. Kart select now lists **only owned karts** plus a green "+" card that opens the garage, where the "Yeni maşın" card sells the next kart for manat.
+- **Mobile optimisation (High stays High):** profiling showed the seaside balustrade (372 triangles × hundreds) and the Baku lamp (978 triangles, 3 materials, shadow caster) dominating; they, the palms, plane tree, pine, cypress, flower beds, bollards and benches are now baked single-material Blender models (`tools/blender/street_props.py`, `flora_props.py`): baluster 372 → 128, lamp 978 → 584, palm 1,154 → 660 (3 → 1 material), flower bed 788 → 312, bollard 420 → 112, bench 280 → 72. Lamp globes glow from the orm mask driven by TimeOfDay's lamp level. Measured (High, day, desktop GPU, Mobile renderer, autopilot seed 5; procedural → baked karts + props, primitives mean): seafront 543k → 374k, downtown 373k → 247k, old_city 679k → 308k; draw calls unchanged.
+- Tests: `tests/test_round27.gd` (3 methods, 11 checks); updated the old ownership tests (round 7, 8, 17) to the new rule. Full strict suite: 220 methods, 5753 checks, 0 failures, 0 script errors.
+- Build: `_builds/YaskaRacing-0.14.2-v33-debug.apk`, apksigner verified (SHA-256 726cd353…6e25d9).
+- Known: an existing phone profile loses the karts it got for free (keeps HavHav + the selected kart); `test_touch_scroll` failed once in a full run but passes alone (timing flake, also before this change); no phone FPS yet.
 
 ## Update 0.14.1 (versionCode 32) — all seven karts + Old City houses / Maiden Tower as Blender models
 - **Old City props** (`tools/blender/oldcity_props.py`, 4096² bake → one 2048² set in `assets/models/oldcity/`): house_a..d and maiden_tower keep PropKit's footprints, heights and +Z facade (placement, occluders, AoMap unchanged). Houses: bevelled stone block, plinth, cornice and parapet, arched door / shop / windows with stone surrounds and sills, a window on each side wall per floor, the wooden şüşəbənd balcony with mullions, side posts and carved diamonds, domes / roof kiosks. Stone relief = Cycles Voronoi bump baked into the normal map (no dense geometry). Tower: tapering body, 14 masonry courses, beak buttress, parapet, slits, door, rock base (4,368 → 1,811 triangles).

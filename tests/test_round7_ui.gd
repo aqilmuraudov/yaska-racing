@@ -202,7 +202,8 @@ func test_owned_karts_default_and_migration() -> void:
 	var old := {"version": 3, "currency": 500, "selected_kart": "posi"}
 	SafeFile.write_json(PROFILE, old)
 	SaveManager.load_profile()
-	check_eq(SaveManager.owned_karts().size(), RacerRoster.IDS.size(), "old saves own every kart")
+	# 0.14.2: the free "own every kart" of the v4 migration is taken back (v6).
+	check_eq(SaveManager.owned_karts(), [RacerRoster.DEFAULT_ID, "posi"], "old saves keep the starter and the raced kart")
 	check_eq(int(SaveManager.data.currency), 500, "balance kept")
 	check(SaveManager.save_profile(), "saved")
 	check_eq(int(SaveManager.data.version), SaveManager.SAVE_VERSION, "migrated to the current save version")

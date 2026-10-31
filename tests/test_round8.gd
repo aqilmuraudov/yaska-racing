@@ -71,10 +71,11 @@ func test_tuning_only_owned() -> void:
 func test_migration_keeps_owned() -> void:
 	SafeFile.write_json(PROFILE, {"version": 3, "currency": 900})
 	SaveManager.load_profile()
-	check_eq(SaveManager.owned_karts().size(), RacerRoster.IDS.size(), "0.8.2 saves own all")
+	# 0.14.2 (v6): karts handed out for free by the v4 migration are taken back.
+	check_eq(SaveManager.owned_karts(), [RacerRoster.DEFAULT_ID], "0.8.2 saves: starter kart only")
 	SafeFile.write_json(PROFILE, {"version": 4, "currency": 900, "owned_karts": RacerRoster.IDS.duplicate(), "selected_kart": "yaska"})
 	SaveManager.load_profile()
-	check_eq(SaveManager.owned_karts().size(), RacerRoster.IDS.size(), "0.8.3 saves keep all")
+	check_eq(SaveManager.owned_karts(), [RacerRoster.DEFAULT_ID, "yaska"], "0.8.3 saves: starter + the raced kart")
 	check_eq(SaveManager.get_selected_kart(), "yaska", "selection kept")
 
 
@@ -95,35 +96,26 @@ func _racer_select(sz: Vector2) -> Array:
 	return [host, rs]
 
 
+## 0.14.2 (owner): kart select lists only owned karts; a "+" card leads to
+## the garage, where new karts are bought with manat.
 func test_racer_select_locked_cards_and_dialogs() -> void:
 	for sz in MENU_SIZES:
+		SaveManager.data.owned_karts = [RacerRoster.DEFAULT_ID]
 		var pair: Array = await _racer_select(sz)
 		var rs: RacerSelect = pair[1]
 		var area := Rect2(Vector2.ZERO, sz)
-		var yi := RacerRoster.IDS.find("yaska")
-		check(rs.cards[yi].get_node("Lock").visible, "yaska shows a price tag")
-		check(not rs.cards[RacerRoster.IDS.find(RacerRoster.DEFAULT_ID)].get_node("Lock").visible, "standard unlocked")
-		rs._select(yi)
-		check(rs.buy_btn.visible and not rs.start_btn.visible, "Al replaces Start")
-		check(area.encloses(rs.buy_btn.get_global_rect()), "buy visible at %s" % sz)
-		SaveManager.data.currency = 100
-		rs.open_buy()
+		check_eq(rs.cards.size(), 1, "only the owned kart is offered")
+		check_eq(rs.defs[0].id, RacerRoster.DEFAULT_ID, "the starter kart")
+		check(rs.start_btn.visible and not rs.buy_btn.visible, "Start, no buying here")
+		var more: Control = rs.find_child("MoreKarts", true, false)
+		check(more != null and area.encloses(more.get_global_rect()), "+ card to the garage visible at %s" % sz)
+		pair[0].queue_free()
 		await tree.process_frame
-		await tree.process_frame
-		check_eq(rs.shop_kind, "funds", "not enough money dialog")
-		check(rs.shop_dialog.find_child("Missing", true, false) != null, "shows what is missing")
-		var pr: Rect2 = (rs.shop_dialog.find_child("Panel", true, false) as Control).get_global_rect()
-		check(area.encloses(pr), "dialog fits at %s (%s)" % [sz, pr])
-		rs.close_shop()
-		SaveManager.data.currency = KartShop.price("yaska")
-		rs.open_buy()
-		await tree.process_frame
-		check_eq(rs.shop_kind, "confirm", "confirm dialog")
-		rs.confirm_buy()
-		await tree.process_frame
-		check(SaveManager.is_kart_owned("yaska"), "bought from the dialog")
-		check(rs.start_btn.visible and not rs.buy_btn.visible, "Start is back")
-		check_eq(SaveManager.get_money(), 0, "charged")
+		SaveManager.data.owned_karts = RacerRoster.IDS.duplicate()
+		pair = await _racer_select(sz)
+		rs = pair[1]
+		check_eq(rs.cards.size(), RacerRoster.IDS.size(), "every owned kart listed")
+		check(rs.find_child("MoreKarts", true, false) == null, "no + card when all are owned")
 		SaveManager.data.owned_karts = [RacerRoster.DEFAULT_ID]
 		pair[0].queue_free()
 		await tree.process_frame

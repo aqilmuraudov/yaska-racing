@@ -413,7 +413,7 @@ func test_steer_hint_never_overlaps_start() -> void:
 
 
 func test_save_v5_backward_compatible() -> void:
-	check_eq(SaveManager.SAVE_VERSION, 5, "save version 5")
+	check(SaveManager.SAVE_VERSION >= 5, "save version 5 or later (6 since 0.14.2)")
 	var v4 := {"version": 4, "currency": 1234, "owned_karts": ["havhav", "posi"], "records": {"seafront_sprint": {"best_lap_ms": 41000}},
 		"cup_progress": {"junk": 1}}
 	SafeFile.write_json(PROFILE, v4)

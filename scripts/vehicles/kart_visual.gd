@@ -8,6 +8,8 @@ extends Node3D
 const MAX_ALIGN_TILT := deg_to_rad(28.0)
 const MAX_ROLL := deg_to_rad(20.0)
 const WHEEL_RADIUS := 0.34
+## 0.14.2 visible wheel spin cap, rad/s (~3 turns per second).
+const MAX_WHEEL_RATE := 19.0
 const VCOLOR_GLOSS := preload("res://assets/materials/vcolor_gloss.gdshader")
 
 var kart: KartController
@@ -229,7 +231,9 @@ func _physics_process(delta: float) -> void:
 		blob.transform = Transform3D(_align, Vector3(0, 0.05 - (0.0 if kart.grounded else 0.0), 0.05))
 
 	# Wheels.
-	_wheel_angle -= kart.speed * delta / WHEEL_RADIUS
+	# 0.14.2: the true rate (up to ~110 rad/s) turns > 90° per frame and reads
+	# as frantic / backwards spinning; cap what is shown (tread blur covers it).
+	_wheel_angle -= clampf(kart.speed / WHEEL_RADIUS, -MAX_WHEEL_RATE, MAX_WHEEL_RATE) * delta
 	var steer_vis := steer * deg_to_rad(24.0)
 	if drifting or absf(kart.drift_slip) > 0.05:
 		# Front wheels counter-steer: they point along the travel direction
