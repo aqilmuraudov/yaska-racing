@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- 0.12.0 tap hint: a pointing hand, index finger up (tip at ~ (44,10)). -->
+  <g stroke="#1b2346" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <path fill="#ffffff" d="M36 66 V20 a10 10 0 0 1 20 0 V56
+      a9 9 0 0 1 18 0 v4 a9 9 0 0 1 18 0 v6 a9 9 0 0 1 18 0 v22
+      c0 20 -14 34 -34 34 h-10 c-12 0 -20 -6 -27 -16 L18 92
+      c-5 -8 -2 -16 6 -18 c5 -1 9 1 12 5 Z"/>
+    <path fill="none" d="M56 56 v18 M74 60 v14 M92 66 v10"/>
+  </g>
+  <circle cx="46" cy="18" r="4" fill="#ffd23f"/>
+</svg>

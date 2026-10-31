@@ -33,6 +33,7 @@ G="C:/Tools/Godot/Godot_v4.4.1-stable_win64_console.exe"
 python tools/check_scripts.py            # parse every .gd file (refreshes class cache)
 python tools/check_csv.py                # localisation table sanity
 "$G" --headless -s tests/run_tests.gd    # unit + integration tests (exit code 0 = pass)
+GODOT="$G" python tools/run_tests.py    # 0.12.0 STRICT run: also fails a test that hit a SCRIPT ERROR (use this one)
 "$G" --headless -s tests/run_tests.gd -- --only=test_items   # subset
 ```
 

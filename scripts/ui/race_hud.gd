@@ -22,6 +22,9 @@ var star_pill: PanelContainer
 var star_label: Label
 var money_label: Label ## driving income this race (subtle)
 var celebration: FinishCelebration
+var replay_layer: Control ## 0.12.0 finish replay overlay
+var replay_skip: Button
+var tap_hint: TapHint ## 0.12.0 wordless item hint on touch screens
 ## First quick race only: three short prompts (steer, drift, item).
 var _hints_on := false
 var _hint_step := 0
@@ -372,6 +375,9 @@ func setup(p_race: RaceManager) -> void:
 		celebration.dismiss()
 		results.show_results(res))
 	race.state_changed.connect(_on_state)
+	_build_replay_layer()
+	race.replay_started.connect(_on_replay_started)
+	race.replay_ended.connect(_on_replay_ended)
 	if race.stars:
 		race.stars.collected.connect(func(total: int):
 			star_label.text = str(total)
@@ -627,6 +633,42 @@ func caption(text: String) -> void:
 	tw.tween_callback(l.queue_free)
 
 
+## 0.12.0: the new item as a small picture pill (item icon + its name)
+## instead of the bracketed "[Əşya: …]" text line.
+func item_caption(it: StringName) -> void:
+	if not bool(Settings.get_value("accessibility", "subtitles", true)):
+		return
+	var names := {&"turbo": "ITEM_TURBO", &"shield": "ITEM_SHIELD", &"trap": "ITEM_TRAP"}
+	var pill := PanelContainer.new()
+	pill.name = "ItemCaption"
+	pill.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.INK, 0.78), 36, 3, Color(1, 1, 1, 0.3), 6))
+	pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 8)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_child(h)
+	var ic := ItemIcon.new()
+	ic.item = it
+	ic.custom_minimum_size = Vector2(44, 44)
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(ic)
+	var l := GameUI.label(tr(names.get(it, "")), 24, UITheme.YELLOW, 6)
+	h.add_child(l)
+	captions.add_child(pill)
+	while captions.get_child_count() > 2:
+		var oldest := captions.get_child(0)
+		captions.remove_child(oldest)
+		oldest.queue_free()
+	pill.pivot_offset = Vector2(110, 26)
+	pill.scale = Vector2.ONE * 0.6
+	var tw := pill.create_tween()
+	tw.tween_property(pill, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(1.8)
+	tw.tween_property(pill, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(pill.queue_free)
+
+
 func _on_item_changed(it: StringName) -> void:
 	if it == &"?rolling":
 		item_icon.rolling = true
@@ -638,8 +680,9 @@ func _on_item_changed(it: StringName) -> void:
 		if it != &"" and _last_item == &"":
 			item_panel.scale = Vector2.ONE * 1.2
 		if it != &"" and was_rolling:
-			var names := {&"turbo": "ITEM_TURBO", &"shield": "ITEM_SHIELD", &"trap": "ITEM_TRAP"}
-			caption(tr("CAP_ITEM") % tr(names.get(it, "")))
+			item_caption(it)
+		if it == &"" and is_instance_valid(tap_hint):
+			tap_hint.dismiss() # used: the hand goes away
 	_last_item = it if it != &"?rolling" else _last_item
 
 
@@ -664,8 +707,28 @@ func _tick_hints() -> void:
 		_msg_time = 3.5
 	elif _hint_step == 2 and p.kart.item != &"" and p.kart.item_roll_timer <= 0.0:
 		_hint_step = 3
-		show_message(tr("HINT_ITEM"), "info")
-		_msg_time = 3.0
+		if not show_tap_hint("item"):
+			show_message(tr("HINT_ITEM"), "info")
+			_msg_time = 3.0
+
+
+## 0.12.0: on touch screens a pulsing ring + tapping hand on the button
+## replaces the sentence. Returns false when there is no such button shown.
+func show_tap_hint(button_id: String) -> bool:
+	if touch == null or not touch.visible:
+		return false
+	var b = touch.get_button(button_id)
+	if b == null or not b.visible:
+		return false
+	if is_instance_valid(tap_hint):
+		tap_hint.queue_free()
+	tap_hint = TapHint.new()
+	tap_hint.name = "TapHint"
+	root.add_child(tap_hint)
+	var to_root := root.get_global_transform().affine_inverse() * touch.get_global_transform()
+	tap_hint.target = to_root * b.center
+	tap_hint.radius = b.radius * touch.get_global_transform().get_scale().x
+	return true
 
 
 func show_pause(on: bool) -> void:
@@ -777,3 +840,78 @@ func _update_delta() -> void:
 	if delta_pill.visible:
 		delta_label.text = format_delta(d)
 		delta_label.add_theme_color_override("font_color", Color.WHITE if absf(d) < 0.005 else (Color("6dff8f") if d < 0.0 else Color("ff8080")))
+
+
+## 0.12.0 finish replay: cinema bars, a small "replay" badge (icon + one
+## word) and one big skip button. The race HUD and celebration hide.
+func _build_replay_layer() -> void:
+	replay_layer = Control.new()
+	replay_layer.name = "ReplayLayer"
+	replay_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	replay_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	replay_layer.visible = false
+	add_child(replay_layer)
+	for top in [true, false]:
+		var bar := ColorRect.new()
+		bar.name = "BarTop" if top else "BarBottom"
+		bar.color = Color(0, 0, 0, 0.88)
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.set_anchors_preset(Control.PRESET_TOP_WIDE if top else Control.PRESET_BOTTOM_WIDE)
+		bar.anchor_bottom = 0.1 if top else 1.0
+		bar.anchor_top = 0.0 if top else 0.9
+		bar.offset_top = 0
+		bar.offset_bottom = 0
+		replay_layer.add_child(bar)
+	var badge := GameUI.chip("restore", tr("REPLAY_BADGE"), 26, Color("e8384f", 0.9), Color.WHITE)
+	badge.name = "ReplayBadge"
+	badge.anchor_top = 0.1
+	badge.anchor_bottom = 0.1
+	badge.offset_left = 28
+	badge.offset_top = 16
+	replay_layer.add_child(badge)
+	replay_skip = Button.new()
+	replay_skip.name = "ReplaySkip"
+	replay_skip.text = tr("REPLAY_SKIP")
+	replay_skip.icon = UITheme.icon("play")
+	replay_skip.expand_icon = false
+	replay_skip.focus_mode = Control.FOCUS_NONE
+	replay_skip.custom_minimum_size = Vector2(196, 84)
+	UITheme.style_button(replay_skip, "orange", 34)
+	replay_skip.add_theme_constant_override("icon_max_width", 40)
+	replay_skip.add_theme_constant_override("h_separation", 10)
+	# Bottom-right, above the lower cinema bar (10 % of the height).
+	replay_skip.anchor_left = 1.0
+	replay_skip.anchor_right = 1.0
+	replay_skip.anchor_top = 0.9
+	replay_skip.anchor_bottom = 0.9
+	replay_skip.offset_left = -236
+	replay_skip.offset_right = -40
+	replay_skip.offset_top = -104
+	replay_skip.offset_bottom = -20
+	replay_skip.pressed.connect(func(): race.skip_replay())
+	replay_layer.add_child(replay_skip)
+
+
+func _on_replay_started(_kart: Node3D) -> void:
+	safe.visible = false
+	touch.release_all()
+	touch.visible = false
+	celebration.dismiss()
+	replay_layer.visible = true
+	replay_layer.modulate.a = 0.0
+	create_tween().tween_property(replay_layer, "modulate:a", 1.0, 0.3)
+	replay_skip.pivot_offset = replay_skip.custom_minimum_size * 0.5
+	var tw := replay_skip.create_tween().set_loops(0)
+	tw.tween_property(replay_skip, "scale", Vector2.ONE * 1.06, 0.5).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(replay_skip, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
+	replay_skip.set_meta("pulse", tw)
+
+
+func _on_replay_ended() -> void:
+	replay_layer.visible = false
+	safe.visible = true
+	var tw = replay_skip.get_meta("pulse", null)
+	if tw is Tween and (tw as Tween).is_valid():
+		(tw as Tween).kill()
+	replay_skip.scale = Vector2.ONE
+

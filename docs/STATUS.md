@@ -1,6 +1,15 @@
 # Status, verification evidence and known issues
 
-Date: 2026-10-31 · Build: 0.11.2 · Engine: Godot 4.4.1-stable
+Date: 2026-10-31 · Build: 0.12.0 · Engine: Godot 4.4.1-stable
+
+## Update 0.12.0 (versionCode 29) — finish replay, wordless item hint, strict tests
+First batch of the owner-approved list (replay, less text in the HUD, test runner).
+- **Winner's finish replay** (`FinishReplay`): after the 3.4 s celebration the camera shows the winner crossing the line (3.6 s before → 1.4 s after, slow motion near the line, ~6 s), cinema bars, "⟲ TƏKRAR" chip and a big "Keç" (skip) button; then the results. If the winner crossed too long ago (> buffer), the player's own finish is shown. Karts are moved from a 15 s recording with their physics paused and restored exactly afterwards. Off in the tutorial. This was "deferred" since 0.10.1.
+- **Less text in the HUD:** the new item appears as its picture + name in a pill (no "[Əşya: …]" brackets); on touch screens the first "use the item" hint is a pulsing ring and a tapping hand on the ITEM button instead of a sentence (keyboard keeps the sentence).
+- **Strict tests:** `tools/run_tests.py` runs the suite and fails any test method that printed a SCRIPT ERROR (Godot 4.4's runner reported such aborted methods as PASS). Checked on the 0.11.1 copy: it flags `test_round9` (5 errors) with exit 1; on 0.12.0 it exits 0.
+- Tests: `tests/test_round23.gd` (7 methods, 64 checks: buffer cap and span, target choice, slow motion, play → skip → restore, play to the end, restart during the replay, off in tests/tutorial, tap hint, item pill, strings). Full suite (strict runner): 197 methods, 5377 checks, 0 failures, 0 script errors.
+- Screenshots (Mobile renderer, lavapipe): `docs/screenshots/0.12.0/` (replay, results after it, item pill + tap hint).
+- Known / not verified: no phone — replay smoothness and the tap hand on a real screen need a device check. The replay uses the trackside/cinematic shots, which can still be briefly blocked by small decor without collision (known since 0.10.2). Rival karts' driver animations keep their last pose during the replay (only transforms and wheel speed are replayed). Steering/drift first-race hints are still sentences (next batch).
 
 ## Update 0.11.2 (versionCode 28) — phone optimisation, night polish
 Owner request: "super-optimise for Android, raise graphics quality". New build box (Linux): Godot 4.4.1 official + templates, OpenJDK 17, debug keystore copied from the owner (SHA-256 726cd353…6e25d9). Android SDK pieces come from Ubuntu packages (apksigner 31.0.2, zipalign, adb) laid out as build-tools/34.0.0 — Google's servers are unreachable here, so no sdkmanager / Android Studio / emulator (no KVM either). Screenshots now use the **Mobile renderer** on software Vulkan (lavapipe) under Xvfb — closer to the phone than the old Compatibility shots, but still not a phone.

@@ -23,6 +23,9 @@ const START_BOOST_WINDOW := GameFeel.START_WINDOW
 const START_PERFECT_WINDOW := GameFeel.START_PERFECT
 ## Near miss pop (0.9.1): kart that was passed close, for HUD/camera.
 signal near_miss(rival: Node)
+## 0.12.0 finish replay (HUD hides, shows the replay badge + skip button).
+signal replay_started(kart: Node3D)
+signal replay_ended
 const FINISH_WINDOW := 18.0 ## (legacy) longest wait for the field
 ## Results open this long after the PLAYER crosses the line: the race is
 ## over for them at the crossing; the delay is only the finish celebration.
@@ -67,6 +70,9 @@ var track: TrackData
 var builder: TrackBuilder
 var decor: Node3D
 var night_lights: Array[Node3D] = []
+var replay: FinishReplay ## 0.12.0
+var _replay_active := false
+var _replay_cam_mode := 0
 var environment: RaceEnvironment
 var items: ItemSystem
 var camera: ChaseCamera
@@ -242,6 +248,11 @@ func _build_racers() -> void:
 	if decor and decor.has_method("segment_hit"):
 		camera.occluder = decor.segment_hit
 	camera.others = all_karts
+	replay = FinishReplay.new()
+	replay.name = "FinishReplay"
+	add_child(replay)
+	replay.setup(all_karts)
+	replay.finished.connect(_on_replay_finished)
 	camera.mode_changed.connect(func(m: int):
 		if hud and is_instance_valid(hud):
 			hud.caption(tr("HUD_CAMERA_VIEW") % tr(ChaseCamera.MODE_KEYS[m])))
@@ -434,6 +445,14 @@ func _set_state(s: RaceState) -> void:
 func restart() -> void:
 	get_tree().paused = false
 	paused = false
+	if replay:
+		var was := _replay_active
+		_replay_active = false
+		replay.stop() # restores karts and their physics; no results
+		replay.clear()
+		if was:
+			camera.set_mode(_replay_cam_mode)
+			replay_ended.emit()
 	race_time = 0.0
 	finish_counter = 0
 	_results = {}
@@ -484,8 +503,13 @@ func _physics_process(delta: float) -> void:
 			_tick_racers(delta)
 			_resolve_contacts()
 		RaceState.RACING, RaceState.FINISHING:
+			if _replay_active:
+				replay.step(delta) # emits finished at the end -> results
+				return
 			race_time += delta
 			_tick_racers(delta)
+			if replay:
+				replay.record(race_time)
 			_resolve_contacts()
 			_update_ranking()
 			_tick_goals()
@@ -495,7 +519,8 @@ func _physics_process(delta: float) -> void:
 				if Input.is_action_just_pressed(InputActions.NITRO) and player.player_input and (player.player_input.enabled or kids_mode()):
 					fire_nitro()
 			if state == RaceState.FINISHING and state_time >= RESULTS_DELAY:
-				_finish_race()
+				if not _start_replay():
+					_finish_race()
 	_audio_director_timer -= delta
 	if _audio_director_timer <= 0.0:
 		_audio_director_timer = 0.25
@@ -648,6 +673,63 @@ func _on_player_finished() -> void:
 	player.ai.set_physics_process(true)
 	player.kart.get_meta("visual").set_victory(player.finish_place <= 3)
 	_set_state(RaceState.FINISHING)
+
+
+## 0.12.0: the winner's finish replay between the celebration and the
+## results. Skipped in tutorials, in headless tests (unless config
+## "force_replay") and when the crossing is no longer in the buffer.
+func replay_enabled() -> bool:
+	if replay == null or config.mode == "tutorial":
+		return false
+	if headless_test and not bool(config.get("force_replay", false)):
+		return false
+	return bool(config.get("finish_replay", true))
+
+
+func _start_replay() -> bool:
+	if not replay_enabled():
+		return false
+	var winner_i := -1
+	var winner_t := 0.0
+	var player_i := -1
+	for i in racers.size():
+		var r: Racer = racers[i]
+		if r.is_player:
+			player_i = i
+		if r.tracker.finished and r.finish_place == 1:
+			winner_i = i
+			winner_t = r.tracker.finish_time
+	var target := replay.pick_target(winner_i, winner_t, player_i, player.tracker.finish_time)
+	if target < 0 or not replay.start(target):
+		return false
+	_replay_active = true
+	_replay_cam_mode = camera.mode
+	camera.set_mode(ChaseCamera.Mode.CINEMATIC)
+	camera.follow(racers[target].kart)
+	camera.snap()
+	replay_started.emit(racers[target].kart)
+	return true
+
+
+## Ends the replay early (HUD "skip" button, or a tap).
+func skip_replay() -> void:
+	if _replay_active and replay.playing:
+		replay.stop()
+
+
+func _on_replay_finished() -> void:
+	if not _replay_active:
+		return # restart() stopped it
+	_replay_active = false
+	camera.set_mode(_replay_cam_mode)
+	camera.follow(player.kart)
+	camera.snap()
+	replay_ended.emit()
+	_finish_race()
+
+
+func is_replaying() -> bool:
+	return _replay_active
 
 
 func _finish_race() -> void:

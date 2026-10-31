@@ -166,6 +166,7 @@ func _ui_shots(race: RaceManager) -> void:
 ## --force-finish=N: finish the player at race_time 4 s, show the place-N
 ## celebration and capture it, then capture the results panel and quit.
 var _ff_stage := 0
+var _ff_replay_seen := false
 func _force_finish(race: RaceManager) -> void:
 	if _ff_stage == 0 and race.state == RaceManager.RaceState.RACING and race.race_time > 4.0:
 		_ff_stage = 1
@@ -195,6 +196,12 @@ func _force_finish(race: RaceManager) -> void:
 		race.hud.celebration.play(n) # pin the shown place for the capture
 		await get_tree().create_timer(1.1 * Engine.time_scale).timeout
 		await _save_shot("celebrate_place%d.png" % n)
+		_ff_stage = 2
+	elif _ff_stage == 2 and race.is_replaying() and not _ff_replay_seen:
+		_ff_replay_seen = true # 0.12.0: capture the finish replay once
+		_ff_stage = 4
+		await get_tree().create_timer(1.6 * Engine.time_scale).timeout
+		await _save_shot("replay.png")
 		_ff_stage = 2
 	elif _ff_stage == 2 and race.state == RaceManager.RaceState.RESULTS:
 		_ff_stage = 3

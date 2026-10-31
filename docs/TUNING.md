@@ -265,3 +265,11 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
   - k = 1 at night, 0.35 at sunset, 0 by day.
   - sea: global `yaska_night` (1 night, 0.3 sunset, 0 day) mixes the water to navy (0.02, 0.06, 0.12)…(0.006, 0.018, 0.055) with cool moon glints.
 
+## Finish replay and wordless hints (0.12.0)
+- `FinishReplay` (`scripts/racing/finish_replay.gd`): ring buffer of every kart's transform + speed, recorded every 2nd physics tick (30 Hz), `BUFFER_S` 15 s (452 frames × karts).
+- Starts when FINISHING reaches `RESULTS_DELAY` (3.4 s). Target: the race winner if its crossing is still covered by the buffer, else the player. Window `WINDOW_BEFORE` 3.6 s before the line to `WINDOW_AFTER` 1.4 s after; playback ×`SLOWMO` 0.45 within ±`SLOWMO_RANGE` 0.7 s of the crossing → about 6.1 s real time. Kart physics paused during playback; transforms/velocity/speed/yaw restored afterwards; race clock frozen.
+- Camera: CINEMATIC on the target kart, then back to the saved view on the player. HUD: race HUD hidden, cinema bars (10 % top/bottom), "⟲ TƏKRAR" chip, "Keç" button (196×84, bottom-right above the bar, pulses).
+- Off in the tutorial, in headless tests (unless `force_replay`), or with config `finish_replay = false`. Restart during the replay restores the karts and gives no results.
+- Item notice: `RaceHUD.item_caption` — item icon (44 px) + item name in a dark pill, 0.25 s pop, 1.8 s, 0.4 s fade (was the text line "[Əşya: …]").
+- Item hint on touch screens: `TapHint` — yellow ring pulsing at 1.1 Hz around the ITEM button and a tapping hand (`hint_tap.svg`), 3.2 s or until the item is used. Keyboard/controller keeps the sentence.
+
