@@ -1,6 +1,6 @@
 extends SceneTree
 ## Triangle / draw counts of one racer's kart model (near and far LOD).
-##   godot --headless --path . -s tools/kart_stats.gd -- yaska
+##   godot --headless --path . -s tools/kart_stats.gd -- yaska [procedural]
 ## Draws = mesh surfaces (one draw call each when visible).
 
 func _init() -> void:
@@ -8,6 +8,8 @@ func _init() -> void:
 	var id: String = args[0] if args.size() > 0 else "yaska"
 	var roster = load("res://scripts/vehicles/racer_roster.gd")
 	var def = roster.get_def(id)
+	if "procedural" in args:
+		load("res://scripts/vehicles/kart_model.gd").gltf_enabled = false
 	for lod in [["near", 1.0], ["far", 0.4]]:
 		var shape_kit = load("res://scripts/effects/shape_kit.gd")
 		shape_kit.detail = lod[1]

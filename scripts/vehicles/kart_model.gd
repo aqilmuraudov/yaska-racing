@@ -33,12 +33,15 @@ static var _kart_vcolor: ShaderMaterial
 ## only skips the procedural meshes, so all animation code is shared. Missing
 ## file -> the procedural model, as before.
 const GLTF_MODELS := {"star": "res://assets/models/yaska/yaska_star.glb",
-	"buddy": "res://assets/models/havhav/buddy_rally.glb"}
+	"buddy": "res://assets/models/havhav/buddy_rally.glb",
+	"bamboo": "res://assets/models/posi/bamboo_sprint.glb"}
 const GLTF_FAR := {"star": "res://assets/models/yaska/yaska_star_far.glb",
-	"buddy": "res://assets/models/havhav/buddy_rally_far.glb"}
+	"buddy": "res://assets/models/havhav/buddy_rally_far.glb",
+	"bamboo": "res://assets/models/posi/bamboo_sprint_far.glb"}
 ## Exhaust tips of the glTF models (smoke and boost flames start here).
 const GLTF_EXHAUST := {"star": [Vector3(-0.235, 1.0, 1.11), Vector3(0.235, 1.0, 1.11)],
-	"buddy": [Vector3(0.33, 0.525, 1.18)]}
+	"buddy": [Vector3(0.33, 0.525, 1.18)],
+	"bamboo": [Vector3(-0.2, 0.6, 1.15), Vector3(0.2, 0.6, 1.15)]}
 const BAKED_SHADER := preload("res://assets/materials/kart_baked.gdshader")
 static var gltf_enabled := true
 static var _baked_mats := {}
