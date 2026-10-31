@@ -289,6 +289,14 @@ const GLTF_PROPS := {
 	"maiden_tower": "res://assets/models/oldcity/oldcity_props",
 	"baluster": "res://assets/models/street/street_props",
 	"lamp": "res://assets/models/street/street_props",
+	"palm": "res://assets/models/flora/flora_props",
+	"palm_b": "res://assets/models/flora/flora_props",
+	"tree": "res://assets/models/flora/flora_props",
+	"pine": "res://assets/models/flora/flora_props",
+	"cypress": "res://assets/models/flora/flora_props",
+	"flower_bed": "res://assets/models/flora/flora_props",
+	"bollard": "res://assets/models/flora/flora_props",
+	"bench": "res://assets/models/flora/flora_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps"}
