@@ -31,7 +31,9 @@ const TITLES := [
 	{"id": "turbo", "name": "TITLE_TURBO", "stars": 700},
 ]
 
-const TRACKS := TrackList.IDS ## 0.11.0: per-track trophies for both tracks
+const TRACKS := TrackList.IDS ## 0.11.0: per-track trophies for every track
+## 0.13.0: string prefix per track (was "not the first track = Göydələnlər").
+const TROPHY_PREFIX := {"seafront_sprint": "TROPHY_", "downtown_towers": "TROPHY_DT_", "old_city": "TROPHY_OC_"}
 
 ## Daily goals (optional): three per day, chosen from the date.
 const DAILY_POOL := [
@@ -65,7 +67,7 @@ static func trophies() -> Array:
 		for m in [["quick_finish", 1, 15], ["quick_podium", 1, 25], ["quick_win", 1, 40], ["quick_win", 5, 80],
 				["tt_finish", 1, 15], ["tt_finish", 5, 40], ["tt_record", 3, 50]]:
 			var key := "%s:%s" % [track, m[0]]
-			t.append({"id": "%s_%d" % [key, m[1]], "name": ("TROPHY_" if track == TRACKS[0] else "TROPHY_DT_") + String(m[0]).to_upper(), "arg": m[1],
+			t.append({"id": "%s_%d" % [key, m[1]], "name": String(TROPHY_PREFIX.get(track, "TROPHY_")) + String(m[0]).to_upper(), "arg": m[1],
 				"track": track, "stat": key, "target": m[1], "coins": m[2]})
 	for e in t: # amounts above were coins (0.7); one coin = 2 qəpik
 		e.coins = int(e.coins) * Money.COINS_TO_QEPIK

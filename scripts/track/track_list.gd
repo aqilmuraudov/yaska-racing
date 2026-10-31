@@ -3,14 +3,14 @@ extends RefCounted
 ## 0.11.0: every playable track (data/tracks/<id>.json) in menu order, with
 ## its name/description keys. Records, ghosts and trophies are per track id.
 
-const IDS := ["seafront_sprint", "downtown_towers"]
-const NAME_KEYS := {"seafront_sprint": "TRACK_SEAFRONT", "downtown_towers": "TRACK_DOWNTOWN"}
-const DESC_KEYS := {"seafront_sprint": "TRACK_SEAFRONT_DESC", "downtown_towers": "TRACK_DOWNTOWN_DESC"}
+const IDS := ["seafront_sprint", "downtown_towers", "old_city"] # 0.13.0 old_city
+const NAME_KEYS := {"seafront_sprint": "TRACK_SEAFRONT", "downtown_towers": "TRACK_DOWNTOWN", "old_city": "TRACK_OLDCITY"}
+const DESC_KEYS := {"seafront_sprint": "TRACK_SEAFRONT_DESC", "downtown_towers": "TRACK_DOWNTOWN_DESC", "old_city": "TRACK_OLDCITY_DESC"}
 ## Lap time relative to the seafront lap (autopilot, 0.11.0 measurement);
 ## scales the daily "time" goal.
 ## 0.11.1: short city names for the big city cards.
-const CITY_KEYS := {"seafront_sprint": "CITY_SEAFRONT", "downtown_towers": "TRACK_DOWNTOWN"}
-const LAP_SCALE := {"seafront_sprint": 1.0, "downtown_towers": 0.7}
+const CITY_KEYS := {"seafront_sprint": "CITY_SEAFRONT", "downtown_towers": "TRACK_DOWNTOWN", "old_city": "TRACK_OLDCITY"}
+const LAP_SCALE := {"seafront_sprint": 1.0, "downtown_towers": 0.7, "old_city": 0.5} # 0.13.0 autopilot lap ~26 s
 
 
 static func is_valid(id: String) -> bool:

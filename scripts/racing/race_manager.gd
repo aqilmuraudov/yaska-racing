@@ -190,7 +190,13 @@ func build_steps() -> Array:
 		for area in builder.boost_pad_areas:
 			area.body_entered.connect(_on_boost_pad)
 		# 0.11.0: each track picks its scenery builder.
-		decor = DowntownDecor.new() if track.decor_kind == "downtown" else TrackDecor.new()
+		match track.decor_kind:
+			"downtown":
+				decor = DowntownDecor.new()
+			"oldcity": # 0.13.0 İçərişəhər
+				decor = OldCityDecor.new()
+			_:
+				decor = TrackDecor.new()
 		decor.name = "Decor"
 		add_child(decor)
 		countdown_tick.connect(decor.set_countdown_lights), "decor_begin"])

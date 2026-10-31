@@ -557,3 +557,10 @@ STK_QOSA_QALA,Double Gate,Qoşa Qala
 STK_GOVERNMENT_HOUSE,Government House,Hökumət Evi
 STK_CARPET_MUSEUM,Carpet Museum,Xalça Muzeyi
 REWARDS_ALBUM,Album,Albom
+TRACK_OLDCITY,Old City,İçərişəhər
+TRACK_OLDCITY_DESC,"Narrow cobbled streets, the Maiden Tower and Qoşa Qala","Dar daş küçələr, Qız Qalası və Qoşa Qala"
+TROPHY_OC_QUICK_FINISH,Old City: finish a quick race,İçərişəhər: sürətli yarışı bitir
+TROPHY_OC_QUICK_PODIUM,Old City: podium in a quick race,İçərişəhər: sürətli yarışda podium
+TROPHY_OC_QUICK_WIN,Old City: win %d quick races,İçərişəhər: %d sürətli yarışda qalib gəl
+TROPHY_OC_TT_FINISH,Old City: %d time trials,İçərişəhər: %d vaxta qarşı yarış
+TROPHY_OC_TT_RECORD,Old City: beat your record %d times,İçərişəhər: rekordunu %d dəfə yenilə

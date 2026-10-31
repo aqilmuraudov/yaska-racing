@@ -48,7 +48,9 @@ func build() -> void:
 		if avail.x <= 0.0:
 			return
 		var gap := float(row.get_theme_constant("separation"))
-		var w := clampf((avail.x - gap - 24.0) / 2.0, 300.0, 600.0)
+		# 0.13.0: three cities share the row (was two).
+		var n := float(btns.size())
+		var w := clampf((avail.x - gap * (n - 1.0) - 24.0) / n, 250.0, 600.0)
 		var h := clampf(avail.y - 12.0, 320.0, w * 1.02)
 		for c in btns:
 			c.custom_minimum_size = Vector2(w, h)
