@@ -32,10 +32,13 @@ static var _kart_vcolor: ShaderMaterial
 ## kart space; build() still makes the rig (wheels, steering, driver nodes) and
 ## only skips the procedural meshes, so all animation code is shared. Missing
 ## file -> the procedural model, as before.
-const GLTF_MODELS := {"star": "res://assets/models/yaska/yaska_star.glb"}
-const GLTF_FAR := {"star": "res://assets/models/yaska/yaska_star_far.glb"}
+const GLTF_MODELS := {"star": "res://assets/models/yaska/yaska_star.glb",
+	"buddy": "res://assets/models/havhav/buddy_rally.glb"}
+const GLTF_FAR := {"star": "res://assets/models/yaska/yaska_star_far.glb",
+	"buddy": "res://assets/models/havhav/buddy_rally_far.glb"}
 ## Exhaust tips of the glTF models (smoke and boost flames start here).
-const GLTF_EXHAUST := {"star": [Vector3(-0.235, 1.0, 1.11), Vector3(0.235, 1.0, 1.11)]}
+const GLTF_EXHAUST := {"star": [Vector3(-0.235, 1.0, 1.11), Vector3(0.235, 1.0, 1.11)],
+	"buddy": [Vector3(0.33, 0.525, 1.18)]}
 const BAKED_SHADER := preload("res://assets/materials/kart_baked.gdshader")
 static var gltf_enabled := true
 static var _baked_mats := {}
@@ -181,8 +184,13 @@ func _attach_gltf(src: Dictionary) -> void:
 	if not driver.eyes.is_empty():
 		targets["Eyes"] = driver.eyes[0]
 	if driver.ears.size() == 2:
+		# Braids (girl) or ears (animals) ride on the same pivots.
 		targets["BraidL"] = driver.ears[0]
 		targets["BraidR"] = driver.ears[1]
+		targets["EarL"] = driver.ears[0]
+		targets["EarR"] = driver.ears[1]
+	if driver.tail:
+		targets["Tail"] = driver.tail
 	if driver.arms.size() == 2:
 		targets["ArmL"] = driver.arms[0].get_child(0)
 		targets["ArmR"] = driver.arms[1].get_child(0)

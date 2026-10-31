@@ -159,8 +159,7 @@ func test_fallback_and_other_racers() -> void:
 	m.free()
 	KartModel.gltf_enabled = true
 	for id in RacerRoster.IDS:
-		if id == "yaska":
-			continue
 		var o := _model(id)
-		check(not o.from_gltf, "%s stays procedural" % id)
+		var want := KartModel.GLTF_MODELS.has(RacerRoster.get_def(id).kart_style)
+		check(o.from_gltf == want, "%s uses glTF only when it has a model" % id)
 		o.free()
