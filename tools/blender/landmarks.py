@@ -300,35 +300,42 @@ def _arc(c, rad, a0, a1, toward, n):
 
 
 def build_crescent(hi):
-    """Crescent moon standing on its outer rim (LandmarkKit._crescent frame):
-    outer circle R 46 touching y = 0, inner circle r 39 cut out up-left."""
+    """Baku Crescent (0.15.3, from photos): a huge glass arch, an asymmetric
+    inverted U - straight thick left leg, broad round top, the right side
+    curving down to a thinner leg - with a tall arched opening between the
+    legs, standing on its round podium in the sea."""
     tag = "H" if hi else "L"
     g = "crescent"
-    R, r = 46.0, 39.0
-    oc, ic = Vector((0.0, R)), Vector((-15.0, R + 12.0))
-    d = (ic - oc).length
-    a = (R * R - r * r + d * d) / (2 * d)
-    h = math.sqrt(max(R * R - a * a, 0.0))
-    dvec = (ic - oc) / d
-    mid = oc + dvec * a
-    perp = Vector((-dvec.y, dvec.x))
-    t1, t2 = mid + perp * h, mid - perp * h
-    n = L(hi, 18, 64)
-    away = math.atan2((oc - ic).y, (oc - ic).x)
-    outer = _arc(oc, R, math.atan2((t1 - oc).y, (t1 - oc).x), math.atan2((t2 - oc).y, (t2 - oc).x), away, n)
-    inner = _arc(ic, r, math.atan2((t2 - ic).y, (t2 - ic).x), math.atan2((t1 - ic).y, (t1 - ic).x), away, n)
-    outline = [(p.x, p.y) for p in outer] + [(p.x, p.y) for p in inner[1:-1]]
+    n = L(hi, 14, 48)
+    outer = []
+    for k in range(n + 1):
+        a = math.pi * (1.0 - k / n)
+        outer.append((24.0 * math.cos(a), 44.0 + 28.0 * math.sin(a) if a > math.pi / 2 else 40.0 + 32.0 * math.sin(a)))
+    hole = []
+    for k in range(n + 1):
+        a = math.pi * k / n
+        hole.append((5.0 - 9.0 * math.cos(a), 30.0 + 14.0 * math.sin(a)))
+    # Around the solid: left foot, into the opening (up its left side, over
+    # its arch, down its right side), right foot, up the right side, over the
+    # top and down the left side.
+    outline = [(-24.0, 0.0), (-4.0, 0.0)] + hole + [(14.0, 0.0), (24.0, 0.0)] + list(reversed(outer))[:-1]
+    from mathutils.geometry import tessellate_polygon
     bm = bmesh.new()
     fr = [bm.verts.new((x, y, 8.0)) for x, y in outline]
     bk = [bm.verts.new((x, y, -8.0)) for x, y in outline]
-    f1 = bm.faces.new(fr)
-    f2 = bm.faces.new(list(reversed(bk)))
-    bmesh.ops.triangulate(bm, faces=[f1, f2])
+    for tri in tessellate_polygon([[Vector((x, y, 0.0)) for x, y in outline]]):
+        bm.faces.new([fr[i] for i in tri])
+        bm.faces.new([bk[i] for i in reversed(tri)])
     m = len(outline)
     for i in range(m):
         j = (i + 1) % m
         bm.faces.new((fr[j], fr[i], bk[i], bk[j]))
     K.finish(bm, f"cr_body_{tag}", "glass_blue", g, hi, smooth=False)
+    # Low round podium of glass floors with white bands around the feet.
+    turned(f"cr_pod_{tag}", [(0.0, 32.0), (9.6, 32.0), (9.6, 0.0)], (0, 0, 0), "glass", g, hi, L(hi, 24, 64))
+    for k, y in enumerate((0.0, 3.2, 6.4, 9.6)):
+        turned(f"cr_podband{k}_{tag}", [(y - 0.3, 32.5), (y + 0.4, 32.5), (y + 0.4, 31.8), (y - 0.3, 31.8)], (0, 0, 0),
+               "white", g, hi, L(hi, 24, 64))
     turned(f"cr_base_{tag}", [(-3.5, 41.0), (0.0, 41.0), (0.0, 0.0)], (0, 0, 0), "white", g, hi, L(hi, 24, 64))
     if hi:
         poly = outline
