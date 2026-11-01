@@ -58,3 +58,12 @@ func test_real_malls() -> void:
 		names.append(m[4])
 	for n in ["28 MALL", "PORT BAKU", "PARK BULVAR", "GƏNCLİK MALL"]:
 		check(n in names, "downtown has " + n)
+
+
+func test_nine_storey_blocks() -> void:
+	for id in ["block9_a", "block9_b", "block9_c"]:
+		var bb := PropKit.get_mesh(id + PropKit.LO_SUFFIX).get_aabb()
+		check(bb.size.y > 30.0 and bb.size.y < 40.0, "%s is 9 storeys + shops (%.1f m)" % [id, bb.size.y])
+		check(absf(bb.size.x - 30.0) < 2.0, "%s 30 m wide" % id)
+	var src := FileAccess.get_file_as_string("res://scripts/track/track_decor.gd")
+	check(src.find("block9_") > 0, "city blocks use them, unscaled")

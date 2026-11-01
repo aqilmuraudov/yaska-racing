@@ -349,13 +349,17 @@ const GLTF_PROPS := {
 	"port_baku": "res://assets/models/malls/malls_props",
 	"park_bulvar": "res://assets/models/malls/malls_props",
 	"ganjlik_mall": "res://assets/models/malls/malls_props",
+	# 0.15.3 generic new 9-storey Baku residential blocks
+	"block9_a": "res://assets/models/blocks/blocks_props",
+	"block9_b": "res://assets/models/blocks/blocks_props",
+	"block9_c": "res://assets/models/blocks/blocks_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
 	"res://assets/models/city": "windows", "res://assets/models/seafront": "windows",
 	"res://assets/models/skyline": "windows", "res://assets/models/landmarks": "windows",
 	"res://assets/models/downtown": "windows", "res://assets/models/plaza": "windows",
-	"res://assets/models/malls": "windows"}
+	"res://assets/models/malls": "windows", "res://assets/models/blocks": "windows"}
 const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true

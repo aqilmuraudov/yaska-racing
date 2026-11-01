@@ -901,7 +901,15 @@ func _place_backdrop() -> void:
 		var bh := rng.randf_range(8.0, 30.0)
 		var bs := Vector3(rng.randf_range(10, 24), bh, rng.randf_range(10, 22))
 		var rot := Basis(Vector3.UP, rng.randf_range(-0.2, 0.2))
-		if PropKit.gltf_enabled and PropKit.GLTF_PROPS.has("stalin_block"):
+		if LandmarkKit._has_gltf("block9_a"):
+			# 0.15.3 (owner): ordinary city = new 9-storey Baku blocks, unscaled
+			# so the windows keep their proportions (30 x 16 m footprint).
+			if not clear_of_track(q, 26.0, 30.0):
+				continue
+			var kind9: String = ["block9_a", "block9_b", "block9_c"][i % 3]
+			var yaw9 := Basis(Vector3.UP, rng.randf_range(-0.25, 0.25) + (PI if i % 2 == 0 else 0.0))
+			city.add_committed(PropKit.get_mesh(kind9 + PropKit.LO_SUFFIX), Transform3D(yaw9, q + Vector3(0, -1.0, 0)))
+		elif PropKit.gltf_enabled and PropKit.GLTF_PROPS.has("stalin_block"):
 			# 0.14.4: baked sandstone blocks / residential towers (far LOD, one mesh).
 			var kind := "stalin_block" if i % 3 != 0 else "resid_tower"
 			var base: Vector3 = Vector3(40, 26, 22) if kind == "stalin_block" else Vector3(24, 62, 20)
