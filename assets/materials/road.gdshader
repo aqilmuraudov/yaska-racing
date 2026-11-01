@@ -38,6 +38,21 @@ float band(float x, float a, float b) {
 }
 
 varying vec2 road_xz;
+
+// 0.15.3: relief without tangents - bump from a height value through screen
+// space derivatives (Mikkelsen). Aggregate grain on asphalt, sunken mortar
+// between cobbles; fades out with distance (no shimmer, cheap far away).
+uniform float asphalt_bump = 0.006;
+uniform float cobble_bump = 0.03;
+vec3 bump_normal(vec3 pos, vec3 nrm, float h) {
+	vec3 dpdx = dFdx(pos);
+	vec3 dpdy = dFdy(pos);
+	vec3 r1 = cross(dpdy, nrm);
+	vec3 r2 = cross(nrm, dpdx);
+	float det = dot(dpdx, r1);
+	vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
+	return normalize(abs(det) * nrm - grad);
+}
 global uniform float yaska_night; // 0.13.0: wet asphalt at night
 // 0.13.0 contact shadows painted at load time (AoMap): 1 = open ground.
 global uniform sampler2D yaska_ao : filter_linear_mipmap, repeat_disable;
@@ -96,6 +111,11 @@ void fragment() {
 	// Soft darker gutter along both edges frames the driving surface.
 	col *= 1.0 - 0.18 * smoothstep(hw - 1.4, hw - 0.1, abs(lat)) * (1.0 - edge_line);
 
+	// Relief: luminance of the textures as height (dark = low).
+	float h_asph = dot(texture(asphalt_tex, wp * 0.25).rgb, vec3(0.33));
+	float h_cob = dot(cobble, vec3(0.33));
+	float hgt = mix(h_asph * asphalt_bump, h_cob * cobble_bump, cob) * detail * (1.0 - marks);
+	NORMAL = bump_normal(VERTEX, NORMAL, hgt);
 	// Buildings and trees right beside the road shade its edge a little.
 	ALBEDO = col * mix(1.0, ao_at(road_xz), 0.75);
 	// Roughness varies with the grain; the polished racing line and painted

@@ -93,10 +93,9 @@ func _make_materials() -> void:
 	var water := ShaderMaterial.new()
 	water.shader = WATER_SHADER
 	materials.water = water
-	var wall := StandardMaterial3D.new()
-	wall.vertex_color_use_as_albedo = true
-	wall.vertex_color_is_srgb = true
-	wall.roughness = 0.85
+	# 0.15.3: barrier shader (concrete grain, panel joints, relief).
+	var wall := ShaderMaterial.new()
+	wall.shader = preload("res://assets/materials/barrier.gdshader")
 	materials.wall = wall
 	var stone := ShaderMaterial.new()
 	stone.shader = preload("res://assets/materials/limestone.gdshader")
