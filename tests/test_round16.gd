@@ -46,9 +46,9 @@ func test_flame_towers_shape() -> void:
 func test_government_house_massing() -> void:
 	var bb := LandmarkKit.get_mesh("government_house").get_aabb()
 	check(bb.size.x >= 170.0, "long facade (%.0f m)" % bb.size.x)
-	check(bb.size.y >= 75.0, "stepped tower with spire (%.0f m)" % bb.size.y)
+	check(bb.size.y >= 55.0, "loggia towers with needles above the roof (%.0f m)" % bb.size.y)
 	check(absf(bb.position.x + bb.end.x) < 1.0, "symmetric")
-	check(LandmarkKit.get_mesh("government_house_far").get_aabb().size.y >= 75.0, "far LOD keeps the silhouette")
+	check(LandmarkKit.get_mesh("government_house_far").get_aabb().size.y >= 55.0, "far LOD keeps the silhouette")
 
 
 func test_baku_eye_proportions() -> void:
