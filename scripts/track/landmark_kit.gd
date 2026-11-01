@@ -171,8 +171,10 @@ static func set_flame_led(amount: float) -> void:
 ## convex outer face (+x) curls in towards it like a tongue of fire.
 static func flame_point(u: float, v: float, height: float, radius: float) -> Vector3:
 	var th := u * TAU
-	var r := radius * (1.0 + 0.17 * cos(th) - 0.07 * cos(3.0 * th))
-	var w := pow(maxf(1.0 - v, 0.0), 0.7) * (1.0 + 0.95 * v)
+	# 0.14.4 (owner's photos): fuller flames - a stronger convex outer face and
+	# a belly around a third of the height before the long taper to the tip.
+	var r := radius * (1.0 + 0.24 * cos(th) - 0.07 * cos(3.0 * th))
+	var w := pow(maxf(1.0 - v, 0.0), 0.75) * (1.0 + 1.3 * v)
 	var cx := -radius * 0.75 * pow(v, 1.5)
 	return Vector3(cx + cos(th) * r * w, v * height, sin(th) * r * 0.84 * w)
 
@@ -186,7 +188,7 @@ static func _flame(height: float, radius: float, lod: bool) -> ArrayMesh:
 ## Tower layout in the group's local frame: [height, radius, centre].
 ## Tallest at the back (-z); centres on a triangle of 34 m circumradius.
 static func flame_defs() -> Array:
-	return [[120.0, 17.0, Vector3(0, 0, -34)], [109.0, 15.5, Vector3(-29.4, 0, 17)], [106.0, 15.0, Vector3(29.4, 0, 17)]]
+	return [[120.0, 20.0, Vector3(0, 0, -34)], [109.0, 18.5, Vector3(-29.4, 0, 17)], [106.0, 18.0, Vector3(29.4, 0, 17)]]
 
 
 static func _flame_towers(lod: bool) -> ArrayMesh:
