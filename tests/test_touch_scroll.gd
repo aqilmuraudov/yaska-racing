@@ -8,6 +8,7 @@ var sc: ScrollContainer
 var ts: TouchScroll
 var presses := 0
 var xf := Transform2D.IDENTITY
+var layer: CanvasLayer
 
 
 func _build() -> void:
@@ -24,7 +25,13 @@ func _build() -> void:
 		b.custom_minimum_size = Vector2(0, 72)
 		b.pressed.connect(func(): presses += 1)
 		v.add_child(b)
-	tree.root.add_child(sc)
+	# On its own top canvas layer: in the full run, Controls left on the root
+	# by earlier tests could sit above the list and eat the tap (the old
+	# "tap still presses a row" flake that only showed in full runs).
+	layer = CanvasLayer.new()
+	layer.layer = 127
+	tree.root.add_child(layer)
+	layer.add_child(sc)
 	ts = TouchScroll.attach(sc)
 	await frames(3)
 	xf = sc.get_viewport().get_screen_transform()
@@ -106,5 +113,5 @@ func test_finger_drag_scrolls_and_taps_still_work() -> void:
 	await _touch(Vector2(240, 150), false)
 	await frames(3)
 	check_eq(presses, 1, "tap still presses a row")
-	sc.queue_free()
+	layer.queue_free()
 	await frames(1)
