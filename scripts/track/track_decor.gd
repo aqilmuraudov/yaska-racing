@@ -861,9 +861,10 @@ func _place_backdrop() -> void:
 		for k in 5:
 			var sz := Vector3(rng.randf_range(40, 80), rng.randf_range(14, 24), rng.randf_range(26, 48))
 			var off := Vector3(rng.randf_range(-35, 35), rng.randf_range(-4, 6), rng.randf_range(-15, 15))
-			clouds.add(ShapeKit.superellipsoid(sz, 1.0, 1.0, Vector2.ONE, Vector2.ONE, 6, 10), Transform3D(Basis.IDENTITY, cpos + off), cloud_mat)
+			# 0.14.2: 450-800 m away, so 5 x 8 / 3 x 6 segments look the same (-40 %).
+			clouds.add(ShapeKit.superellipsoid(sz, 1.0, 1.0, Vector2.ONE, Vector2.ONE, 5, 8), Transform3D(Basis.IDENTITY, cpos + off), cloud_mat)
 			# flat, slightly grey base like a cumulus
-			clouds.add(ShapeKit.superellipsoid(Vector3(sz.x * 1.2, sz.y * 0.35, sz.z * 1.1), 1.0, 1.0, Vector2.ONE, Vector2.ONE, 4, 8), Transform3D(Basis.IDENTITY, cpos + off - Vector3(0, sz.y * 0.3, 0)), cloud_mat)
+			clouds.add(ShapeKit.superellipsoid(Vector3(sz.x * 1.2, sz.y * 0.35, sz.z * 1.1), 1.0, 1.0, Vector2.ONE, Vector2.ONE, 3, 6), Transform3D(Basis.IDENTITY, cpos + off - Vector3(0, sz.y * 0.3, 0)), cloud_mat)
 	var cloud_mi := _landmark(clouds.commit(), Transform3D.IDENTITY, "Clouds")
 	cloud_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 

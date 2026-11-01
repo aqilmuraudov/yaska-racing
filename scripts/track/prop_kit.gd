@@ -782,7 +782,9 @@ static func _wheel_ring(a: Accum) -> void:
 		var p2 := Vector3(cos(ang2), sin(ang2), 0) * (r + 1.2)
 		# Baku Eye: 60 m wheel, pastel cabins (~2.5 m)
 		var col: String = ["pastel_pink", "pastel_mint", "pastel_blue", "pastel_yellow"][i % 4]
-		a.add(ShapeKit.superellipsoid(Vector3(2.5, 2.6, 2.5), 0.7, 0.8), T(p2), m(col))
+		# 0.14.2: 24 cabins 30-60 m up are seen from far below: 6 x 12 segments
+		# (was the 10 x 18 default) - far fewer triangles, shadow pass too.
+		a.add(ShapeKit.superellipsoid(Vector3(2.5, 2.6, 2.5), 0.7, 0.8, Vector2.ONE, Vector2.ONE, 6, 12), T(p2), m(col))
 
 
 static func _kiosk(a: Accum) -> void:
