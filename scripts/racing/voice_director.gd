@@ -2,7 +2,8 @@ class_name VoiceDirector
 extends Node
 ## 0.15.1 character voice lines in Azerbaijani (ElevenLabs, tools/voice/).
 ## Short lines at race moments: GO, a rival close behind / ahead, overtakes,
-## item hits, the finish. One speaker at a time with a quiet gap, never the same
+## item hits, the finish. Only the player's own racer speaks (owner: rival
+## lines mixed into each other). One line at a time with a quiet gap, never the same
 ## line twice in a row. Plays on the SFX bus (project rule) and obeys the
 ## Settings → Səs "Personaj səsləri" switch (audio.voices_on).
 
@@ -76,22 +77,13 @@ func _check_places() -> void:
 		_prev_place = p.place
 		return
 	if p.place < _prev_place:
-		var behind := _racer_at(p.place + 1)
-		if behind != null and randf() < 0.4:
-			say(behind, "passed")
-		else:
-			say(p, "pass")
+		say(p, "pass")
 	elif p.place > _prev_place:
-		var ahead := _racer_at(p.place - 1)
-		if ahead != null and randf() < 0.6:
-			say(ahead, "pass")
-		else:
-			say(p, "passed")
+		say(p, "passed")
 	_prev_place = p.place
 
 
-## A rival right behind the player teases; the player, right behind a
-## rival, calls out.
+## The player, right behind a rival, calls out.
 func _check_near(dt: float) -> void:
 	var p := race.player
 	for r in race.racers:
@@ -102,13 +94,13 @@ func _check_near(dt: float) -> void:
 		if t < 0.0:
 			_near[r.index] = minf(t + dt, 0.0)
 			continue
-		if absf(gap) > NEAR or absf(gap) < 0.5:
+		if gap > -0.5 or gap < -NEAR:
 			_near[r.index] = 0.0
 			continue
 		t += dt
 		_near[r.index] = t
 		if t >= NEAR_TIME and quiet <= 0.0 and _approach_rest <= 0.0:
-			if say(r if gap > 0.0 else p, "approach"):
+			if say(p, "approach"):
 				_near[r.index] = -NEAR_REST
 				_approach_rest = APPROACH_REST
 
@@ -117,16 +109,9 @@ func _on_finish(place: int) -> void:
 	say(race.player, "win" if place == 1 else "lose", true)
 
 
-func _racer_at(place: int) -> RaceManager.Racer:
-	for r in race.racers:
-		if r.place == place:
-			return r
-	return null
-
-
 ## Plays one line of the racer's category. force: the finish line interrupts.
 func say(r: RaceManager.Racer, cat: String, force := false) -> bool:
-	if r == null or r.racer_id == "" or not COUNTS.has(cat) or not enabled():
+	if r == null or not r.is_player or r.racer_id == "" or not COUNTS.has(cat) or not enabled():
 		return false
 	if not force and (quiet > 0.0 or out.playing):
 		return false

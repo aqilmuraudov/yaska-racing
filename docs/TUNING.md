@@ -301,9 +301,9 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 | Param | Value | Meaning |
 |---|---|---|
 | `GAP` | 3.0 s | quiet after any line ends |
-| `NEAR` / `NEAR_TIME` | 7 m / 1.5 s | rival this close (race distance) this long → "approach" |
+| `NEAR` / `NEAR_TIME` | 7 m / 1.5 s | player this close behind a rival (race distance) this long → "approach" |
 | `NEAR_REST` | 8 s | same rival pair rest |
 | `APPROACH_REST` | 10 s | any "approach" line rest |
-| overtake speaker | 60% overtaker / 40% player (player passed); 40% overtaken / 60% player (player passes) | |
+| speaker | the player's racer only | rivals are silent |
 | volume | +2 dB on the SFX bus | |
 | generation | `eleven_v3`, `az`, stability 0.4, similarity 0.75; pitch per racer in the JSON (1.15–1.42) | |

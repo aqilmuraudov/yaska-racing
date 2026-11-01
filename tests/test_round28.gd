@@ -85,6 +85,10 @@ func test_director_plays_on_sfx_bus_and_respects_switch() -> void:
 	check(not v.say(race.player, "pass"), "one speaker at a time")
 	check(v.say(race.player, "win", true), "finish interrupts")
 	v.reset()
+	for r in race.racers:
+		if r != race.player:
+			check(not v.say(r, "pass"), "rivals never speak (%s)" % r.racer_id)
+	v.reset()
 	var a := v.spoken.size()
 	Settings.set_value("audio", "voices_on", false)
 	check(not v.say(race.player, "start"), "silent when switched off")
