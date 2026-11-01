@@ -119,6 +119,7 @@ static func get_mesh(id: String) -> ArrayMesh:
 		"carpet_museum": mesh = _carpet_museum(false)
 		"carpet_museum_far": mesh = _carpet_museum(true)
 		"qosa_qala": mesh = qosa_qala(22.0)
+		"port_baku": mesh = PropKit.get_mesh("port_baku") # 0.15.3 seafront east end
 	_meshes[id] = mesh
 	return mesh
 

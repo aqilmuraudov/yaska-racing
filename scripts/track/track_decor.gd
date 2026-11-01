@@ -38,14 +38,20 @@ var _reserved: Array = []
 ## Placed Baku landmarks by id (tests and screenshot views use these).
 var landmarks := {}
 const WHEEL_SITE := Vector3(-40.0, 0.0, 22.0)
+## 0.15.3 (owner: mini Baku): real west-to-east order along the bay (+x is
+## east, the sea is +z): Flag Square + Crystal Hall at Bayil in the west, the
+## TV tower on the western hill, Flame Towers and the Carpet Museum west of
+## the centre, Government House in the centre-east, Port Baku and the
+## Crescent in the east, the Heydar Aliyev Center inland to the north-east.
 const LANDMARK_SITES := {
 	# id: [x, z, footprint radius, yaw]
-	"flag_square": [338.0, -14.0, 36.0, 0.0],
+	"flag_square": [-395.0, -15.0, 36.0, 0.0],
 	"heydar_aliyev": [175.0, -285.0, 66.0, 0.45],
 	"flame_towers": [-175.0, -435.0, 66.0, 0.69],
-	"crescent": [-236.0, 150.0, 44.0, 0.2],
+	"crescent": [380.0, 120.0, 44.0, -0.3],
 	"government_house": [40.0, -104.0, 64.0, 0.0],
 	"carpet_museum": [-160.0, -84.0, 56.0, 0.55],
+	"port_baku": [338.0, -14.0, 38.0, 0.0],
 }
 
 
@@ -662,7 +668,7 @@ func _place_baku_landmarks() -> void:
 		near.mesh = LandmarkKit.get_mesh(id)
 		root.add_child(near)
 		var far_id: String = id + "_far"
-		if id != "flag_square":
+		if id != "flag_square" and id != "port_baku":
 			near.visibility_range_end = 380.0
 			var far := MeshInstance3D.new()
 			far.name = "Far"
@@ -935,8 +941,8 @@ func _place_backdrop() -> void:
 ## oil platforms and ships on the Caspian horizon, flag poles along the
 ## promenade and Azerbaijani street signs beside the road.
 const EXTRA_SITES := {
-	"tv_tower": [-20.0, -640.0, 0.0],
-	"crystal_hall": [300.0, 92.0, 0.0],
+	"tv_tower": [-330.0, -600.0, 0.0],
+	"crystal_hall": [-320.0, 75.0, 0.0],
 }
 const STREET_NAMES := ["Neftçilər prospekti", "Dənizkənarı bulvar", "İçərişəhər", "Azadlıq meydanı", "Üzeyir Hacıbəyov küç."]
 
