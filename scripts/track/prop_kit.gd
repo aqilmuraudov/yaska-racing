@@ -301,10 +301,19 @@ const GLTF_PROPS := {
 	"modern_b": "res://assets/models/city/city_props",
 	"modern_c": "res://assets/models/city/city_props",
 	"grandstand": "res://assets/models/city/city_props",
+	"chevron_left": "res://assets/models/seafront/seafront_props",
+	"chevron_right": "res://assets/models/seafront/seafront_props",
+	"tire_stack": "res://assets/models/seafront/seafront_props",
+	"kiosk": "res://assets/models/seafront/seafront_props",
+	"umbrella": "res://assets/models/seafront/seafront_props",
+	"boat": "res://assets/models/seafront/seafront_props",
+	"flower_bed_b": "res://assets/models/seafront/seafront_props",
+	"wheel_frame": "res://assets/models/seafront/seafront_props",
+	"wheel_ring": "res://assets/models/seafront/seafront_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
-	"res://assets/models/city": "windows"}
+	"res://assets/models/city": "windows", "res://assets/models/seafront": "windows"}
 const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true

@@ -45,6 +45,11 @@ MODEL = ""
 STONE_MATS = []
 # Callables run after the bake, before the far copies / export: f(groups).
 PRE_EXPORT = []
+# Bake ray settings (metres): karts / small props by default; big buildings
+# raise them (their high-only details stand further off the low surface).
+CAGE = 0.025
+RAY = 0.06
+AO_DIST = 0.22
 # Kart space rig shared by every racer (KartModel / AnimalDriver).
 STEER_POS = Vector((0.0, 0.88, -0.30))
 STEER_TILT = math.radians(-55.0)
@@ -728,7 +733,7 @@ def setup_cycles(samples):
     sc.cycles.use_denoising = False
     if sc.world is None:
         sc.world = bpy.data.worlds.new("World")
-    sc.world.light_settings.distance = 0.22
+    sc.world.light_settings.distance = AO_DIST
 
 
 def new_image(name, color, non_color):
@@ -804,8 +809,8 @@ def bake_all(groups, highs):
             if not hs:
                 continue
             select_only(hs + [o], o)
-            bpy.ops.object.bake(type=ptype, use_selected_to_active=True, cage_extrusion=0.025,
-                                max_ray_distance=0.06, margin=0 if pname == "cover" else 4, margin_type="EXTEND",
+            bpy.ops.object.bake(type=ptype, use_selected_to_active=True, cage_extrusion=CAGE,
+                                max_ray_distance=RAY, margin=0 if pname == "cover" else 4, margin_type="EXTEND",
                                 use_clear=False,
                                 normal_space="TANGENT", target="IMAGE_TEXTURES")
         print(f"BAKE {pname}: {time.time() - t0:.1f}s")
