@@ -58,8 +58,14 @@ def smooth(a, b, x):
 
 
 def hac_height(u):
-    return smooth(0.0, 0.22, u) * smooth(1.0, 0.7, u) * (
-        13.0 + 41.0 * math.exp(-((u - 0.3) / 0.13) ** 2) + 17.0 * math.exp(-((u - 0.66) / 0.1) ** 2))
+    """Same as LandmarkKit.hac_height (0.15.3, from photos)."""
+    foot = smooth(0.0, 0.05, u) * smooth(1.0, 0.93, u)
+    low_arch = 20.0 * math.exp(-((u - 0.12) / 0.075) ** 2)
+    base = 9.0 * smooth(0.03, 0.1, u) * smooth(0.62, 0.52, u)
+    d = u - 0.47
+    portal = 46.0 * (math.exp(-(d / 0.15) ** 2) if d < 0.0 else math.exp(-(d / 0.06) ** 4))
+    wing = 13.0 * smooth(0.5, 0.6, u) * smooth(1.0, 0.72, u)
+    return foot * max(low_arch + base, portal, wing)
 
 
 def hac_point(u, v):

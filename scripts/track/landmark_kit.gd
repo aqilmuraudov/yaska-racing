@@ -265,10 +265,26 @@ const HAC_D := 74.0
 const HAC_EDGE := 0.4 # front lip height as a fraction of the local height
 
 
+## 0.15.3 (from photos): low glazed arch on the left, a dip, then the shell
+## sweeps up into the tall round-topped arch portal (steep right side), and a
+## long low wing tapers away to the right.
 static func hac_height(u: float) -> float:
-	var rise := smoothstep(0.0, 0.22, u)
-	var fall := smoothstep(1.0, 0.7, u)
-	return rise * fall * (13.0 + 41.0 * exp(-pow((u - 0.3) / 0.13, 2.0)) + 17.0 * exp(-pow((u - 0.66) / 0.1, 2.0)))
+	var foot := smoothstep(0.0, 0.05, u) * smoothstep(1.0, 0.93, u)
+	var low_arch := 20.0 * exp(-pow((u - 0.12) / 0.075, 2.0))
+	var base := 9.0 * smoothstep(0.03, 0.1, u) * smoothstep(0.62, 0.52, u)
+	var d := u - 0.47
+	var portal := 46.0 * (exp(-pow(d / 0.15, 2.0)) if d < 0.0 else exp(-pow(d / 0.06, 4.0)))
+	var wing := 13.0 * smoothstep(0.5, 0.6, u) * smoothstep(1.0, 0.72, u)
+	return foot * maxf(maxf(low_arch + base, portal), wing)
+
+
+## The pointed "horn" rising behind the left half (auditorium roof).
+static func hac_horn_point(u: float, v: float) -> Vector3:
+	var th := u * TAU
+	var r := 19.0 * pow(maxf(1.0 - v, 0.0), 0.72)
+	var h := 52.0
+	var lean := 7.0 * v * v
+	return Vector3(-40.0 + cos(th) * r, v * h, -16.0 + lean + sin(th) * r * 0.8)
 
 
 static func _hac_theta_end() -> float:
@@ -326,10 +342,11 @@ static func _heydar_aliyev(lod: bool) -> ArrayMesh:
 	var nu := 30 if lod else 104
 	var nv := 10 if lod else 30
 	var shell := grid(nu, nv, func(u: float, v: float) -> Vector3: return hac_point(u, v))
+	var horn := grid(12 if lod else 32, 8 if lod else 20, func(u: float, v: float) -> Vector3: return hac_horn_point(u, v), true, true)
 	if _has_gltf("hac_base"):
 		# 0.15.3: Blender glass front + plaza under the self-lit white shell.
 		var acc := PropKit.Accum.new()
-		acc.add_committed(_merge([[shell, Transform3D.IDENTITY, hac_white()]]), Transform3D.IDENTITY)
+		acc.add_committed(_merge([[shell, Transform3D.IDENTITY, hac_white()], [horn, Transform3D.IDENTITY, hac_white()]]), Transform3D.IDENTITY)
 		acc.add_committed(PropKit.get_mesh("hac_base" + (PropKit.LO_SUFFIX if lod else "")), Transform3D.IDENTITY)
 		return acc.commit()
 	# Curved dark glass wall recessed under the lip: from the ground up to
@@ -352,6 +369,7 @@ static func _heydar_aliyev(lod: bool) -> ArrayMesh:
 	var facade := st.commit()
 	var parts: Array = [
 		[shell, Transform3D.IDENTITY, hac_white()],
+		[horn, Transform3D.IDENTITY, hac_white()],
 		[facade, Transform3D.IDENTITY, hac_glass()],
 	]
 	# Broad plaza with terraced lawns stepping down towards the viewer.
