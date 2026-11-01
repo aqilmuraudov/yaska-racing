@@ -22,7 +22,8 @@ func _run() -> void:
 	if lid != "flame_towers":
 		var bz := t.basis.z.normalized()
 		var bx := t.basis.x.normalized()
-		views = {"front": t.origin + bz * 230.0 + Vector3.UP * 12.0, "angle": t.origin + bz * 170.0 + bx * 150.0 + Vector3.UP * 20.0, "side": t.origin - bx * 220.0 + bz * 60.0 + Vector3.UP * 15.0}
+		var dd := 230.0 if lid != "maiden_tower" else 60.0
+		views = {"front": t.origin + bz * dd + Vector3.UP * 12.0, "angle": t.origin + bz * dd * 0.75 + bx * dd * 0.65 + Vector3.UP * 20.0, "side": t.origin - bx * dd + bz * dd * 0.3 + Vector3.UP * 15.0}
 	for k in views:
 		cam.global_position = views[k]
 		cam.look_at(t.origin + Vector3.UP * (60.0 if lid == "flame_towers" else 18.0))

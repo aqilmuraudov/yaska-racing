@@ -173,14 +173,21 @@ def build_tower(hi):
           "rock", g, hi, L(hi, 24, 64), False, False).data.transform(up)
     lathe(f"body_{tag}", [(base, r0), (base + h, r1), (base + h, 0.0)], (0, 0, 0), "tower_stone", g, hi,
           L(hi, 40, 128), False, False).data.transform(up)
-    n = 14
-    for k in range(n):
-        y = base + 1.6 + k * (h - 2.6) / n
-        rr = r0 + (r1 - r0) * (y - base) / h + 0.06
-        lathe(f"course{k}_{tag}", [(y - 0.11, rr), (y + 0.11, rr)], (0, 0, 0), "tower_course", g, hi,
-              L(hi, 40, 128)).data.transform(up)
-    # Beak-shaped buttress on +x, almost full height.
-    bh = h - 1.2
+    # 0.15.3 (photos): the upper ~45 % is dense ribbed coursing - every
+    # course steps out a little with a sloped underside; the lower part is
+    # plain rough masonry (the Voronoi bump). High model only: the ribs are
+    # baked into the normal / AO maps of the smooth low tower.
+    if hi:
+        y = base + h * 0.55
+        k = 0
+        while y < base + h - 0.4:
+            rr = r0 + (r1 - r0) * (y - base) / h
+            lathe(f"rib{k}_{tag}", [(y - 0.16, rr), (y, rr + 0.13), (y + 0.06, rr + 0.13), (y + 0.06, rr)], (0, 0, 0),
+                  "tower_course", g, hi, 128).data.transform(up)
+            y += 0.42
+            k += 1
+    # Beak-shaped buttress on +x, lower than the tower (~85 %).
+    bh = h * 0.85
     segs = L(hi, 8, 20)
     plan = []
     for k in range(segs + 1):
@@ -197,6 +204,13 @@ def build_tower(hi):
     top = base + bh - 0.01
     K.finish(bm, f"buttress_{tag}", "tower_stone", g, hi,
              outward=lambda p: Vector((p.x, 3.0 if p.y > top else 0.0, p.z)), smooth=False)
+    if hi:
+        # Ribbed coursing on the outer face of the buttress top as well.
+        for k in range(int(bh * 0.4 / 0.42)):
+            yy = base + bh * 0.6 + k * 0.42
+            t = (yy - base) / bh
+            bbox(f"brib{k}", (0.26, 0.1, 9.2 * (1.0 - 0.14 * t)), (r0 - 1.0 + 4.6 * (1.0 - 0.14 * t) + 0.8 + (r1 - r0) * t,
+                 yy, 0.0), "tower_course", g, hi, 0.0)
     lathe(f"parapet_{tag}", [(base + h, r1 + 0.1), (base + h + 0.9, r1 + 0.1), (base + h + 0.9, r1 - 0.5),
                              (base + h + 0.4, r1 - 0.5)], (0, 0, 0), "tower_course", g, hi, L(hi, 40, 128)
           ).data.transform(up)
