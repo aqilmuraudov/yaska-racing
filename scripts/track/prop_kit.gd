@@ -310,10 +310,17 @@ const GLTF_PROPS := {
 	"flower_bed_b": "res://assets/models/seafront/seafront_props",
 	"wheel_frame": "res://assets/models/seafront/seafront_props",
 	"wheel_ring": "res://assets/models/seafront/seafront_props",
+	"socar_tower": "res://assets/models/skyline/skyline_props",
+	"crown_tower": "res://assets/models/skyline/skyline_props",
+	"stack_tower": "res://assets/models/skyline/skyline_props",
+	"glass_slab": "res://assets/models/skyline/skyline_props",
+	"stalin_block": "res://assets/models/skyline/skyline_props",
+	"resid_tower": "res://assets/models/skyline/skyline_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
-	"res://assets/models/city": "windows", "res://assets/models/seafront": "windows"}
+	"res://assets/models/city": "windows", "res://assets/models/seafront": "windows",
+	"res://assets/models/skyline": "windows"}
 const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true

@@ -104,9 +104,9 @@ def build_crown(hi):
         bbox(f"crown_fin{s}_{tag}", (1.2, H, 26.0), (s * 11.6, H * 0.5, 0), "white", g, hi, L(hi, 0.0, 0.2))
     # Flared crown: an inverted frustum, its lip, a lattice pyramid and the spire.
     lathe(f"crown_lip_{tag}", [(0.0, 15.0), (6.0, 22.0), (8.0, 22.0), (8.0, 18.0)], (0, 0, 0), "white", g, hi,
-          L(hi, 4, 4), False, True).data.transform(K.trs((0, H, 0), (0, math.pi / 4, math.pi / 2)))
+          L(hi, 4, 4), False, True).data.transform(Matrix.Translation(Vector((0, H, 0))) @ Matrix.Rotation(math.pi / 4, 4, "Y") @ Matrix.Rotation(math.pi / 2, 4, "Z"))
     lathe(f"crown_pyr_{tag}", [(0.0, 16.0), (16.0, 0.6)], (0, 0, 0), "steel", g, hi, L(hi, 4, 4), False, True
-          ).data.transform(K.trs((0, H + 8.0, 0), (0, math.pi / 4, math.pi / 2)))
+          ).data.transform(Matrix.Translation(Vector((0, H + 8.0, 0))) @ Matrix.Rotation(math.pi / 4, 4, "Y") @ Matrix.Rotation(math.pi / 2, 4, "Z"))
     tube(f"crown_spire_{tag}", [(0, H + 20.0, 0), (0, H + 42.0, 0)], 0.6, "steel", g, hi, 1, L(hi, 6, 12))
     if hi:
         for k in range(8):

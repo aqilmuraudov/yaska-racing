@@ -827,9 +827,13 @@ func _place_backdrop() -> void:
 		a.add(ShapeKit.superellipsoid(sz, 1.0, 1.0, Vector2.ONE, Vector2.ONE, 8, 12), Transform3D(Basis(Vector3.UP, rng.randf() * TAU), hp), hill_mat if i % 3 else hill_mat2)
 	var hills := _landmark(a.commit(), Transform3D.IDENTITY, "Hills")
 	hills.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# Modern glass towers north-east (the Flame Towers are a placed landmark).
-	var towers := [["tower_a", Vector3(430, 0, -420)], ["tower_b", Vector3(470, 0, -360)], ["tower_c", Vector3(520, 0, -440)],
-		["tower_b", Vector3(380, 0, -480)], ["tower_a", Vector3(560, 0, -330)], ["modern_b", Vector3(330, 0, -380)]]
+	# 0.14.4 Baku skyline north-east (owner's photos; the Flame Towers are a
+	# placed landmark): SOCAR-like twisted tower, crowned spire tower, stacked
+	# cubes, glass slabs, sandstone blocks with white domes, residential towers.
+	var towers := [["socar_tower", Vector3(430, 0, -420)], ["crown_tower", Vector3(470, 0, -360)],
+		["stack_tower", Vector3(520, 0, -440)], ["glass_slab", Vector3(380, 0, -480)], ["resid_tower", Vector3(560, 0, -330)],
+		["stalin_block", Vector3(330, 0, -380)], ["glass_slab", Vector3(600, 0, -400)], ["resid_tower", Vector3(300, 0, -450)],
+		["resid_tower", Vector3(490, 0, -500)]]
 	for tw in towers:
 		var mi2 := _landmark(PropKit.get_mesh(tw[0]), Transform3D(Basis(Vector3.UP, rng.randf() * 0.6), tw[1]), tw[0])
 		mi2.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -842,7 +846,17 @@ func _place_backdrop() -> void:
 			continue
 		var bh := rng.randf_range(8.0, 30.0)
 		var bs := Vector3(rng.randf_range(10, 24), bh, rng.randf_range(10, 22))
-		city.add(PropKit.box(bs), Transform3D(Basis(Vector3.UP, rng.randf_range(-0.2, 0.2)), q + Vector3(0, bh * 0.5 - 1.0, 0)), plaster[i % plaster.size()])
+		var rot := Basis(Vector3.UP, rng.randf_range(-0.2, 0.2))
+		if PropKit.gltf_enabled and PropKit.GLTF_PROPS.has("stalin_block"):
+			# 0.14.4: baked sandstone blocks / residential towers (far LOD, one mesh).
+			var kind := "stalin_block" if i % 3 != 0 else "resid_tower"
+			var base: Vector3 = Vector3(40, 26, 22) if kind == "stalin_block" else Vector3(24, 62, 20)
+			var sc := Vector3(bs.x / base.x, bh / base.y, bs.z / base.z)
+			if kind == "resid_tower":
+				sc = Vector3(sc.x, sc.y * 1.6, sc.z)
+			city.add_committed(PropKit.get_mesh(kind + PropKit.LO_SUFFIX), Transform3D(rot.scaled(sc), q + Vector3(0, -1.0, 0)))
+		else:
+			city.add(PropKit.box(bs), Transform3D(rot, q + Vector3(0, bh * 0.5 - 1.0, 0)), plaster[i % plaster.size()])
 	var city_mi := _landmark(city.commit(), Transform3D.IDENTITY, "CityBlocks")
 	city_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Soft low-poly clouds (one merged mesh, no shadows).
