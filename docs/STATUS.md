@@ -1,13 +1,14 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-01 · Build: 0.15.0 · Engine: Godot 4.4.1-stable
+Date: 2026-11-01 · Build: 0.15.1 · Engine: Godot 4.4.1-stable
 
-## Next (unreleased, after 0.15.0) — character voices in Azerbaijani, Göydələnlər in Blender
+## Update 0.15.1 (versionCode 36) — character voices in Azerbaijani, Göydələnlər in Blender
 - **Character voices** (owner request): 7 racers × 15 short Azerbaijani lines (start, approach, pass, passed, hit, win, lose) in `data/voice_lines.json`, made with ElevenLabs `eleven_v3` (language `az`) by `tools/voice/gen_voices.py` (key in `_setup/`, never committed; raw mp3 cached in `tools/voice/out/raw`, so a rerun spends nothing). Voices: Gökçe (Yaska, owner's pick; Leloyun pitched higher), Natiq Alasgar (HavHav), Abbas (Posi), Ibrahim Mammadli (Biçok), Deniz (Mestan, Çepiş); ffmpeg pitch shift + trim + loudnorm, mono OGG, 105 files, 2.5 MB. 3116 characters used (account 2298/40000 after).
 - `VoiceDirector` (`scripts/racing/voice_director.gd`): **only the player's own racer speaks** (owner: rival lines would mix). GO → start line; player within 7 m behind a rival for 1.5 s → "approach", 10 s rest between such lines; overtakes → pass / passed; item hit → "hit"; finish → win/lose (interrupts). One speaker at a time, 3 s quiet gap, no line twice in a row. Plays on the SFX bus (project rule: `scripts/audio` untouched), so it also follows the "Səs effektləri" switch.
 - Settings → Səs: new "Personaj səsləri" switch (`audio.voices_on`, default on, speech-bubble icon); with effects off its row says why nothing is heard.
 - Autopilot check (desktop, 2 laps, 106 s): 12 lines before the approach rest; now fewer. Not listened to on a phone yet; Azerbaijani pronunciation of the v3 model was judged by the owner on the sample page only.
 - Strict suite: 227 methods, 5953 checks, 1 failure (the known `test_touch_scroll` full-run flake; passes alone). Round 28 tests: line files, switch, settings row, SFX bus, one speaker, no repeat.
+- Build: `_builds/YaskaRacing-0.15.1-v36-debug.apk`, **180.0 MB** (0.15.0: 160.6 MB; Göydələnlər Blender textures ~17 MB, voices 2.5 MB). Signed with the usual key (SHA-256 726cd353…6e25d9). Not tested on a phone.
 
 ## Update 0.15.0 (versionCode 35) — kart ownership flow, Dəniz sahili fully in Blender, landmarks
 - **Kart flow (owner):** the first "Oyna" on a new profile opens "İlk maşınını seç": every racer, one free pick ("Bu mənimdir!"), then the lesson once. Races never ask for a kart again: city select / Bakı Kuboku / new cup start with the garage kart (`Game.start_race_with_selected`; time trial still alone). Garage → "Maşınlarım": all karts in a row, owned = tap to race with it (gold ring + ✓), locked = price, tap to buy with manat (the bought kart becomes active). Main menu shows the selected kart. Save v8 (`starter_chosen`; existing profiles are never asked); the owned list no longer forces HavHav in.
