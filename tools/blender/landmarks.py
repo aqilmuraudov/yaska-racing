@@ -92,17 +92,61 @@ def build_government_house(hi):
         if hi:
             bbox(f"gh_pil{k}", (0.6, H - 14.0, 0.25), (x + arc_w * 0.5, 13.0 + (H - 14.0) * 0.5, fz + 0.12), "sand_light",
                  g, True, 0.05)
-    # Side wings: project forward, stepped tops with arched crowns.
+    # 0.15.3 (from photos): square towers with two storeys of tall arched
+    # loggias, a toothed parapet and needle pinnacles - corner towers on the
+    # projecting wings, the tallest in the centre, small ones in between. The
+    # whole roof edge carries the same small teeth.
+    def teeth(name, x0, x1, y, z, step=2.4):
+        n = max(int((x1 - x0) / step), 1)
+        for k in range(n + 1):
+            bbox(f"{name}{k}_{tag}", (0.7, 1.2, 0.5), (x0 + k * (x1 - x0) / n, y + 0.6, z), "sand_light", g, hi, 0.0)
+
+    def needle(name, x, y, z, hgt):
+        turned(f"{name}_{tag}", [(0.0, 0.45), (0.6, 0.45), (0.8, 0.3), (hgt, 0.04), (hgt, 0.0)], (x, y, z), "sand_light",
+               g, hi, L(hi, 6, 12))
+        ellipsoid(f"{name}b_{tag}", (0.28, 0.28, 0.28), (x, y + hgt * 0.45, z), "sand_light", g, hi, L(hi, (6, 4), (10, 6)))
+
+    def tower(name, cx, cz, w, d, y0, levels, lh, arches, needles_h):
+        y = y0
+        for lv in range(levels):
+            bbox(f"{name}_lv{lv}_{tag}", (w, lh, d), (cx, y + lh * 0.5, cz), "sand", g, hi, L(hi, 0.0, 0.2))
+            for s in (-1, 1):
+                for k in range(arches):
+                    xx = cx + (k - (arches - 1) * 0.5) * (w / arches)
+                    recess(f"{name}_a{lv}{k}{s}", xx, y + 0.8, cz + s * d * 0.5, w / arches * 0.55, lh - 1.6,
+                           "window_dark", g, hi, normal=(0, 0, s))
+                for k in range(max(arches - 1, 1)):
+                    zz = cz + (k - (max(arches - 1, 1) - 1) * 0.5) * (d / max(arches - 1, 1))
+                    recess(f"{name}_s{lv}{k}{s}", cx + s * w * 0.5, y + 0.8, zz, d / max(arches - 1, 1) * 0.5, lh - 1.6,
+                           "window_dark", g, hi, normal=(s, 0, 0))
+            bbox(f"{name}_cor{lv}_{tag}", (w + 0.8, 0.5, d + 0.8), (cx, y + lh, cz), "sand_light", g, hi, L(hi, 0.0, 0.1))
+            y += lh
+        for s in (-1, 1):
+            teeth(f"{name}_tf{s}", cx - w * 0.5, cx + w * 0.5, y + 0.25, cz + s * d * 0.5)
+            nz = max(int(d / 2.4), 1)
+            for k in range(nz + 1):
+                bbox(f"{name}_ts{s}{k}_{tag}", (0.5, 1.2, 0.7), (cx + s * w * 0.5, y + 0.85, cz - d * 0.5 + k * d / nz),
+                     "sand_light", g, hi, 0.0)
+        for sx in (-1, 1):
+            for sz in (-1, 1):
+                needle(f"{name}_n{sx}{sz}", cx + sx * w * 0.5, y + 0.3, cz + sz * d * 0.5, needles_h)
+        needle(f"{name}_nc", cx, y + 0.3, cz + d * 0.5, needles_h * 1.25)
+        return y
+
+    # Roof-edge teeth along the main body.
+    for s in (-1, 1):
+        teeth(f"gh_roof{s}", -Lm * 0.5, Lm * 0.5, H + 0.9, s * fz)
+    # Wings: corner towers (project forward).
     for s in (-1, 1):
         wx = s * (Lm * 0.5 - 12.0)
-        bbox(f"gh_wing{s}_{tag}", (24.0, H + 6.0, 8.0), (wx, (H + 6.0) * 0.5, fz + 4.0), "sand", g, hi, L(hi, 0.0, 0.3))
-        bbox(f"gh_wingtop{s}_{tag}", (16.0, 5.0, 8.4), (wx, H + 8.5, fz + 4.0), "sand", g, hi, L(hi, 0.0, 0.25))
-        bbox(f"gh_wingtop2{s}_{tag}", (8.0, 4.0, 8.6), (wx, H + 13.0, fz + 4.0), "sand_light", g, hi, L(hi, 0.0, 0.25))
+        bbox(f"gh_wing{s}_{tag}", (24.0, H, 10.0), (wx, H * 0.5, fz + 5.0), "sand", g, hi, L(hi, 0.0, 0.3))
         for k in range(4):
-            recess(f"gh_wwin{s}{k}", wx - 7.5 + k * 5.0, 3.0, fz + 8.0, 2.6, 8.0, "window_dark", g, hi)
-            recess(f"gh_wwin2{s}{k}", wx - 7.5 + k * 5.0, 15.0, fz + 8.0, 2.2, 9.0, "glass", g, hi)
-        recess(f"gh_wcrown{s}", wx, H + 7.0, fz + 8.2, 5.0, 5.5, "window_dark", g, hi)
-    # Centre: projecting block, giant portal between paired columns, stepped tower.
+            recess(f"gh_wwin{s}{k}", wx - 7.5 + k * 5.0, 3.0, fz + 10.0, 2.6, 8.0, "window_dark", g, hi)
+            recess(f"gh_wwin2{s}{k}", wx - 7.5 + k * 5.0, 15.0, fz + 10.0, 2.2, 9.0, "glass", g, hi)
+        tower(f"gh_ct{s}", wx, fz + 2.0, 22.0, 14.0, H, 2, 8.0, 3, 5.0)
+        # Small towers between the corners and the centre.
+        tower(f"gh_mt{s}", s * Lm * 0.26, 0.0, 12.0, 10.0, H, 1, 7.0, 2, 3.5)
+    # Centre: projecting block, giant portal between paired columns, main tower.
     bbox(f"gh_centre_{tag}", (46.0, H + 4.0, 6.0), (0, (H + 4.0) * 0.5, fz + 3.0), "sand", g, hi, L(hi, 0.0, 0.3))
     recess("gh_portal", 0.0, 2.2, fz + 6.0, 12.0, 24.0, "window_dark", g, hi)
     for s in (-1, 1):
@@ -111,20 +155,7 @@ def build_government_house(hi):
                    "sand_light", g, hi, L(hi, 6, 16))
         for k in range(3):
             recess(f"gh_cwin{s}{k}", s * (14.0 + k * 3.6), 14.0, fz + 6.0, 2.0, 7.0, "glass", g, hi)
-    tiers = [(30.0, 8.0, 22.0), (22.0, 8.0, 16.0), (15.0, 9.0, 11.0), (9.0, 9.0, 7.0)]
-    y = H + 4.0
-    for i, (w, h, d) in enumerate(tiers):
-        bbox(f"gh_tier{i}_{tag}", (w, h, d), (0, y + h * 0.5, 2.0), "sand" if i % 2 == 0 else "sand_light", g, hi,
-             L(hi, 0.0, 0.25))
-        for s in (-1, 1):
-            for k in range(max(1, int(w / 7.0))):
-                xx = (k - (max(1, int(w / 7.0)) - 1) * 0.5) * 6.0
-                recess(f"gh_loggia{i}{k}{s}", xx, y + 1.2, 2.0 + s * d * 0.5, 2.2, h - 2.6, "window_dark", g, hi,
-                       normal=(0, 0, s))
-        bbox(f"gh_tcorn{i}_{tag}", (w + 0.8, 0.6, d + 0.8), (0, y + h + 0.1, 2.0), "sand_light", g, hi, L(hi, 0.0, 0.15))
-        y += h
-    turned(f"gh_spire_{tag}", [(0.0, 2.4), (3.0, 1.6), (14.0, 0.3), (16.0, 0.0)], (0, y, 2.0), "gold", g, hi,
-           L(hi, 6, 16))
+    tower("gh_main", 0.0, 2.0, 26.0, 20.0, H + 4.0, 2, 10.0, 3, 6.0)
 
 
 def build_carpet_museum(hi):
