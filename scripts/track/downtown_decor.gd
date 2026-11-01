@@ -18,7 +18,7 @@ const MALLS := [
 ]
 ## Name sign position on each mall (local), and its pixel size.
 const MALL_SIGN := {"mall_28": [Vector3(4.0, 15.9, 16.5), 0.02], "port_baku": [Vector3(0.0, 13.3, 33.7), 0.022],
-	"park_bulvar": [Vector3(2.0, 9.0, 15.4), 0.02], "ganjlik_mall": [Vector3(0.0, 15.1, 19.8), 0.02],
+	"park_bulvar": [Vector3(2.0, 9.0, 15.4), 0.02], "ganjlik_mall": [Vector3(0.0, 21.6, 17.8), 0.022],
 	"mall_a": [Vector3(0, 15.35, 19.0), 0.022], "mall_b": [Vector3(0, 15.35, 19.0), 0.022]}
 const MALL_R := 38.0
 const TOWER_R := {"sky_a": 16.0, "sky_b": 17.0, "sky_c": 13.5, "sky_d": 19.0}

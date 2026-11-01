@@ -11,8 +11,9 @@ reserved radius), front +Z, origin on the ground. Heights are game-fitted.
                two stepped beige residential towers behind
   park_bulvar  long Boulevard mall: silver barrel-vault roofs, glass dome at
                the left end, pointed stone "sails", blue glass bands
-  ganjlik_mall glass box wrapped in wavy white horizontal bands (built from
-               memory - no free photo was found)
+  ganjlik_mall four storeys of interlocking sandstone and glass between two
+               limestone corner "bookends" (from the architect's description;
+               no free photo was found)
 orm alpha = glass (grid + lit shop windows at night), albedo alpha = stone.
 """
 
@@ -154,7 +155,7 @@ def build_park_bulvar(hi):
     bbox(f"pbv_canopy_{tag}", (18.0, 0.5, 5.0), (2.0, 7.6, d * 0.5 + 2.4), "white", g, hi, L(hi, 0.0, 0.08))
 
 
-def wave_band(name, w, y, thick, depth, zf, amp, phase, g, hi):
+def _unused_wave_band(name, w, y, thick, depth, zf, amp, phase, g, hi):
     """White horizontal band whose front edge waves in plan."""
     n = L(hi, 16, 64)
     bm = bmesh.new()
@@ -176,14 +177,28 @@ def wave_band(name, w, y, thick, depth, zf, amp, phase, g, hi):
 
 
 def build_ganjlik(hi):
+    """Ganjlik Mall (Chapman Taylor): four storeys; the long boulevard facade
+    is an interlocking composition of warm sandstone cladding and cool glass,
+    with light limestone "bookends" framing the corner entrances."""
     tag = "H" if hi else "L"
     g = "ganjlik_mall"
-    w, h, d = 62.0, 17.0, 32.0
-    bbox(f"gm_box_{tag}", (w - 2.0, h, d), (0, h * 0.5, 0), "glass", g, hi, 0.0)
-    for k, y in enumerate((0.6, 4.8, 9.0, 13.2, 17.0)):
-        wave_band(f"gm_band{k}_{tag}", w, y, 1.0 if k else 1.2, 4.0, d * 0.5 + 1.8, 1.4, k * 0.6, g, hi)
-    bbox(f"gm_entry_{tag}", (14.0, 8.0, 1.0), (0, 4.0, d * 0.5 + 2.0), "glass_blue", g, hi, 0.0)
-    bbox(f"gm_roof_{tag}", (w - 2.0, 0.6, d), (0, h + 0.3, 0), "white", g, hi, 0.0)
+    w, h, d = 50.0, 20.0, 32.0
+    bbox(f"gm_core_{tag}", (w, h, d), (0, h * 0.5, 0), "glass", g, hi, 0.0)
+    fz = d * 0.5
+    # Interlocking sandstone blocks over the glass (staggered by storey).
+    blocks = [(-18.0, 0, 10.0), (-2.0, 0, 8.0), (14.0, 0, 12.0), (-10.0, 1, 12.0), (8.0, 1, 10.0),
+              (-20.0, 2, 6.0), (-4.0, 2, 14.0), (16.0, 2, 8.0), (-12.0, 3, 10.0), (6.0, 3, 12.0)]
+    for k, (x, lv, bw) in enumerate(blocks):
+        bbox(f"gm_sand{k}_{tag}", (bw, 5.0, 1.2), (x, lv * 5.0 + 2.5, fz + 0.6), "stone_beige", g, hi, L(hi, 0.0, 0.08))
+    bbox(f"gm_sides_{tag}", (w + 0.2, h, d - 4.0), (0, h * 0.5, -2.0), "stone_beige", g, hi, 0.0)
+    # Limestone bookends at both corners, taller, with glass entrances.
+    for s in (-1, 1):
+        bx = s * (w * 0.5 + 4.0)
+        bbox(f"gm_book{s}_{tag}", (8.0, h + 4.0, d + 2.0), (bx, (h + 4.0) * 0.5, 0), "stone_light", g, hi,
+             L(hi, 0.0, 0.2))
+        bbox(f"gm_entry{s}_{tag}", (5.0, 9.0, 0.6), (bx, 4.5, fz + 1.05), "glass_blue", g, hi, 0.0)
+        bbox(f"gm_canopy{s}_{tag}", (7.0, 0.4, 3.0), (bx, 9.4, fz + 2.4), "white", g, hi, 0.0)
+    bbox(f"gm_roof_{tag}", (w, 0.6, d), (0, h + 0.3, 0), "white", g, hi, 0.0)
 
 
 OFFSET = {g: Vector((i * 120.0, 0.0, 0.0)) for i, g in enumerate(GROUPS)}
