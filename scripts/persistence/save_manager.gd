@@ -4,7 +4,7 @@ extends Node
 
 signal profile_changed
 
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 const DEFAULT_PATH := "user://profile.json"
 const LEDGER_LIMIT := 200
 
@@ -38,7 +38,10 @@ static func default_profile() -> Dictionary:
 		"reward_ledger": [],
 		"records": {},
 		"ghosts": {},
-		"tutorial": {"drift_done": false},
+		# 0.14.3: every tutorial flag must have a default here - _merge_into only
+		# keeps known keys, so "lesson_done" was dropped on each load (owner: the
+		# lesson opened on every start since 0.13.0).
+		"tutorial": {"drift_done": false, "lesson_done": false},
 		"cup_progress": {}, ## BakuCup state (0.10.0), {} when no cup runs
 		"cup_history": {}, ## {"played", "won", "best"} finished cups
 		"daily_challenge": {}, ## {"done": "YYYY-MM-DD", "count"}
@@ -121,6 +124,18 @@ func _migrate(d: Dictionary) -> Dictionary:
 				keep.append(sel)
 			d.owned_karts = keep
 		d.version = 6
+	# v6 → v7 (0.14.3): "lesson_done" never survived a reload (see the default
+	# above), so players who already raced saw the lesson again and again.
+	# Anyone with a finished race has seen it: mark it done.
+	if int(d.get("version", 1)) < 7:
+		var races := 0
+		if typeof(d.get("stats")) == TYPE_DICTIONARY:
+			races = int(d.stats.get("races", 0))
+		if typeof(d.get("tutorial")) != TYPE_DICTIONARY:
+			d.tutorial = {}
+		if races > 0:
+			d.tutorial["lesson_done"] = true
+		d.version = 7
 	return d
 
 

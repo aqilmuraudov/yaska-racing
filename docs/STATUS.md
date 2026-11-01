@@ -1,6 +1,11 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-01 · Build: 0.14.2 · Engine: Godot 4.4.1-stable
+Date: 2026-11-01 · Build: 0.14.3 · Engine: Godot 4.4.1-stable
+
+## Update 0.14.3 (versionCode 34) — lesson really shown once; lighter Baku Eye and clouds
+- **Root cause of the repeating lesson (owner saw it again in 0.14.2):** `SaveManager._merge_into` keeps only keys that exist in the default profile, and the default `tutorial` dictionary only had `drift_done`, so `lesson_done` was dropped on every load since 0.13.0 — 0.14.2 wrote it at the start of the lesson but lost it on the next launch. Fixed by adding `lesson_done` to the defaults; save v7 marks it done for every profile that has finished a race. New regression test reloads the profile from disk (the old tests never did).
+- Baku Eye cabins 10 × 18 → 6 × 12 segments (WheelRing 10,752 → 5,568 triangles, shadow caster); far clouds 12,880 → 8,120 triangles. Seafront High day primitives mean 374k → 362k, max 461k → 440k.
+- Tests: `tests/test_round27.gd` +1 method. Full strict suite: 221 methods, 5756 checks, 0 failures, 0 script errors.
 
 ## Update 0.14.2 (versionCode 33) — owner fixes + mobile optimisation of the street props
 Owner reports after playing 0.14.1:

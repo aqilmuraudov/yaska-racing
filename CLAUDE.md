@@ -23,7 +23,7 @@ Həmişə Azərbaycan dilində cavab ver.
 
 ## Testlər və build
 - Strict testlər: `GODOT="<godot console exe>" python tools/run_tests.py` — skript xətası olan testi də uğursuz sayır.
-  Əvvəlki tam qaçış: 220 metod, 5753 yoxlama, 0 uğursuz (0.14.2).
+  Əvvəlki tam qaçış: 221 metod, 5756 yoxlama, 0 uğursuz (0.14.3).
 - Debug runner bayraqları `docs/BUILD.md`-də (`--race --autopilot --track=old_city --tod=night --capture=DIR ...`).
 - Android export: `--export-debug "Android" <apk>`. JDK 17 PATH-da olmalıdır, yoxsa APK imzasız çıxır.
 - İmza açarı: `_setup/yaska-debug.keystore` (alias `androiddebugkey`, şifrə `android`).
@@ -33,7 +33,7 @@ Həmişə Azərbaycan dilində cavab ver.
   Yeni açar YARATMA — yoxsa telefonda köhnə oyunun üstünə quraşdırılmaz.
 - `_builds/` və `_setup/` git-ə düşmür.
 
-## Vəziyyət (0.14.2, versionCode 33)
+## Vəziyyət (0.14.3, versionCode 34)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 3 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,

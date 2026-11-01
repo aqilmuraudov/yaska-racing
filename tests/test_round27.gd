@@ -57,4 +57,20 @@ func test_free_karts_taken_back_by_v6() -> void:
 		"selected_kart": "posi"})
 	SaveManager.load_profile()
 	check_eq(SaveManager.owned_karts(), [RacerRoster.DEFAULT_ID, "posi", "bicok"], "real purchases kept")
-	check(SaveManager.save_profile() and int(SaveManager.data.version) == 6, "saved as v6")
+	check(SaveManager.save_profile() and int(SaveManager.data.version) == SaveManager.SAVE_VERSION, "saved as the current version")
+
+
+## 0.14.3: the flag must survive a save -> load from disk (it was dropped by
+## _merge_into because the default tutorial dictionary did not know it).
+func test_lesson_flag_survives_reload() -> void:
+	SaveManager.set_tutorial_flag(LessonDirector.FLAG, true)
+	SaveManager.save_profile()
+	SaveManager.load_profile()
+	check(SaveManager.get_tutorial_flag(LessonDirector.FLAG), "lesson_done kept after reload")
+	SafeFile.write_json(PROFILE, {"version": 6, "stats": {"races": 3, "wins": 0, "podiums": 0},
+		"tutorial": {"drift_done": true}})
+	SaveManager.load_profile()
+	check(SaveManager.get_tutorial_flag(LessonDirector.FLAG), "v7: a profile that has raced skips the lesson")
+	SafeFile.write_json(PROFILE, {"version": 6, "stats": {"races": 0, "wins": 0, "podiums": 0}})
+	SaveManager.load_profile()
+	check(not SaveManager.get_tutorial_flag(LessonDirector.FLAG), "a profile that never raced still gets it once")
