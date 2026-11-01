@@ -492,7 +492,7 @@ GOALS_S_CLEAN_LAP,%d clean laps,%d təmiz dövr
 GOALS_S_TOP3,Top 3,Top 3
 GOALS_S_WIN,1st place,1-ci yer
 SET_KIDS_AUTO,Kids Controls (Auto drive),Uşaqlar üçün idarəetmə (Avto sürmə)
-SET_KIDS_AUTO_HINT,The kart steers and drives by itself. Tap NITRO for a boost.,Kart özü sürür və dönür. Sürət üçün NİTRO-ya toxun.
+SET_KIDS_AUTO_HINT,"The kart steers and drives by itself. In a race, hold the yellow ""Auto"" badge to drive yourself.","Kart özü sürür və dönür. Yarışda sarı ""Avto"" nişanını basıb saxlasan, özün sürərsən."
 HUD_KIDS_AUTO,Auto,Avto
 GOAL_FINISH,Finish the race,Yarışı bitir
 GOALS_S_FINISH,Finish,Bitir

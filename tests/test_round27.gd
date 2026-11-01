@@ -74,3 +74,23 @@ func test_lesson_flag_survives_reload() -> void:
 	SafeFile.write_json(PROFILE, {"version": 6, "stats": {"races": 0, "wins": 0, "podiums": 0}})
 	SaveManager.load_profile()
 	check(not SaveManager.get_tutorial_flag(LessonDirector.FLAG), "a profile that never raced still gets it once")
+
+
+## 0.14.3: Kids controls left on hid every button; holding the badge brings them back.
+func test_hold_badge_turns_kids_off() -> void:
+	var cfg := Game.default_race_config()
+	cfg.laps = 1
+	cfg.kids_auto = true
+	Game.race_config = cfg
+	var race: RaceManager = load("res://scenes/race/race.tscn").instantiate()
+	tree.root.add_child(race)
+	await tree.process_frame
+	await tree.process_frame
+	check(race.kids_mode() and race.hud.kids_badge.visible, "kids on, badge shown")
+	check(not race.hud.touch.get_button("steer_left").visible, "steer hidden in kids mode")
+	race.hud.turn_off_kids_mode()
+	check(not race.kids_mode() and race.player.player_input.enabled, "manual driving back")
+	check(race.hud.touch.get_button("steer_left").visible, "steer buttons back")
+	Settings.set_value("controls", "kids_auto", false)
+	race.queue_free()
+	await tree.process_frame

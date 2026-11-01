@@ -117,7 +117,10 @@ func setup(p_race: RaceManager) -> void:
 	# Kids controls badge (0.9.5): tells parents the kart drives itself.
 	kids_badge = PanelContainer.new()
 	kids_badge.name = "KidsBadge"
-	kids_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 0.14.3: hold for 1 s to drive yourself (a short tap does nothing, so a
+	# small child does not switch it off by accident).
+	kids_badge.mouse_filter = Control.MOUSE_FILTER_STOP
+	kids_badge.gui_input.connect(_on_kids_badge_input)
 	kids_badge.add_theme_stylebox_override("panel", UITheme.rounded(Color(UITheme.YELLOW, 0.92), 16, 2, Color.WHITE, 8))
 	kids_badge.position = Vector2(140, 68)
 	kids_badge.visible = race.kids_mode()
@@ -760,7 +763,36 @@ func release_touches() -> void:
 		touch.release_all()
 
 
+var _kids_hold := -1.0
+const KIDS_HOLD := 1.0
+
+
+func _on_kids_badge_input(e: InputEvent) -> void:
+	if (e is InputEventScreenTouch or e is InputEventMouseButton) and e.is_pressed():
+		_kids_hold = 0.0
+	elif (e is InputEventScreenTouch or e is InputEventMouseButton) and not e.is_pressed():
+		_kids_hold = -1.0
+		kids_badge.modulate = Color.WHITE
+
+
+## Hold reached: Kids controls off for this race and in Settings.
+func turn_off_kids_mode() -> void:
+	_kids_hold = -1.0
+	race.set_kids_mode(false)
+	Settings.set_value("controls", "kids_auto", false)
+	kids_badge.visible = false
+	kids_badge.modulate = Color.WHITE
+	touch.kids = false
+	touch._layout()
+	AudioManager.play_ui("ui_confirm")
+
+
 func _process(delta: float) -> void:
+	if _kids_hold >= 0.0:
+		_kids_hold += delta
+		kids_badge.modulate = Color.WHITE.lerp(Color(0.6, 1.0, 0.6), minf(_kids_hold / KIDS_HOLD, 1.0))
+		if _kids_hold >= KIDS_HOLD:
+			turn_off_kids_mode()
 	if touch and race.nitro:
 		if touch.nitro_level != race.nitro.level:
 			touch.nitro_level = race.nitro.level

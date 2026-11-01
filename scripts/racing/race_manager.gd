@@ -1003,6 +1003,18 @@ func kids_mode() -> bool:
 	return bool(config.get("kids_auto", false))
 
 
+## 0.14.3: switch Kids controls mid-race (hold the "Avto" badge). Owner report:
+## the setting was on and the race showed no buttons at all, with no way back.
+func set_kids_mode(on: bool) -> void:
+	config.kids_auto = on
+	var r = player
+	if r.player_input:
+		r.player_input.release_all()
+		r.player_input.enabled = not auto_drive()
+	r.ai.set_physics_process(auto_drive())
+	r.kart.speed_scale = KIDS_PLAYER_SPEED if on else 1.0
+
+
 ## The player's kart drives itself (Kids controls or debug autopilot).
 func auto_drive() -> bool:
 	return kids_mode() or bool(config.get("debug_autopilot", false))
