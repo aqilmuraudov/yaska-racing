@@ -335,12 +335,21 @@ const GLTF_PROPS := {
 	"wall_seg": "res://assets/models/gate/gate_props",
 	"wall_tower": "res://assets/models/gate/gate_props",
 	"wall_end": "res://assets/models/gate/gate_props",
+	# 0.15.3 HAC plaza + glass front, Flag Square, gantry, carpets, bunting
+	# poles (tools/blender/plaza_props.py).
+	"hac_base": "res://assets/models/plaza/plaza_props",
+	"flag_square": "res://assets/models/plaza/plaza_props",
+	"gantry_pillar": "res://assets/models/plaza/plaza_props",
+	"gantry_seg": "res://assets/models/plaza/plaza_props",
+	"gantry_lights": "res://assets/models/plaza/plaza_props",
+	"carpet_hang": "res://assets/models/plaza/plaza_props",
+	"bunting_pole": "res://assets/models/plaza/plaza_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
 	"res://assets/models/city": "windows", "res://assets/models/seafront": "windows",
 	"res://assets/models/skyline": "windows", "res://assets/models/landmarks": "windows",
-	"res://assets/models/downtown": "windows"}
+	"res://assets/models/downtown": "windows", "res://assets/models/plaza": "windows"}
 const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true

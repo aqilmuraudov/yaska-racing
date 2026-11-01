@@ -466,6 +466,7 @@ func _build_terrain() -> void:
 			if not hash.has(key):
 				hash[key] = []
 			hash[key].append([p, path.half_widths[i] + ow + 0.6])
+	_terrain_hash = hash
 	var heights := PackedFloat32Array()
 	var cols := PackedColorArray()
 	heights.resize(nx * nz)
@@ -493,6 +494,17 @@ func _build_terrain() -> void:
 	var mi := _add_mesh("Terrain", mb.commit(materials.ground), false)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Safety floor far below: anything reaching it is recovered by RaceManager.
+
+
+## 0.15.3: height of the grass terrain at a world point (same rule as the
+## mesh, without the 6 m grid), for set pieces standing on it.
+var _terrain_hash := {}
+
+
+func terrain_height(wx: float, wz: float) -> float:
+	if _terrain_hash.is_empty():
+		return 0.0
+	return float(_terrain_sample(_terrain_hash, 24.0, wx, wz)[0])
 
 
 func _terrain_sample(hash: Dictionary, hcell: float, wx: float, wz: float) -> Array:

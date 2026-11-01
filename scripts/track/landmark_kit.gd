@@ -305,6 +305,12 @@ static func _heydar_aliyev(lod: bool) -> ArrayMesh:
 	var nu := 30 if lod else 104
 	var nv := 10 if lod else 30
 	var shell := grid(nu, nv, func(u: float, v: float) -> Vector3: return hac_point(u, v))
+	if _has_gltf("hac_base"):
+		# 0.15.3: Blender glass front + plaza under the self-lit white shell.
+		var acc := PropKit.Accum.new()
+		acc.add_committed(_merge([[shell, Transform3D.IDENTITY, hac_white()]]), Transform3D.IDENTITY)
+		acc.add_committed(PropKit.get_mesh("hac_base" + (PropKit.LO_SUFFIX if lod else "")), Transform3D.IDENTITY)
+		return acc.commit()
 	# Curved dark glass wall recessed under the lip: from the ground up to
 	# where it meets the underside of the shell, well behind the front edge.
 	var th_g := _hac_theta_end() + 0.32
@@ -434,6 +440,8 @@ const FLAG_POLE_H := 64.0
 
 
 static func _flag_square() -> ArrayMesh:
+	if _has_gltf("flag_square"):
+		return PropKit.get_mesh("flag_square") # 0.15.3 Blender square, same mast height
 	var parts: Array = []
 	var plaza := ShapeKit.cylinder(34.0, 0.4, 40)
 	parts.append([plaza, Transform3D(Basis.IDENTITY, Vector3(0, 0.15, 0)), PropKit.m("plaster_cream")])

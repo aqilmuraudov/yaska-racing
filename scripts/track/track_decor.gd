@@ -482,6 +482,27 @@ func _place_old_city() -> void:
 var _carpet_xforms := {} # variant -> [Transform3D]
 
 
+## 0.15.3: the Blender carpet (rod, folds, fringe) when present. Its UVs are
+## rebuilt from the cloth position (1.6 x 2.4 m, centred) so the carpet
+## shader paints the pattern exactly as on the old flat quad.
+static func _carpet_mesh() -> Mesh:
+	if not LandmarkKit._has_gltf("carpet_hang"):
+		var quad := QuadMesh.new()
+		quad.size = Vector2(1.6, 2.4)
+		return quad
+	var src := PropKit.get_mesh("carpet_hang")
+	var arrays := src.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var uvs := PackedVector2Array()
+	uvs.resize(verts.size())
+	for i in verts.size():
+		uvs[i] = Vector2(verts[i].x / 1.6 + 0.5, 0.5 - verts[i].y / 2.4)
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return m
+
+
 func _add_carpet(house_xf: Transform3D, idx: int) -> void:
 	var variant := idx % 4
 	var local := Vector3(rng.randf_range(-2.5, 2.5), 2.4, 4.08)
@@ -491,8 +512,7 @@ func _add_carpet(house_xf: Transform3D, idx: int) -> void:
 
 
 func _flush_carpets() -> void:
-	var quad := QuadMesh.new()
-	quad.size = Vector2(1.6, 2.4)
+	var quad: Mesh = _carpet_mesh()
 	for variant in _carpet_xforms.keys():
 		var list: Array = _carpet_xforms[variant]
 		var mm := MultiMesh.new()
@@ -612,6 +632,15 @@ func _place_baku_landmarks() -> void:
 		var y := ground_y(p)
 		if id == "crescent":
 			y = data.sea_level - 0.5
+		elif id == "flag_square":
+			# 0.15.3: the round plaza sits on the highest ground under it (its
+			# skirt reaches down), so the slope never buries half of it.
+			for k in 13:
+				var ang := TAU * k / 12.0
+				var q := p + Vector3(cos(ang), 0, sin(ang)) * (30.0 if k < 12 else 0.0)
+				y = maxf(y, ground_y(q))
+				if builder:
+					y = maxf(y, builder.terrain_height(q.x, q.z) + 0.05)
 		elif id == "flame_towers":
 			y = ground_y(p) + 5.0
 			var hill := MeshInstance3D.new()
@@ -711,11 +740,24 @@ func _build_gantry() -> void:
 	var half := data.main.half_width_at(s) + 1.6
 	var a := PropKit.Accum.new()
 	var h := 7.6
-	for side: float in [-1.0, 1.0]:
+	var blender := LandmarkKit._has_gltf("gantry_seg")
+	if blender:
+		# 0.15.3 Blender gantry: two legs, 2 m checkered beam pieces across
+		# the road, the countdown light box in the middle.
+		var span := half * 2.0 + 1.2
+		var n := maxi(int(round(span / 2.0)), 1)
+		var sx := span / (n * 2.0)
+		for k in n:
+			a.add_committed(PropKit.get_mesh("gantry_seg"), Transform3D(Basis.from_scale(Vector3(sx, 1, 1)), Vector3(-span * 0.5 + k * 2.0 * sx, 0, 0)))
+		for side: float in [-1.0, 1.0]:
+			a.add_committed(PropKit.get_mesh("gantry_pillar"), Transform3D(Basis.IDENTITY, Vector3(side * half, 0, 0)))
+		a.add_committed(PropKit.get_mesh("gantry_lights"), Transform3D.IDENTITY)
+	for side: float in ([] if blender else [-1.0, 1.0]):
 		a.add(PropKit.rbox(Vector3(0.9, h, 0.9), 0.2), Transform3D(Basis.IDENTITY, Vector3(side * half, h * 0.5, 0)), PropKit.m("navy"))
-	a.add(PropKit.rbox(Vector3(half * 2.0 + 1.2, 1.5, 1.0), 0.2), Transform3D(Basis.IDENTITY, Vector3(0, h + 0.3, 0)), PropKit.m("navy"))
+	if not blender:
+		a.add(PropKit.rbox(Vector3(half * 2.0 + 1.2, 1.5, 1.0), 0.2), Transform3D(Basis.IDENTITY, Vector3(0, h + 0.3, 0)), PropKit.m("navy"))
 	# Checkered band
-	for i in 24:
+	for i in (0 if blender else 24):
 		var x := -half + (i + 0.5) * (half * 2.0 / 24.0)
 		a.add(PropKit.box(Vector3(half * 2.0 / 24.0, 0.5, 0.05)), Transform3D(Basis.IDENTITY, Vector3(x, h + 0.65, 0.52)), PropKit.m("white" if i % 2 == 0 else "navy"))
 		a.add(PropKit.box(Vector3(half * 2.0 / 24.0, 0.5, 0.05)), Transform3D(Basis.IDENTITY, Vector3(x, h - 0.05, 0.52)), PropKit.m("navy" if i % 2 == 0 else "white"))
@@ -734,7 +776,7 @@ func _build_gantry() -> void:
 		var l := MeshInstance3D.new()
 		l.mesh = ShapeKit.sphere(0.45, 14, 8)
 		l.material_override = _light_off_mat
-		l.position = Vector3(-1.6 + i * 1.6, h + 0.3, -0.6)
+		l.position = Vector3(-1.6 + i * 1.6, h + 1.85, 0.0) if blender else Vector3(-1.6 + i * 1.6, h + 0.3, -0.6)
 		gantry.add_child(l)
 		gantry_lights.append(l)
 
@@ -795,7 +837,10 @@ func _place_bunting() -> void:
 		var right := p + r * half + Vector3.UP * 8.2
 		var a := PropKit.Accum.new()
 		for side: float in [-1.0, 1.0]:
-			a.add(ShapeKit.cylinder(0.08, 8.6, 6), Transform3D(Basis.IDENTITY, p + r * side * half + Vector3.UP * 4.25 - p), PropKit.m("metal_grey"))
+			if LandmarkKit._has_gltf("bunting_pole"):
+				a.add_committed(PropKit.get_mesh("bunting_pole"), Transform3D(Basis.IDENTITY, r * side * half))
+			else:
+				a.add(ShapeKit.cylinder(0.08, 8.6, 6), Transform3D(Basis.IDENTITY, p + r * side * half + Vector3.UP * 4.25 - p), PropKit.m("metal_grey"))
 		var n := int(half * 2.0 / 1.1)
 		for i in n:
 			var f := (i + 0.5) / n

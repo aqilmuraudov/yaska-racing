@@ -2,6 +2,16 @@
 
 Date: 2026-11-01 · Build: 0.15.2 · Engine: Godot 4.4.1-stable
 
+## Next (unreleased, after 0.15.2) — remaining set pieces in Blender
+- `tools/blender/plaza_props.py` → `assets/models/plaza/` (one 2048² set, near LOD 6664 tris for all seven modules):
+  - **Heydar Aliyev Center**: curved glass front under the shell lip (glass mask → world-space grid, sky tint, lit windows at night), entrance doors + canopies, plaza with a wide stair, terraced lawns with white edges and hedge bands, three round pools with rims. The white shell stays LandmarkKit's self-lit mesh (its night glow is the building's identity); `_heydar_aliyev` merges both.
+  - **State Flag Square**: radial paving with joints, flag-colour rings, three-step podium, granite drum, tapered 64 m mast with collars and gold ball, four eight-point star plaques, eight lamps with glowing globes, a 4 m skirt. It now stands on the real grass height (`TrackBuilder.terrain_height`, same rule as the terrain mesh); before, `ground_y` (road height) left half the plaza under the grass.
+  - **Start / finish gantry**: legs with "YASKA" side panels, 2 m checkered beam pieces repeated across the road, countdown light box on top of the beam (the lamps are seen from both sides; before, the box hid the "YASKA RACING" sign).
+  - **Hanging carpets**: rod with gold knobs, soft folds, fringe; UVs rebuilt in Godot from the cloth position so the carpet shader pattern is unchanged.
+  - **Bunting poles**: base, collar, gold finial.
+- Not converted (and why): the track surface, kerbs and barriers are continuous meshes built along the spline (`TrackBuilder`), not props; a Blender module cannot follow every curve. They can get better textures / normal maps instead.
+- Strict suite: 238 methods, 6024 checks, 1 failure (the known `test_touch_scroll` full-run flake). Round 30 tests: modules, HAC white shell kept, mast height, carpet UVs, terrain height.
+
 ## Update 0.15.2 (versionCode 37) — owner fixes: Rekord HUD, garage tabs, time of day, "Öyrən", Qoşa Qala in Blender
 - **Rekord HUD overlap** (owner screenshot): the camera switch sat on the ghost delta pill / best-lap line. In time trial it now sits below that column (`TouchControls.camera_low`, y 290 vs 150 at scale 1).
 - **Garage split into two big tabs**: "Maşınlar" (3-column grid of big kart cards: portrait, name, "✓ Sürürəm" / "Seç" / price; tap = race with it or buy) and "Tüninq" (paint, upgrades, parts). Tab is remembered (`GarageScreen.tab`). The old "Yeni maşın" strip is gone (only the "all karts" message remains).
