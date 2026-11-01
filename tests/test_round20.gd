@@ -264,9 +264,10 @@ func test_garage_buy_flow() -> void:
 	host.add_child(screen)
 	for k in 6:
 		await tree.process_frame
-	check(screen.new_kart_btn != null, "Yeni maşın card")
-	check(screen.new_kart_btn.text.contains(Money.format(price)), "Al button shows the price (%s)" % screen.new_kart_btn.text)
-	check(screen.new_kart_btn.text.contains("₼"), "manat")
+	# 0.15.2: the price sits on the kart's own card in the "Maşınlar" tab.
+	var card: Button = screen.my_karts.find_child("Kart_" + first, false, false)
+	check(card != null, "kart card")
+	check(_has_text(card, Money.format(price)), "card shows the price")
 	screen.open_buy()
 	check_eq(screen.shop_kind(), "funds", "not enough money")
 	check(screen.shop_dialog.find_child("Missing", true, false) != null, "shows what's missing")
@@ -291,6 +292,15 @@ func test_garage_buy_flow() -> void:
 	check(screen.new_kart_btn == null, "no buy button when all owned")
 	check(screen.new_kart_box.find_child("AllKarts", true, false) != null, "all karts message")
 	host.queue_free()
+
+
+func _has_text(n: Node, t: String) -> bool:
+	if n is Label and (n as Label).text.contains(t):
+		return true
+	for c in n.get_children():
+		if _has_text(c, t):
+			return true
+	return false
 
 
 class DowntownGarageHelper:

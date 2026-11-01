@@ -6,7 +6,7 @@ extends MenuScreen
 ## the Nitro add-on. Each row shows the level, a stat preview bar (current
 ## and, highlighted, the next level) and the next price.
 
-const PANEL_W := 600.0
+const PANEL_W := 640.0
 const ROWS := [
 	["speed", "GARAGE_SPEED", "GARAGE_SPEED_DESC", "top_speed", Color("ff5f6d")],
 	["engine", "GARAGE_ENGINE", "GARAGE_ENGINE_DESC", "acceleration", Color("ffb21f")],
@@ -30,6 +30,11 @@ var new_kart_id := ""
 var new_kart_btn: Button
 var shop_dialog: Control
 var _dragging := false
+## 0.15.2 (owner): the panel has two big tabs - "Maşınlar" (pick / buy a
+## kart) and "Tüninq" (paint, upgrades, parts) - instead of one long list.
+static var tab := 0
+var tab_buttons: Array[Button] = []
+var tab_pages: Array[Control] = []
 
 
 func _init() -> void:
@@ -85,20 +90,46 @@ func build() -> void:
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 8)
 	panel.add_child(outer)
+	var tabs := HBoxContainer.new()
+	tabs.name = "GarageTabs"
+	tabs.add_theme_constant_override("separation", 10)
+	outer.add_child(tabs)
+	for t in [["GARAGE_TAB_KARTS", "racer_yaska"], ["GARAGE_TAB_TUNING", "garage"]]:
+		var tb := Button.new()
+		tb.text = tr(t[0])
+		tb.icon = UITheme.icon(t[1])
+		tb.add_theme_constant_override("icon_max_width", 40)
+		tb.custom_minimum_size = Vector2(0, UITheme.H_PRIMARY)
+		tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tb.clip_text = true
+		tb.focus_mode = Control.FOCUS_ALL
+		var i := tab_buttons.size()
+		tb.pressed.connect(func(): show_tab(i))
+		tabs.add_child(tb)
+		tab_buttons.append(tb)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer.add_child(scroll)
 	TouchScroll.attach(scroll)
-	var v := VBoxContainer.new()
-	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	v.add_theme_constant_override("separation", 8)
-	scroll.add_child(v)
-	_build_my_karts(v)
+	var pages := VBoxContainer.new()
+	pages.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(pages)
+	var kv := VBoxContainer.new()
+	kv.name = "KartsPage"
+	kv.add_theme_constant_override("separation", 10)
+	pages.add_child(kv)
 	new_kart_box = VBoxContainer.new()
 	new_kart_box.name = "NewKart"
-	v.add_child(new_kart_box)
+	kv.add_child(new_kart_box)
+	_build_my_karts(kv)
 	_build_new_kart()
+	var v := VBoxContainer.new()
+	v.name = "TuningPage"
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.add_theme_constant_override("separation", 8)
+	pages.add_child(v)
+	tab_pages = [kv, v]
 	# Paint
 	var ph := HBoxContainer.new()
 	ph.add_theme_constant_override("separation", 10)
@@ -128,6 +159,14 @@ func build() -> void:
 	outer.add_child(done_btn)
 	refresh()
 	_build_parts()
+	show_tab(tab)
+
+
+func show_tab(i: int) -> void:
+	tab = clampi(i, 0, 1)
+	for k in tab_pages.size():
+		tab_pages[k].visible = k == tab
+		UITheme.style_button(tab_buttons[k], "yellow" if k == tab else "blue", UITheme.FS_BTN_PRIMARY)
 
 
 func _make_row(r: Array) -> Control:
@@ -309,6 +348,9 @@ func _build_new_kart() -> void:
 		all.name = "AllKarts"
 		h.add_child(all)
 		return
+	# 0.15.2: every kart card has its own buy button below; no extra card.
+	card.queue_free()
+	return
 	var d := RacerRoster.get_def(new_kart_id)
 	h.add_child(GameUI.portrait(new_kart_id, 84, UITheme.YELLOW))
 	var tv := VBoxContainer.new()
@@ -330,41 +372,57 @@ func _build_new_kart() -> void:
 ## 0.14.4 (owner) "Maşınlarım": every kart in one row. Owned: tap to make it
 ## the kart for every race (selected one has a gold ring); locked: price, tap
 ## to buy it with manat. Races no longer ask for a kart.
-var my_karts: HBoxContainer
+var my_karts: GridContainer
 
 
 func _build_my_karts(v: VBoxContainer) -> void:
-	v.add_child(GameUI.label(tr("GARAGE_MY_KARTS"), UITheme.FS_H2, UITheme.TEXT, 6))
-	my_karts = HBoxContainer.new()
+	my_karts = GridContainer.new()
 	my_karts.name = "MyKarts"
-	my_karts.add_theme_constant_override("separation", 4)
+	my_karts.columns = 3
+	my_karts.add_theme_constant_override("h_separation", 10)
+	my_karts.add_theme_constant_override("v_separation", 10)
 	v.add_child(my_karts)
 	var selected := SaveManager.get_selected_kart()
 	for d in RacerRoster.all():
 		var owned := SaveManager.is_kart_owned(d.id)
+		var sel := d.id == selected
 		var b := Button.new()
 		b.name = "Kart_" + d.id
-		b.flat = true
 		b.focus_mode = Control.FOCUS_ALL
-		b.custom_minimum_size = Vector2(74, 92)
+		b.custom_minimum_size = Vector2(184, 230)
 		b.tooltip_text = d.display_name
+		var box := UITheme.art_box("panel_card_selected" if sel else "panel_card", 8, 8)
+		for st in ["normal", "hover", "pressed", "focus"]:
+			b.add_theme_stylebox_override(st, box)
 		var col := VBoxContainer.new()
 		col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		col.add_theme_constant_override("separation", 0)
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		col.add_theme_constant_override("separation", 4)
 		b.add_child(col)
-		var ring := UITheme.YELLOW if d.id == selected else (Color.WHITE if owned else Color(0.4, 0.4, 0.5))
-		var pic := GameUI.portrait(d.id, 64, ring)
+		var ring := UITheme.YELLOW if sel else (Color.WHITE if owned else Color(0.4, 0.4, 0.5))
+		var pic := GameUI.portrait(d.id, 104, ring)
 		pic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		if not owned:
-			pic.modulate = Color(0.45, 0.45, 0.55)
+			pic.modulate = Color(0.5, 0.5, 0.6)
 		col.add_child(pic)
-		var txt := "✓" if d.id == selected else (d.display_name if owned else Money.format(KartShop.price(d.id)))
-		var lb := GameUI.label(txt, UITheme.FS_CAPTION, UITheme.YELLOW if not owned or d.id == selected else UITheme.TEXT, 5)
-		lb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		lb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		col.add_child(lb)
+		var nm := GameUI.label(d.display_name, UITheme.FS_H2, UITheme.INK if sel else UITheme.TEXT, 0 if sel else 6)
+		nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_child(nm)
+		var tag: Control
+		if sel:
+			tag = GameUI.badge("✓ " + tr("GARAGE_KART_ACTIVE"), UITheme.INK, UITheme.FS_BODY, UITheme.YELLOW)
+		elif owned:
+			tag = GameUI.badge(tr("GARAGE_KART_PICK"), Color("1f6fd1"), UITheme.FS_BODY)
+		else:
+			tag = GameUI.money_chip(KartShop.price(d.id), 22)
+		tag.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for c in tag.find_children("*", "Control", true, false):
+			(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_child(tag)
 		var id := d.id
 		b.pressed.connect(func(): pick_kart(id))
 		my_karts.add_child(b)

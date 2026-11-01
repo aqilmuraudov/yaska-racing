@@ -77,30 +77,17 @@ func build() -> void:
 		cards[String(mode.id)] = b
 		if _first == null:
 			_first = b
-	school_btn = make_button(tr("MODE_TUTORIAL"), func(): _choose("tutorial"))
+	# 0.15.2 (owner): one big "Öyrən" button under the modes opens the guided
+	# tour of every race button (TutorialDirector); nothing opens by itself.
+	school_btn = make_button(tr("MODE_LEARN"), func(): _choose("tutorial"))
 	school_btn.name = "Mode_tutorial"
 	school_btn.icon = UITheme.icon("mode_school")
 	school_btn.expand_icon = false
-	school_btn.add_theme_constant_override("icon_max_width", 40)
-	UITheme.style_button(school_btn, "yellow", UITheme.FS_BTN_SMALL)
-	school_btn.custom_minimum_size = Vector2(300, UITheme.H_BTN_SMALL)
+	school_btn.add_theme_constant_override("icon_max_width", 56)
+	UITheme.style_button(school_btn, "lime", UITheme.FS_BTN_PRIMARY)
+	school_btn.custom_minimum_size = Vector2(440, UITheme.H_PRIMARY)
 	school_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	# 0.13.0: the first lesson can be played again from here.
-	var small_row := HBoxContainer.new()
-	small_row.name = "SmallModes"
-	small_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	small_row.add_theme_constant_override("separation", 16)
-	small_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	col.add_child(small_row)
-	small_row.add_child(school_btn)
-	lesson_btn = make_button(tr("MODE_LESSON"), func(): Game.start_lesson())
-	lesson_btn.name = "Mode_lesson"
-	lesson_btn.icon = UITheme.icon("hint_tap")
-	lesson_btn.expand_icon = false
-	lesson_btn.add_theme_constant_override("icon_max_width", 40)
-	UITheme.style_button(lesson_btn, "yellow", UITheme.FS_BTN_SMALL)
-	lesson_btn.custom_minimum_size = Vector2(240, UITheme.H_BTN_SMALL)
-	small_row.add_child(lesson_btn)
+	col.add_child(school_btn)
 	# Four cards side by side; they scale with the space really available
 	# so 20:9, 16:9 and 4:3 all fit without scrolling.
 	var fit := func():
@@ -109,7 +96,7 @@ func build() -> void:
 			return
 		var gap := float(row.get_theme_constant("separation"))
 		var w := clampf((avail.x - gap * 3.0 - 16.0) / 4.0, 200.0, 360.0)
-		var h := clampf(avail.y - UITheme.H_BTN_SMALL - UITheme.GAP_M - 16.0, 300.0, minf(w * 1.7, 520.0))
+		var h := clampf(avail.y - UITheme.H_PRIMARY - UITheme.GAP_M - 16.0, 280.0, minf(w * 1.7, 520.0))
 		var icon_px := clampf(w * 0.42, 84.0, 128.0)
 		for c in btns:
 			c.custom_minimum_size = Vector2(w, h)
@@ -207,6 +194,8 @@ func _choose(mode: String) -> void:
 			Game.race_config.laps = 1
 			Game.race_config.ai_count = 0
 			Game.race_config.items = false
+			Game.race_config.kids_auto = false # the tour shows every button
+			Game.race_config.time_of_day = "day"
 			Game.start_loading_race()
 		"cup":
 			Game.race_config.mode = "quick"

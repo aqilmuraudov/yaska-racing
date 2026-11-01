@@ -135,17 +135,15 @@ func start_lesson() -> void:
 var starter_pick := false
 
 
-## First "Oyna" on a new profile: pick the starter kart, then the lesson
-## once; later, mode select.
+## First "Oyna" on a new profile: pick the starter kart; then mode select.
+## 0.15.2 (owner): no lesson opens by itself any more - the big "Öyrən"
+## button under the race modes starts the guided tour (TutorialDirector).
 func play_pressed() -> void:
 	if SaveManager.needs_starter():
 		starter_pick = true
 		goto(State.KART_SELECT)
 		return
-	if not SaveManager.get_tutorial_flag(LessonDirector.FLAG):
-		start_lesson()
-	else:
-		goto(State.MODE_SELECT)
+	goto(State.MODE_SELECT)
 
 
 ## Races start with the garage's selected kart (no kart screen in between).

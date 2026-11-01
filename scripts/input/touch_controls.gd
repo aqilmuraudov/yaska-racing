@@ -53,6 +53,9 @@ var _icons := {}
 ## charge (0..1) every frame.
 ## Kids controls (0.9.5): only NITRO (and recover) stay; no steering/gas/brake.
 var kids := false
+## Rekord: the best-lap line and the ghost delta pill fill the top-right
+## column, so the camera switch moves below them (owner: icons overlapped).
+var camera_low := false
 var nitro_level := 0
 var nitro_charge := 0.0
 
@@ -139,7 +142,7 @@ func _layout() -> void:
 		"nitro": [right_base + (Vector2(-300, -236) if easy else Vector2(-124, -474)) * s, 60.0],
 		"recover": [Vector2(sz.x * 0.5, 210.0 * s), 50.0],
 		# Camera view switch: small, top-right under the pause / timer row.
-		"camera": [Vector2(sz.x - m - 40.0 * s - ox, 150.0 * s), 36.0],
+		"camera": [Vector2(sz.x - m - 40.0 * s - ox, (290.0 if camera_low else 150.0) * s), 36.0],
 	}
 	if not auto_gas:
 		defs["gas"] = [right_base + Vector2(-292, -92) * s, 74.0]

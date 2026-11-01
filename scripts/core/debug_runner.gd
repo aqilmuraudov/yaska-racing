@@ -326,8 +326,9 @@ func _capture_screens() -> void:
 			SaveManager.data.login.last = Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()) - 86400 + Time.get_time_zone_from_system().bias * 60)
 			Game.goto(Game.State.MAIN_MENU)
 			await get_tree().create_timer(1.8).timeout
-		elif name == "garage":
+		elif name == "garage" or name == "garage_tune":
 			SaveManager.data.currency = maxi(SaveManager.get_money(), 845)
+			GarageScreen.tab = 1 if name == "garage_tune" else 0
 			Game.goto(Game.State.GARAGE)
 			await get_tree().create_timer(1.6).timeout
 		elif name.begins_with("garage_"):

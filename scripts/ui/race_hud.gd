@@ -347,6 +347,7 @@ func setup(p_race: RaceManager) -> void:
 	touch.name = "TouchControls"
 	root.add_child(touch)
 	touch.kids = race.kids_mode()
+	touch.camera_low = String(race.config.get("mode", "")) == "time_trial"
 	touch.setup(race.player.player_input)
 	touch.visible = _uses_touch
 	pause_menu = PauseMenu.new()

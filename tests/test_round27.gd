@@ -122,4 +122,4 @@ func test_starter_pick_and_garage_kart() -> void:
 	var src := FileAccess.get_file_as_string("res://scripts/ui/city_select.gd")
 	check(src.find("Game.start_race_with_selected()") > 0 and src.find("State.KART_SELECT") < 0, "city select starts the race")
 	var g := FileAccess.get_file_as_string("res://scripts/ui/garage_screen.gd")
-	check(g.find("_build_my_karts(v)") > 0 and g.find("func pick_kart") > 0, "garage has My karts")
+	check(g.find("_build_my_karts(") > 0 and g.find("func pick_kart") > 0, "garage has My karts")

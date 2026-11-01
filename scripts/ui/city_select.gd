@@ -10,6 +10,10 @@ const TrackPreview := preload("res://scripts/ui/track_select.gd").TrackPreview
 var cards := {} ## id -> Button (tests)
 var new_badges := {} ## id -> Control
 var selected := ""
+## 0.15.2 (owner): the time of day is picked here, every time, with three big
+## buttons under the cities (was only in Race setup).
+const TOD_BAR_H := 96.0
+var tod_buttons := {} ## id -> Button (tests)
 
 
 func _init() -> void:
@@ -32,6 +36,7 @@ func build() -> void:
 	var row := HBoxContainer.new()
 	row.name = "Cities"
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_bottom = -TOD_BAR_H - 10.0
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", UITheme.GAP_L + 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -43,6 +48,7 @@ func build() -> void:
 		btns.append(b)
 		cards[id] = b
 	_style_selected()
+	_build_tod_bar()
 	var fit := func():
 		var avail := body.size
 		if avail.x <= 0.0:
@@ -51,7 +57,7 @@ func build() -> void:
 		# 0.13.0: three cities share the row (was two).
 		var n := float(btns.size())
 		var w := clampf((avail.x - gap * (n - 1.0) - 24.0) / n, 250.0, 600.0)
-		var h := clampf(avail.y - 12.0, 320.0, w * 1.02)
+		var h := clampf(avail.y - TOD_BAR_H - 22.0, 280.0, w * 1.02)
 		for c in btns:
 			c.custom_minimum_size = Vector2(w, h)
 			var pic: Control = c.find_child("Pic", true, false)
@@ -162,11 +168,52 @@ func _make_card(id: String) -> Button:
 	return b
 
 
+func _build_tod_bar() -> void:
+	var bar := HBoxContainer.new()
+	bar.name = "TimeOfDay"
+	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bar.offset_top = -TOD_BAR_H
+	bar.offset_bottom = 0.0
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.add_theme_constant_override("separation", 14)
+	body.add_child(bar)
+	for id in TimeOfDay.IDS:
+		var b := Button.new()
+		b.name = "Tod_" + id
+		b.text = tr(TimeOfDay.NAME_KEYS[id])
+		b.icon = UITheme.icon(TimeOfDay.ICONS[id])
+		b.add_theme_constant_override("icon_max_width", 56)
+		b.custom_minimum_size = Vector2(250, TOD_BAR_H)
+		b.focus_mode = Control.FOCUS_ALL
+		var tid: String = id
+		b.pressed.connect(func(): pick_tod(tid))
+		bar.add_child(b)
+		tod_buttons[id] = b
+	_style_tod()
+
+
+func pick_tod(id: String) -> void:
+	Settings.set_value("gameplay", "time_of_day", TimeOfDay.valid(id))
+	Game.race_config.time_of_day = TimeOfDay.valid(id)
+	AudioManager.play_ui("ui_move")
+	_style_tod()
+	UITheme.bounce(tod_buttons[TimeOfDay.valid(id)])
+
+
+func _style_tod() -> void:
+	var cur := TimeOfDay.selected()
+	for id in tod_buttons:
+		UITheme.style_button(tod_buttons[id], "yellow" if id == cur else "blue", UITheme.FS_BTN_PRIMARY)
+
+
 ## Picks the city, remembers it and starts the race with the garage kart.
 func choose(id: String, go := true) -> void:
 	selected = TrackList.valid(id)
 	Settings.set_value("gameplay", "track", selected)
 	Game.race_config.track_id = selected
+	Game.race_config.time_of_day = TimeOfDay.selected()
 	AudioManager.play_ui("ui_confirm")
 	_style_selected()
 	if go:

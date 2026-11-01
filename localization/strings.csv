@@ -570,3 +570,31 @@ TROPHY_OC_TT_RECORD,Old City: beat your record %d times,İçərişəhər: rekord
 STARTER_TITLE,Pick your first kart,İlk maşınını seç
 STARTER_PICK,This one is mine!,Bu mənimdir!
 GARAGE_MY_KARTS,My karts,Maşınlarım
+GARAGE_TAB_KARTS,Karts,Maşınlar
+GARAGE_TAB_TUNING,Tuning,Tüninq
+GARAGE_KART_ACTIVE,Racing,Sürürəm
+GARAGE_KART_PICK,Choose,Seç
+MODE_LEARN,Learn to drive,Öyrən
+TUT2_GAS,Go!,Qaz
+TUT2_GAS_TEXT,Press GAS to drive forward.,Irəli getmək üçün QAZ düyməsinə bas.
+TUT2_GAS_AUTO_TEXT,"Your kart drives forward by itself. You only steer, drift and use items!","Maşın özü irəli gedir. Sən yalnız döndər, drift et və hədiyyələri işlət!"
+TUT2_STEER,Steer,Döndər
+TUT2_STEER_TEXT,Press LEFT and RIGHT to turn. Try both!,Dönmək üçün SOL və SAĞ düymələrinə bas. İkisini də sına!
+TUT2_BRAKE,Brake,Əyləc
+TUT2_BRAKE_TEXT,Press BRAKE to slow down before a sharp turn.,Kəskin döngədən əvvəl yavaşlamaq üçün ƏYLƏC düyməsinə bas.
+TUT2_DRIFT,Drift,Drift
+TUT2_DRIFT_TEXT,Hold DRIFT and turn: your kart slides through the corner!,DRIFT düyməsini basılı saxla və dön: maşın döngədə sürüşəcək!
+TUT2_BOOST,Drift boost,Drift sürəti
+TUT2_BOOST_TEXT,"Hold the drift until the sparks glow, then let go: whoosh, a speed boost!","Qığılcımlar parlayana qədər drifti saxla, sonra burax: vıjjj, sürət!"
+TUT2_BOOST_PRESS_TEXT,"When the drift meter turns gold, press BOOST!","Drift göstəricisi qızılı olanda SÜRƏT düyməsinə bas!"
+TUT2_ITEM,Gifts,Hədiyyə
+TUT2_ITEM_TEXT,"Gift boxes on the road give you a surprise. Here is a turbo, press the button to use it!","Yoldakı hədiyyə qutuları sürpriz verir. Budur, turbo! İşlətmək üçün düyməyə bas!"
+TUT2_CAMERA,Camera,Kamera
+TUT2_CAMERA_TEXT,Press the CAMERA button to see your kart from another side.,Maşına başqa tərəfdən baxmaq üçün KAMERA düyməsinə bas.
+TUT2_PAUSE,Pause,Fasilə
+TUT2_PAUSE_TEXT,The orange button stops the game. From there you can restart or go to the menu.,Narıncı düymə oyunu dayandırır. Oradan yarışı yenidən başlada və ya menyuya qayıda bilərsən.
+TUT2_DONE,Great job!,Əla!
+TUT2_DONE_TEXT,"You know every button now. Collect stars, drift in the corners and win!","Artıq bütün düymələri bilirsən. Ulduz yığ, döngələrdə drift et və qalib gəl!"
+TUT2_NEXT,Next,Davam
+TUT2_EXIT,Exit,Çıx
+TUT2_START_RACE,Let's race!,Yarışaq!

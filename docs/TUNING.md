@@ -307,3 +307,20 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 | speaker | the player's racer only | rivals are silent |
 | volume | +2 dB on the SFX bus | |
 | generation | `eleven_v3`, `az`, stability 0.4, similarity 0.75; pitch per racer in the JSON (1.15–1.42) | |
+
+## Guided tour "Öyrən" (`scripts/racing/tutorial_director.gd`, 0.15.2)
+| Param | Value | Meaning |
+|---|---|---|
+| steps | gas, steer, brake, drift, boost, gift, camera, pause, done | 8 counted steps |
+| `NEXT_AFTER` | 12 s | "Davam" shows on any step after this long |
+| gas (auto-gas) | 4 s and speed > 6 m/s | moves on by itself |
+| track / time | seafront, day, no rivals, 99 laps | `mode_select._choose("tutorial")` |
+
+## Garage / city select (0.15.2)
+| Param | Value |
+|---|---|
+| garage panel width | 640 px, tabs 84 px high |
+| kart card | 184 × 230 px, portrait 104 px, 3 columns |
+| city time-of-day bar | 3 buttons 250 × 96 px |
+| Rekord camera switch | y 290 × scale (other modes 150) |
+

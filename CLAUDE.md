@@ -16,7 +16,7 @@ Həmişə Azərbaycan dilində cavab ver.
 2. UI oyun stilində, sadə, vizual, az mətnli — kiçik uşaq üçün.
 3. Əvvəl test et, ekran görüntülərini tənqidi yoxla, yalnız sonra APK çıxar.
 4. Hər buraxılışda `export_presets.cfg`-də versionCode-u 1 artır; STATUS.md və TUNING.md-ni yenilə;
-   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 28).
+   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 29).
 5. Dəyişiklikdən əvvəl backup (git commit və ya zip).
 6. Zəif yerləri dürüst de; ölçülməyəni ölçülmüş kimi göstərmə.
 7. Aqil bir neçə xüsusiyyəti **bir APK-da** almağı üstün tutur (hər addıma ayrı APK yox).
@@ -33,7 +33,7 @@ Həmişə Azərbaycan dilində cavab ver.
   Yeni açar YARATMA — yoxsa telefonda köhnə oyunun üstünə quraşdırılmaz.
 - `_builds/` və `_setup/` git-ə düşmür.
 
-## Vəziyyət (0.15.1, versionCode 36)
+## Vəziyyət (0.15.2, versionCode 37)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 3 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,
