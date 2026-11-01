@@ -267,6 +267,9 @@ SET2_MUSIC,Music,Musiqi
 SET2_MUSIC_HINT,Menu and race songs.,Menyu və yarış mahnıları.
 SET2_SFX,Sound Effects,Səs effektləri
 SET2_SFX_HINT,"Engines, boosts and buttons.","Mühərrik, sürətlənmə və düymə səsləri."
+SET2_VOICES,Character Voices,Personaj səsləri
+SET2_VOICES_HINT,Racers talk during the race.,Yarışçılar yarışda danışır.
+SET2_VOICES_SFX_OFF,Turn on Sound Effects to hear them.,Eşitmək üçün Səs effektlərini aç.
 SET2_MASTER_OFF_NOTE,Master Sound is off.,Ümumi səs deaktivdir.
 SET2_CONTROL_TYPE,Control Type,İdarəetmə növü
 SET2_CONTROL_TYPE_HINT,Steer with screen buttons or by tilting the phone.,Ekran düymələri ilə və ya telefonu əyərək idarə et.

@@ -57,7 +57,7 @@ func defaults() -> Dictionary:
 		"graphics": g,
 		# Player-facing: three switches. The levels are fixed mix values
 		# (developer panel only); switches never overwrite them.
-		"audio": {"master_on": true, "music_on": true, "sfx_on": true,
+		"audio": {"master_on": true, "music_on": true, "sfx_on": true, "voices_on": true,
 			"master": 0.9, "music": 0.6, "engine": 0.7, "sfx": 0.8, "ui": 0.7,
 			"mute": false, "background_audio": false},
 		"controls": {

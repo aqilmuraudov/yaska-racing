@@ -296,3 +296,14 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 - 0.14.1 per-racer glTF + exhaust tips: `KartModel.GLTF_MODELS / GLTF_FAR / GLTF_EXHAUST` keyed by `kart_style` (star, buddy, bamboo, amber, hop, velvet, cloud). Wheel radii follow the procedural styles (front/rear: buddy 0.31/0.36, bamboo 0.31/0.36, amber 0.27/0.35, hop 0.28/0.32, velvet 0.28/0.34, cloud 0.30/0.34; widths 0.26/0.34). Ear pivots (head-local): dog (±0.27, 0.26, 0.03), panda (±0.22, 0.34, 0.02), fox (±0.16, 0.33, 0.02), rabbit (±0.1, 0.34, 0.04), cat (±0.18, 0.31, 0.02), lamb (±0.24, 0.16, 0.02).
 - 0.14.1 Old City props: `PropKit.GLTF_PROPS` (house_a..d, maiden_tower → `assets/models/oldcity/oldcity_props{,_far}.glb`), far ratio 0.5-0.55 houses / 0.35 tower. `prop_baked.gdshader`: `stone_detail` 1.0, `tex_mean` (0.768, 0.617, 0.371) linear, `detail_fade` 60 m, block 0.9 × 0.42 m, stone specular 0.25, window glow = `window_glow` × 1.4 × (1.0, 0.78, 0.42). Bake: `--bake-res 4096 --tex-res 2048`; Voronoi distance-to-edge bump (cells 0.9 × 0.42 m, strength 0.7, distance 0.03).
 - 0.14.2: `KartVisual.MAX_WHEEL_RATE` 19 rad/s (visible wheel spin cap; physics untouched). Street / flora props: `PropKit.GLTF_PROPS` adds baluster, lamp (`assets/models/street`, glow = lamp energy / 1.4, colour FFE2A0) and palm, palm_b, tree, pine, cypress, flower_bed, bollard, bench (`assets/models/flora`, Palette.vivid colours baked in). Save v6: kart ownership as above.
+
+## Character voices (`scripts/racing/voice_director.gd`, `data/voice_lines.json`)
+| Param | Value | Meaning |
+|---|---|---|
+| `GAP` | 3.0 s | quiet after any line ends |
+| `NEAR` / `NEAR_TIME` | 7 m / 1.5 s | rival this close (race distance) this long → "approach" |
+| `NEAR_REST` | 8 s | same rival pair rest |
+| `APPROACH_REST` | 10 s | any "approach" line rest |
+| overtake speaker | 60% overtaker / 40% player (player passed); 40% overtaken / 60% player (player passes) | |
+| volume | +2 dB on the SFX bus | |
+| generation | `eleven_v3`, `az`, stability 0.4, similarity 0.75; pitch per racer in the JSON (1.15–1.42) | |

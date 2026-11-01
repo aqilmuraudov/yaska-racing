@@ -47,6 +47,7 @@ class Racer:
 	extends RefCounted
 	var index := 0
 	var name := ""
+	var racer_id := "" ## RacerRoster id (voice lines)
 	var kart: KartController
 	var tracker: RaceTracker
 	var player_input: PlayerInput
@@ -104,6 +105,7 @@ var headless_test := false ## set by tests to skip UI
 var auto_pause_on_focus_loss := true
 var tutorial: TutorialDirector
 var lesson: LessonDirector ## 0.13.0 wordless first lesson (config "lesson")
+var voice: VoiceDirector ## 0.15.1 character voice lines
 var ghosts: GhostSystem
 var skid_marks: SkidMarks
 var stars: StarField
@@ -280,6 +282,10 @@ func _build_racers() -> void:
 		lesson.name = "Lesson"
 		add_child(lesson)
 		lesson.setup(self)
+	voice = VoiceDirector.new()
+	voice.name = "Voice"
+	add_child(voice)
+	voice.setup(self)
 
 
 func _spawn_racers(seed_value: int) -> void:
@@ -305,6 +311,7 @@ func _spawn_racers(seed_value: int) -> void:
 		r.is_player = slot == player_slot
 		var racer_id: String = slot_ids[slot]
 		var def := RacerRoster.get_def(racer_id)
+		r.racer_id = racer_id
 		r.name = def.display_name
 		if r.is_player:
 			r.name = "%s %s" % [def.display_name, tr("RACER_YOU_SUFFIX")]

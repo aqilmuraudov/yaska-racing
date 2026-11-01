@@ -1,0 +1,77 @@
+{
+  "_comment": "0.15.1 character voice lines (Azerbaijani). Files: assets/voice/<racer>/<category>_<n>.ogg, made by tools/voice/gen_voices.py with ElevenLabs eleven_v3. Text in [brackets] is an emotion tag for the voice model, not spoken.",
+  "voices": {
+    "yaska":   {"voice_id": "oPC5I9GKjMReiaM29gjY", "pitch": 1.18, "note": "Gökçe, cartoon child tone (owner's pick)"},
+    "havhav":  {"voice_id": "vEZ6kPchf4BHjYlUtJXR", "pitch": 1.30, "note": "Natiq Alasgar, cartoon tone"},
+    "posi":    {"voice_id": "IVMbfLv3KqUc4qDj6Yif", "pitch": 1.15, "note": "Abbas, calm"},
+    "bicok":   {"voice_id": "BQgh92MxG7QAtCA8wY7O", "pitch": 1.30, "note": "Ibrahim Mammadli, sly"},
+    "leloyun": {"voice_id": "oPC5I9GKjMReiaM29gjY", "pitch": 1.42, "note": "Gökçe, tiny bunny"},
+    "mestan":  {"voice_id": "2w5twzryiFg9VNnXphRP", "pitch": 1.15, "note": "Deniz, cool cat"},
+    "cepis":   {"voice_id": "2w5twzryiFg9VNnXphRP", "pitch": 1.38, "note": "Deniz, sweet lamb"}
+  },
+  "lines": {
+    "yaska": {
+      "start": ["[excited] Hazıram! Gedək!", "[cheerful] Yaska yola çıxır!"],
+      "approach": ["[excited] Dayan, səni keçəcəyəm!", "[playful] Gəlirəm, hazır ol!", "[excited] Az qaldı, az qaldı!"],
+      "pass": ["[laughs] Bay-bay!", "[playful] Hə-hə, keçdim səni!", "[proud] Yaska həmişə qabaqdadır!"],
+      "passed": ["[surprised] Ay, olmaz! Səni tutacağam!", "[determined] Hələ bitməyib!"],
+      "hit": ["[surprised] Ay-ay-ay!", "[confused] Bu nə idi elə?!"],
+      "win": ["[excited] Urraaa, mən uddum!", "[joyful] Mən birinciyəm! Yaşasın!"],
+      "lose": ["[cheerful] Növbəti dəfə mən qalib gələcəyəm!"]
+    },
+    "havhav": {
+      "start": ["[excited] Hav-hav! Başlayaq!", "[cheerful] Quyruğum da hazırdır!"],
+      "approach": ["[playful] Hav! Arxandayam!", "[excited] Qaç, qaç, tutacağam!", "[playful] Burnum sənin izini tutub!"],
+      "pass": ["[laughs] Hav-hav, salamat qal!", "[cheerful] Görüşənədək, dostum!", "[proud] Mən sürətli itəm!"],
+      "passed": ["[surprised] Hav?! Bu necə oldu?", "[playful] Dayan, sümüyümü apardın!"],
+      "hit": ["[surprised] Auuu!", "[annoyed] Hav-hav, kim atdı bunu?!"],
+      "win": ["[excited] Hav-hav-hav! Mən qalibəm!", "[joyful] Qızıl sümük mənimdir!"],
+      "lose": ["[sighs] Hav... növbəti dəfə!"]
+    },
+    "posi": {
+      "start": ["[cheerful] Bambukumu yedim, hazıram!", "[playful] Yavaş-yavaş... yox, sürətlə!"],
+      "approach": ["[playful] Panda gəlir, yol ver!", "[cheerful] Mən yavaş deyiləm, bax!", "[curious] Hmm, səni görürəm!"],
+      "pass": ["[cheerful] Bağışla, tələsirəm!", "[laughs] Panda keçdi, bambuk qaldı!", "[calm] Sakit-sakit keçdim!"],
+      "passed": ["[surprised] Ay, bambukum düşdü!", "[calm] Eybi yox, tutaram!"],
+      "hit": ["[dizzy] Uff, başım fırlandı!", "[surprised] Kim məni itələdi?"],
+      "win": ["[excited] Urra! Bambuk ziyafəti!", "[joyful] Panda birincidir!"],
+      "lose": ["[cheerful] Eybi yox, yenə oynayarıq!"]
+    },
+    "bicok": {
+      "start": ["[mischievously] Hiylə hazırdır, gedək!", "[confident] Tülkü kimi cəld!"],
+      "approach": ["[mischievously] Arxana bax, tülkü gəlir!", "[laughs] He-he, səni görürəm!", "[whispers] Hazır ol, sürpriz var!"],
+      "pass": ["[laughs] He-he, tülkü yenə qabaqdadır!", "[mischievously] Çox gözləyərsən, keçə bilməzsən!", "[playful] Bay-bay, yavaşca!"],
+      "passed": ["[annoyed] Hm! Bu hiylə idi!", "[determined] Dayan, hesablaşacağıq!"],
+      "hit": ["[surprised] Quyruğum!", "[annoyed] Bu ədalətsizlikdir!"],
+      "win": ["[proud] Mən dedim axı! Tülkü qalibdir!", "[laughs] Ən ağıllı tülkü mənəm!"],
+      "lose": ["[thoughtful] Hmm... növbəti dəfə hiyləm işləyəcək."]
+    },
+    "leloyun": {
+      "start": ["[excited] Hop-hop! Gedək!", "[excited] Yerkökü gücü, başla!"],
+      "approach": ["[excited] Hop! Hop! Gəlirəm!", "[playful] Qulaqlarım səni eşidir!", "[excited] Tullanıb keçəcəyəm!"],
+      "pass": ["[laughs] Hop! Keçdim!", "[excited] Dovşan kimi sürətli!", "[cheerful] Yerkökü gücü!"],
+      "passed": ["[surprised] Ay, yerkökümü itirdim!", "[excited] Gözlə, tullanıram!"],
+      "hit": ["[surprised] Ay! Qulağım!", "[dizzy] Ooy, fırlandım!"],
+      "win": ["[excited] Hop-hop-hop! Mən uddum!", "[joyful] Yerkökü kubok mənimdir!"],
+      "lose": ["[cheerful] Hop... yenə tullanacağam!"]
+    },
+    "mestan": {
+      "start": ["[calm] Miyav... başlayaq.", "[confident] Pişik hazırdır."],
+      "approach": ["[calm] Miyav, arxandayam.", "[playful] Pəncəm səni tutacaq!", "[whispers] Sakitcə gəlirəm..."],
+      "pass": ["[calm] Miyav, bağışla.", "[confident] Pişik həmişə qabaqdadır.", "[relaxed] Rahatca keçdim."],
+      "passed": ["[annoyed] Fısss! Bu nə idi?", "[surprised] Bığlarım titrədi!"],
+      "hit": ["[surprised] Miyaaav!", "[annoyed] Tüklərim dağıldı!"],
+      "win": ["[proud] Miyav! Qalib pişikəm!", "[relaxed] Bu, çox asan idi."],
+      "lose": ["[calm] Miyav... sabah yenə."]
+    },
+    "cepis": {
+      "start": ["[cheerful] Mee! Gedək!", "[playful] Yumşağam, amma sürətliyəm!"],
+      "approach": ["[cheerful] Mee, mən gəlirəm!", "[playful] Bulud kimi uçuram!", "[excited] Ehtiyatlı ol, yaxınlaşıram!"],
+      "pass": ["[laughs] Mee-mee, keçdim!", "[cheerful] Yumşaq, amma sürətli!", "[playful] Bulud uçdu!"],
+      "passed": ["[surprised] Meee! Gözlə məni!", "[confused] Yunum dolaşdı!"],
+      "hit": ["[surprised] Mee! Ay!", "[confused] Yunum hara uçdu?"],
+      "win": ["[excited] Meee! Mən uddum!", "[joyful] Kiçik quzu, böyük qələbə!"],
+      "lose": ["[cheerful] Mee... yenə yarışaq!"]
+    }
+  }
+}

@@ -301,10 +301,15 @@ func _audio() -> void:
 	_switch("master", "SET2_MASTER", "", "audio", "master_on")
 	var music := _switch("music", "SET2_MUSIC", "", "audio", "music_on")
 	var sfx := _switch("sfx", "SET2_SFX", "", "audio", "sfx_on")
+	var voices := _switch("voices", "SET2_VOICES", "SET2_VOICES_HINT", "audio", "voices_on")
 	if not bool(Settings.get_value("audio", "master_on", true)):
 		# Choices stay editable and remembered; say why nothing is heard.
 		_set_reason(music, tr("SET2_MASTER_OFF_NOTE"))
 		_set_reason(sfx, tr("SET2_MASTER_OFF_NOTE"))
+		_set_reason(voices, tr("SET2_MASTER_OFF_NOTE"))
+	elif not bool(Settings.get_value("audio", "sfx_on", true)):
+		# Voices play on the SFX bus (project rule), so they follow it.
+		_set_reason(voices, tr("SET2_VOICES_SFX_OFF"))
 
 
 func _controls() -> void:
@@ -508,7 +513,7 @@ func _dev_slider(title: String, section: String, key: String, min_v: float, max_
 func _on_setting_changed(section: String, key: String) -> void:
 	if section == "gameplay" and key == "language":
 		call_deferred("_rebuild_after_language")
-	elif section == "audio" and key == "master_on" and tab == 1:
+	elif section == "audio" and (key == "master_on" or key == "sfx_on") and tab == 1:
 		call_deferred("_rebuild_keep_scroll")
 
 
