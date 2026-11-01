@@ -94,11 +94,17 @@ func test_finger_drag_scrolls_and_taps_still_work() -> void:
 	await _wait(1.5)
 	check(sc.get_v_scroll_bar().value <= ts.max_offset() + 0.5, "never scrolls past the end")
 	check(not ts.is_gliding(), "glide ends at the bound")
-	# Plain tap presses the row under the finger.
-	await _touch(Vector2(240, 150), true)
-	await _wait(0.05)
-	await _touch(Vector2(240, 150), false)
+	# Plain tap presses the row under the finger. (Wait on state, not on the
+	# clock: under a loaded full run a glide could still be settling.)
+	for i in 180:
+		if not ts.is_gliding():
+			break
+		await frames(1)
 	await frames(2)
+	await _touch(Vector2(240, 150), true)
+	await frames(3)
+	await _touch(Vector2(240, 150), false)
+	await frames(3)
 	check_eq(presses, 1, "tap still presses a row")
 	sc.queue_free()
 	await frames(1)
