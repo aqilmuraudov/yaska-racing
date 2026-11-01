@@ -324,3 +324,13 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 | city time-of-day bar | 3 buttons 250 × 96 px |
 | Rekord camera switch | y 290 × scale (other modes 150) |
 
+## Mini Baku (0.15.3)
+| Item | Value |
+|---|---|
+| Flame Towers | 120 / 109 / 106 m (real 182/165/161 x 0.66), curl from 50 % height, triangle circumradius 42 m |
+| HAC | portal 46 m at u 0.47, low arch 20 m at u 0.12, wing 13 m, horn 52 m |
+| Seafront sites (x, z) | Flag Square (-395, -15), Crystal Hall (-320, 75), TV tower (-330, -600), Crescent (380, 120), Port Baku (338, -14) |
+| 9-storey block | 30 x 16 m, shops 4.5 m + 9 x 3.1 m, unscaled |
+| Road bump | asphalt 0.006, cobbles 0.03 (height = texture luminance), fades by 60 m |
+| Kerb ridges | every 0.4 m, 0.012 high |
+

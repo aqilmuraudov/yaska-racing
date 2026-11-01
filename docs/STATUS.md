@@ -1,8 +1,22 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-01 · Build: 0.15.2 · Engine: Godot 4.4.1-stable
+Date: 2026-11-01 · Build: 0.15.3 · Engine: Godot 4.4.1-stable
 
-## Next (unreleased, after 0.15.2) — remaining set pieces in Blender
+## Update 0.15.3 (versionCode 38) — "mini Baku": landmarks from real photos, real malls, real layout, 9-storey city, track relief
+- **Owner's goal (2026-11-02):** a mini model of Baku - famous places look like the real ones (silhouette, facade, colour; game-fitted heights), sit in their real relative positions, ordinary buildings are new 9-storey blocks. References: Wikimedia Commons photos (downloaded for study only, not shipped) and the architects' descriptions.
+- **Flame Towers:** straight slightly bellied columns with a teardrop plan; only the top half curls in to a tip over the back edge; tips point outward (was reversed), wider triangle so all three read from the Boulevard, terraced podium with a garden top.
+- **Heydar Aliyev Center:** low glazed arch on the left, dip, tall round-topped portal with a steep right side, long low wing to the right, broad "horn" behind (was two soft humps). Glass front re-baked to the new curve.
+- **Maiden Tower:** dense ribbed coursing on the upper 45 %, plain rough masonry below, buttress at ~85 % height (was 14 even rings).
+- **Government House:** square towers with two storeys of arched loggias, toothed parapets and needle pinnacles (corner, centre, middle towers) and roof-edge teeth (was a stepped "wedding cake" tower with a gold spire).
+- **Baku Crescent:** the real asymmetric glass arch (thick left leg, round top, thin right leg, tall opening) on a banded round podium (was an upright crescent moon).
+- **Real malls** (`tools/blender/malls_props.py`, downtown): 28 Mall (stone block, glowing "28" tower, V-column glass top), Port Baku (disc roof on Y columns, stepped towers), Park Bulvar (silver vaults, glass dome, stone sails), Ganjlik Mall (interlocking sandstone + glass, limestone bookends; from the architect's description - no free photo). Port Baku also stands at the east end of the seafront.
+- **Layout (seafront, +x = east, sea = +z):** Flag Square + Crystal Hall moved to the west (Bayil), TV tower to the western hill, Crescent to the east; west-to-east order now follows the real bay.
+- **Ordinary city:** new 9-storey Baku blocks (`tools/blender/blocks_props.py`, 3 variants: cream with glazed balconies, sandstone with bay windows, grey with a blue glass corner), placed unscaled (the old stretched blocks distorted the windows).
+- **Track surfaces:** asphalt grain and sunken cobble mortar relief, kerb rumble ridges, new barrier shader (concrete grain, panel joints, relief) - bump through screen-space derivatives, no tangents needed.
+- **Test flake fixed:** `test_touch_scroll` (full-run only) - leftover root Controls ate the tap; the test list now sits on its own top canvas layer. Full strict run: 240 methods, 6046 checks, **0 failures**.
+- Build: `_builds/YaskaRacing-0.15.3-v38-debug.apk`, **247.9 MB** (0.15.2: 196.9 MB; three new 2048² texture sets - plaza, malls, 9-storey blocks - in both VRAM formats). Signed with the usual key (SHA-256 726cd353…6e25d9). Not tested on a phone; no phone FPS measured. For Google Play this size needs AAB + Play Asset Delivery.
+
+### Earlier in 0.15.3 — remaining set pieces in Blender
 - `tools/blender/plaza_props.py` → `assets/models/plaza/` (one 2048² set, near LOD 6664 tris for all seven modules):
   - **Heydar Aliyev Center**: curved glass front under the shell lip (glass mask → world-space grid, sky tint, lit windows at night), entrance doors + canopies, plaza with a wide stair, terraced lawns with white edges and hedge bands, three round pools with rims. The white shell stays LandmarkKit's self-lit mesh (its night glow is the building's identity); `_heydar_aliyev` merges both.
   - **State Flag Square**: radial paving with joints, flag-colour rings, three-step podium, granite drum, tapered 64 m mast with collars and gold ball, four eight-point star plaques, eight lamps with glowing globes, a 4 m skirt. It now stands on the real grass height (`TrackBuilder.terrain_height`, same rule as the terrain mesh); before, `ground_y` (road height) left half the plaza under the grass.
