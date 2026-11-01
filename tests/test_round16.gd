@@ -35,7 +35,7 @@ func test_flame_towers_shape() -> void:
 	check(tip.x < 0.0 and base.x > 15.0, "pointed tip leans over the inner side")
 	var w30 := LandmarkKit.flame_point(0.0, 0.3, 120.0, 17.0).x - LandmarkKit.flame_point(0.5, 0.3, 120.0, 17.0).x
 	var w80 := LandmarkKit.flame_point(0.0, 0.8, 120.0, 17.0).x - LandmarkKit.flame_point(0.5, 0.8, 120.0, 17.0).x
-	check(w80 < w30 * 0.6, "tapers towards the tip")
+	check(w80 < w30 * 0.75, "curls in towards the tip (real towers stay wide to ~half height)")
 	check(LandmarkKit.get_mesh("flame_towers").get_aabb().size.y >= 119.0, "tallest tower ~120 m")
 
 

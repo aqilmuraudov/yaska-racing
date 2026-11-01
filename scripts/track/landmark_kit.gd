@@ -193,29 +193,45 @@ static func set_flame_led(amount: float) -> void:
 		m.set_shader_parameter("flame_led", amount)
 
 
-## One flame: rounded-triangle (teardrop) plan, widest low down, then a long
-## taper to a sharp tip. The tip sits above the inner (-x) side, so the
-## convex outer face (+x) curls in towards it like a tongue of fire.
+## One flame (0.15.3, from photos of the real towers): an almost straight,
+## slightly bellied column with a teardrop plan - round "front" (+x) and a
+## narrower back edge (-x). Over the top ~40 % the round front sweeps up and
+## back in a curve and meets the near-vertical back edge at a sharp tip, so
+## the tip stands over the back edge (like a tongue of fire). Section width
+## shrinks with the section length, closing the tip.
+const FLAME_CURL := 0.5 ## height fraction where the front starts to curl back
+
+
 static func flame_point(u: float, v: float, height: float, radius: float) -> Vector3:
 	var th := u * TAU
-	# 0.14.4 (owner's photos): fuller flames - a stronger convex outer face and
-	# a belly around a third of the height before the long taper to the tip.
-	var r := radius * (1.0 + 0.24 * cos(th) - 0.07 * cos(3.0 * th))
-	var w := pow(maxf(1.0 - v, 0.0), 0.75) * (1.0 + 1.3 * v)
-	var cx := -radius * 0.75 * pow(v, 1.5)
-	return Vector3(cx + cos(th) * r * w, v * height, sin(th) * r * 0.84 * w)
+	var belly := 1.0 + 0.07 * sin(PI * minf(v / FLAME_CURL, 1.0))
+	var r := radius * belly
+	# Back edge: near vertical, leaning in a little towards the tip.
+	var x_back := -r * (1.0 - 0.1 * v * v)
+	var x_front := r
+	if v > FLAME_CURL:
+		var t := (v - FLAME_CURL) / (1.0 - FLAME_CURL)
+		x_front = x_back + (r - x_back) * pow(maxf(1.0 - pow(t, 1.6), 0.0), 0.7)
+	var length := maxf(x_front - x_back, 0.0)
+	# Teardrop section: round at the front, pointed towards the back edge.
+	var c := cos(th)
+	var x := x_back + length * (1.0 + c) * 0.5
+	var half_w := minf(length, 2.0 * r) * 0.43
+	var z := half_w * sin(th) * pow((1.0 + c) * 0.5, 0.3)
+	return Vector3(x, v * height, z)
 
 
 static func _flame(height: float, radius: float, lod: bool) -> ArrayMesh:
-	var nu := 14 if lod else 36
-	var nv := 8 if lod else 30
+	var nu := 16 if lod else 48
+	var nv := 10 if lod else 40
 	return grid(nu, nv, func(u: float, v: float) -> Vector3: return flame_point(u, v, height, radius), true, true)
 
 
 ## Tower layout in the group's local frame: [height, radius, centre].
-## Tallest at the back (-z); centres on a triangle of 34 m circumradius.
+## Real 182 / 165 / 161 m at ~0.66; tallest at the back (-z), centres on a
+## triangle of 42 m circumradius (from the sea all three read apart).
 static func flame_defs() -> Array:
-	return [[120.0, 20.0, Vector3(0, 0, -34)], [109.0, 18.5, Vector3(-29.4, 0, 17)], [106.0, 18.0, Vector3(29.4, 0, 17)]]
+	return [[120.0, 21.0, Vector3(0, 0, -42)], [109.0, 19.5, Vector3(-36.4, 0, 21)], [106.0, 19.0, Vector3(36.4, 0, 21)]]
 
 
 static func _flame_towers(lod: bool) -> ArrayMesh:
@@ -223,11 +239,16 @@ static func _flame_towers(lod: bool) -> ArrayMesh:
 	for d in flame_defs():
 		var h: float = d[0]
 		var c: Vector3 = d[2]
-		# convex outer face (+x local) turned away from the triangle centre
-		var yaw := atan2(-c.z, c.x)
+		# The tip (back edge, -x local) points away from the triangle centre,
+		# the round fronts face each other (as seen from the Boulevard).
+		var yaw := atan2(-c.z, c.x) + PI
 		var mat: Material = flame_glass(h) # 0.10.1: far LOD shows the LED show too
 		parts.append([_flame(h, d[1], lod), Transform3D(Basis(Vector3.UP, yaw), c), mat])
-	parts.append([ShapeKit.cone(62.0, 56.0, 4.0, 28 if not lod else 14), Transform3D(Basis.IDENTITY, Vector3(0, 0.0, 0)), PropKit.m("stone_dark")])
+	# Stepped podium with terraces under the towers (stone + glass bands).
+	var seg := 28 if not lod else 14
+	parts.append([ShapeKit.cone(74.0, 70.0, 4.0, seg), Transform3D(Basis.IDENTITY, Vector3(0, 0.0, 0)), PropKit.m("stone_dark")])
+	parts.append([ShapeKit.cone(68.0, 66.0, 3.0, seg), Transform3D(Basis.IDENTITY, Vector3(0, 3.5, 0)), PropKit.m("limestone")])
+	parts.append([ShapeKit.cylinder(62.0, 0.6, seg), Transform3D(Basis.IDENTITY, Vector3(0, 5.1, 0)), PropKit.m("hedge")])
 	return _merge(parts)
 
 
