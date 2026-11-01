@@ -26,7 +26,7 @@ PALETTE = {
     "carpet_gold": ("E0A33A", 0.8, 0.0), "carpet_green": ("2F7A5A", 0.8, 0.0), "flag_blue": ("00B5E2", 0.6, 0.0),
     "flag_red": ("EF3340", 0.6, 0.0), "flag_green": ("509E2F", 0.6, 0.0),
 }
-PAINT_MAT = "glass"
+PAINT_MAT = ["glass", "glass_blue"]
 STONE = ["sand", "sand_shade", "limestone"]
 GROUPS = ["government_house", "carpet_museum", "crystal_hall", "tv_tower", "crescent"]
 UV_SCALE = {"government_house": 1.0, "carpet_museum": 1.1, "crystal_hall": 0.8, "tv_tower": 0.7, "crescent": 0.7}

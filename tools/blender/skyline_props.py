@@ -35,7 +35,7 @@ PALETTE = {
     "garden": ("4FA04A", 0.9, 0.0),
     "concrete": ("C9C4BA", 0.85, 0.0),
 }
-PAINT_MAT = "glass"
+PAINT_MAT = ["glass", "glass_blue", "glass_teal", "glass_grey"]
 STONE = ["sandstone", "sandstone_dark"]
 GROUPS = ["socar_tower", "crown_tower", "stack_tower", "glass_slab", "stalin_block", "resid_tower"]
 UV_SCALE = {"socar_tower": 0.45, "crown_tower": 0.5, "stack_tower": 0.55, "glass_slab": 0.55, "stalin_block": 0.9,

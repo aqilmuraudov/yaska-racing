@@ -754,7 +754,8 @@ def set_emit(mode):
         elif mode == "rough":
             v = (rough,) * 3
         elif mode == "paint":
-            v = (1.0 if m.name == PAINT_MAT else 0.0,) * 3
+            masked = PAINT_MAT if isinstance(PAINT_MAT, (list, tuple)) else [PAINT_MAT]
+            v = (1.0 if m.name in masked else 0.0,) * 3
         elif mode == "stone":
             v = (1.0 if m.name in STONE_MATS else 0.0,) * 3
         elif mode == "cover":

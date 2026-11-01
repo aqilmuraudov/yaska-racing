@@ -316,11 +316,24 @@ const GLTF_PROPS := {
 	"glass_slab": "res://assets/models/skyline/skyline_props",
 	"stalin_block": "res://assets/models/skyline/skyline_props",
 	"resid_tower": "res://assets/models/skyline/skyline_props",
+	"sky_a": "res://assets/models/downtown/downtown_props",
+	"sky_b": "res://assets/models/downtown/downtown_props",
+	"sky_c": "res://assets/models/downtown/downtown_props",
+	"sky_d": "res://assets/models/downtown/downtown_props",
+	"mall_a": "res://assets/models/downtown/downtown_props",
+	"mall_b": "res://assets/models/downtown/downtown_props",
+	"parking": "res://assets/models/downtown/downtown_props",
+	"car_a": "res://assets/models/downtown/downtown_props",
+	"car_b": "res://assets/models/downtown/downtown_props",
+	"car_c": "res://assets/models/downtown/downtown_props",
+	"billboard": "res://assets/models/downtown/downtown_props",
+	"planter": "res://assets/models/downtown/downtown_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
 	"res://assets/models/city": "windows", "res://assets/models/seafront": "windows",
-	"res://assets/models/skyline": "windows", "res://assets/models/landmarks": "windows"}
+	"res://assets/models/skyline": "windows", "res://assets/models/landmarks": "windows",
+	"res://assets/models/downtown": "windows"}
 const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true
@@ -338,6 +351,7 @@ static func baked_material(dir: String) -> ShaderMaterial:
 		var kind: String = PROP_GLOW.get(dir, "windows")
 		sm.set_shader_parameter("window_glow", _glow[kind])
 		sm.set_shader_parameter("glow_color", GLOW_COLOR[kind])
+		sm.set_shader_parameter("window_cells", 0.0 if kind == "lamps" else 1.0)
 		sm.set_meta("glow", kind)
 		TextureLibrary.bind(sm, "stone_tex", "limestone")
 		_baked[dir] = sm
