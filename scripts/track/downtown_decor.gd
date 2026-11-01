@@ -9,11 +9,17 @@ extends TrackDecor
 
 const MALLS := [
 	# [x, z, yaw (front = +Z rotated), prop, name, parking [dx, dz, yaw]]
-	[-6.0, -116.0, PI, "mall_a", "ŞƏHƏR MALL", null],
-	[118.0, -140.0, -PI * 0.5, "mall_b", "GÜNƏŞ MALL", [0.0, -46.0, 0.0]],
-	[45.0, 48.0, PI, "mall_a", "DƏNİZ MALL", [62.0, 0.0, PI * 0.5]],
-	[-172.0, -152.0, 0.0, "mall_b", "BAKI MALL", [-2.0, -46.0, 0.0]],
+	# 0.15.3 (owner: mini Baku): the real malls, modelled from photos
+	# (tools/blender/malls_props.py); Park Bulvar is the one by the sea.
+	[-6.0, -116.0, PI, "mall_28", "28 MALL", null],
+	[118.0, -140.0, -PI * 0.5, "port_baku", "PORT BAKU", [0.0, -46.0, 0.0]],
+	[45.0, 48.0, PI, "park_bulvar", "PARK BULVAR", [62.0, 0.0, PI * 0.5]],
+	[-172.0, -152.0, 0.0, "ganjlik_mall", "GƏNCLİK MALL", [-2.0, -46.0, 0.0]],
 ]
+## Name sign position on each mall (local), and its pixel size.
+const MALL_SIGN := {"mall_28": [Vector3(4.0, 15.9, 16.5), 0.02], "port_baku": [Vector3(0.0, 13.3, 33.7), 0.022],
+	"park_bulvar": [Vector3(2.0, 9.0, 15.4), 0.02], "ganjlik_mall": [Vector3(0.0, 15.1, 19.8), 0.02],
+	"mall_a": [Vector3(0, 15.35, 19.0), 0.022], "mall_b": [Vector3(0, 15.35, 19.0), 0.022]}
 const MALL_R := 38.0
 const TOWER_R := {"sky_a": 16.0, "sky_b": 17.0, "sky_c": 13.5, "sky_d": 19.0}
 const BRIDGE_CLEAR := 8.0 ## m of headroom under the mall bridge
@@ -50,7 +56,7 @@ func _begin(td: TrackData) -> void:
 	for id in CityKit.TOWERS:
 		chunk_size[id] = 160.0
 		skyline_min[id] = 560.0
-	for id in ["mall_a", "mall_b"]:
+	for id in ["mall_a", "mall_b", "mall_28", "port_baku", "park_bulvar", "ganjlik_mall"]:
 		chunk_size[id] = 140.0
 		skyline_min[id] = 420.0
 
@@ -136,7 +142,7 @@ func _place_mall_bridge() -> void:
 		bridge.add_child(strip)
 	# "MALL" letters on both faces (Label3D faces its local +Z).
 	for f: float in [-1.0, 1.0]:
-		var l := _big_label("ŞƏHƏR MALL", 0.024)
+		var l := _big_label("28 MALL", 0.024)
 		l.position = Vector3(0, BRIDGE_CLEAR + 4.2, f * (depth * 0.5 - 1.2))
 		l.rotation.y = 0.0 if f > 0.0 else PI
 		bridge.add_child(l)
@@ -183,9 +189,15 @@ func _place_malls() -> void:
 		holder.name = "MallSign%d" % i
 		holder.transform = xf
 		add_child(holder)
-		var l := _big_label(m[4], 0.022)
-		l.position = Vector3(0, 15.35, 19.0)
+		var sign: Array = MALL_SIGN[m[3]]
+		var l := _big_label(m[4], float(sign[1]))
+		l.position = sign[0]
 		holder.add_child(l)
+		if m[3] == "mall_28":
+			# The tall glowing "28" panel on the corner tower.
+			var big := _big_label("28", 0.06)
+			big.position = Vector3(-26.0, 13.0, 18.45)
+			holder.add_child(big)
 		if i == 2:
 			landmarks["sea_mall"] = holder
 		# Parking lot with parked cars.

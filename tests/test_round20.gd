@@ -161,7 +161,8 @@ func test_downtown_race() -> void:
 	check(signs >= 2, "MALL sign on both faces")
 	var mall_signs := 0
 	for l in decor.find_children("*", "Label3D", true, false):
-		if (l as Label3D).text.ends_with("MALL"):
+		var t := (l as Label3D).text
+		if t.ends_with("MALL") or t in ["PORT BAKU", "PARK BULVAR", "28"]: # 0.15.3 real malls
 			mall_signs += 1
 	check(mall_signs >= 6, "mall signage (%d)" % mall_signs)
 	# Gameplay: items, checkpoints, minimap, respawn on the road.

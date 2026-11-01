@@ -45,3 +45,16 @@ func test_carpet_uvs_cover_cloth() -> void:
 func test_terrain_height_helper() -> void:
 	var src := FileAccess.get_file_as_string("res://scripts/track/track_decor.gd")
 	check(src.find("builder.terrain_height") > 0, "flag square stands on the terrain")
+
+
+func test_real_malls() -> void:
+	for id in ["mall_28", "port_baku", "park_bulvar", "ganjlik_mall"]:
+		check(ResourceLoader.exists(String(PropKit.GLTF_PROPS[id]) + ".glb"), "glb " + id)
+		var bb := PropKit.get_mesh(id).get_aabb()
+		check(bb.size.x > 40.0 and bb.size.y > 10.0, "%s is a big building" % id)
+		check(maxf(absf(bb.position.x), absf(bb.end.x)) < DowntownDecor.MALL_R + 2.0, "%s fits its plot" % id)
+	var names: Array = []
+	for m in DowntownDecor.MALLS:
+		names.append(m[4])
+	for n in ["28 MALL", "PORT BAKU", "PARK BULVAR", "GƏNCLİK MALL"]:
+		check(n in names, "downtown has " + n)
