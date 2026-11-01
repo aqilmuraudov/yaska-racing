@@ -328,6 +328,13 @@ const GLTF_PROPS := {
 	"car_c": "res://assets/models/downtown/downtown_props",
 	"billboard": "res://assets/models/downtown/downtown_props",
 	"planter": "res://assets/models/downtown/downtown_props",
+	# 0.15.2 Qoşa Qala gate + İçərişəhər walls (tools/blender/gate_props.py),
+	# assembled in LandmarkKit.qosa_qala / city_wall.
+	"gate_arch": "res://assets/models/gate/gate_props",
+	"gate_tower": "res://assets/models/gate/gate_props",
+	"wall_seg": "res://assets/models/gate/gate_props",
+	"wall_tower": "res://assets/models/gate/gate_props",
+	"wall_end": "res://assets/models/gate/gate_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",

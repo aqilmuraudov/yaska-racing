@@ -693,6 +693,9 @@ func _build_gate() -> void:
 		var origin := p + r * side * start
 		_landmark(LandmarkKit.city_wall(length), Transform3D(wb, Vector3(origin.x, ground_y(origin) - 0.05, origin.z)), "CityWall")
 		var end := origin + wall_dir * length
+		if LandmarkKit._has_gltf("wall_end"):
+			_landmark(PropKit.get_mesh("wall_end"), Transform3D(Basis.IDENTITY, Vector3(end.x, ground_y(end) - 0.05, end.z)), "WallTower")
+			continue
 		var tower := PropKit.Accum.new()
 		tower.add(ShapeKit.cylinder(3.4, 11.0, 16), PropKit.T(Vector3(0, 5.5, 0)), PropKit.m("limestone_warm"))
 		for k in 10:

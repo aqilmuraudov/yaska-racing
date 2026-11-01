@@ -660,6 +660,9 @@ static func _carpet_museum(lod: bool) -> ArrayMesh:
 ## over the road has a real pointed arch (clearance > 8 m) next to a second,
 ## smaller blind arch on each tower side, the "double" gate.
 static func qosa_qala(span: float) -> ArrayMesh:
+	var gm := _gltf_gate(span)
+	if gm:
+		return gm
 	var a := PropKit.Accum.new()
 	var stone := PropKit.m("limestone_warm")
 	var light := PropKit.m("limestone")
@@ -696,8 +699,49 @@ static func qosa_qala(span: float) -> ArrayMesh:
 	return a.commit()
 
 
+## Blender gate: the arch module is built for GATE_SPAN and stretched across
+## the road; the towers keep their shape (the left one is turned 180°).
+const GATE_SPAN := 22.0
+
+
+static func _gltf_gate(span: float) -> ArrayMesh:
+	if not _has_gltf("gate_arch"):
+		return null
+	var a := PropKit.Accum.new()
+	a.add_committed(PropKit.get_mesh("gate_arch"), Transform3D(Basis.from_scale(Vector3(span / GATE_SPAN, 1, 1)), Vector3.ZERO))
+	var tower := PropKit.get_mesh("gate_tower")
+	var off := span * 0.5 + 3.6
+	a.add_committed(tower, Transform3D(Basis.IDENTITY, Vector3(off, 0, 0)))
+	a.add_committed(tower, Transform3D(Basis(Vector3.UP, PI), Vector3(-off, 0, 0)))
+	return a.commit()
+
+
+## Blender wall: 4 m segments plus a half-round tower every ~24 m, one mesh.
+static func _gltf_wall(length: float) -> ArrayMesh:
+	if not _has_gltf("wall_seg"):
+		return null
+	var a := PropKit.Accum.new()
+	var seg := PropKit.get_mesh("wall_seg")
+	var n := maxi(int(round(length / 4.0)), 1)
+	var sx := length / (n * 4.0)
+	for k in n:
+		a.add_committed(seg, Transform3D(Basis.from_scale(Vector3(sx, 1, 1)), Vector3(k * 4.0 * sx, 0, 0)))
+	var tower := PropKit.get_mesh("wall_tower")
+	var nt := maxi(int(length / 24.0), 1)
+	for t in nt + 1:
+		a.add_committed(tower, Transform3D(Basis.IDENTITY, Vector3(length * float(t) / nt, 0, 0)))
+	return a.commit()
+
+
+static func _has_gltf(id: String) -> bool:
+	return PropKit.gltf_enabled and ResourceLoader.exists(String(PropKit.GLTF_PROPS[id]) + ".glb")
+
+
 ## Straight crenellated wall segment along +x from the origin.
 static func city_wall(length: float) -> ArrayMesh:
+	var gm := _gltf_wall(length)
+	if gm:
+		return gm
 	var a := PropKit.Accum.new()
 	var stone := PropKit.m("limestone_warm")
 	var h := 9.0
