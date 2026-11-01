@@ -297,9 +297,14 @@ const GLTF_PROPS := {
 	"flower_bed": "res://assets/models/flora/flora_props",
 	"bollard": "res://assets/models/flora/flora_props",
 	"bench": "res://assets/models/flora/flora_props",
+	"modern_a": "res://assets/models/city/city_props",
+	"modern_b": "res://assets/models/city/city_props",
+	"modern_c": "res://assets/models/city/city_props",
+	"grandstand": "res://assets/models/city/city_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
-const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps"}
+const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
+	"res://assets/models/city": "windows"}
 const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true
