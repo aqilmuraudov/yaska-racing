@@ -4,7 +4,7 @@ extends Node
 
 signal profile_changed
 
-const SAVE_VERSION := 7
+const SAVE_VERSION := 8
 const DEFAULT_PATH := "user://profile.json"
 const LEDGER_LIMIT := 200
 
@@ -30,7 +30,8 @@ static func default_profile() -> Dictionary:
 		## Karts the player owns (0.8.3, save v4). A fresh profile starts
 		## with the standard kart; older saves own every kart. Nothing is
 		## locked by this yet; kart buying will use it.
-		"owned_karts": [RacerRoster.DEFAULT_ID],
+		"owned_karts": [], # 0.14.4: the first launch picks the one starter kart
+		"starter_chosen": false,
 		"login": {}, ## DailyLogin: {"last": "YYYY-MM-DD", "streak": 1..7}
 		"race_goals": [], ## RaceGoals for the next quick race
 		"paints": {},
@@ -136,6 +137,11 @@ func _migrate(d: Dictionary) -> Dictionary:
 		if races > 0:
 			d.tutorial["lesson_done"] = true
 		d.version = 7
+	# v7 → v8 (0.14.4): first-launch starter pick. Existing players already
+	# have their kart(s): never ask them.
+	if int(d.get("version", 1)) < 8:
+		d.starter_chosen = true
+		d.version = 8
 	return d
 
 
@@ -163,8 +169,10 @@ func owned_karts() -> Array:
 	for id in data.get("owned_karts", []):
 		if RacerRoster.is_valid(String(id)) and not (String(id) in out):
 			out.append(String(id))
-	if not (RacerRoster.DEFAULT_ID in out):
-		out.push_front(RacerRoster.DEFAULT_ID)
+	# 0.14.4: the starter kart is the player's pick, not always HavHav; before
+	# the pick (or on a broken list) the standard kart keeps the game playable.
+	if out.is_empty():
+		out.append(RacerRoster.DEFAULT_ID)
 	return out
 
 
@@ -210,7 +218,22 @@ func own_kart(racer_id: String) -> bool:
 ## version (balanced/agile/fast) map to the default racer.
 func get_selected_kart() -> String:
 	var id := String(data.selected_kart)
-	return id if RacerRoster.is_valid(id) and is_kart_owned(id) else RacerRoster.DEFAULT_ID
+	return id if RacerRoster.is_valid(id) and is_kart_owned(id) else String(owned_karts()[0])
+
+
+## 0.14.4: true until the first launch's starter kart is picked.
+func needs_starter() -> bool:
+	return not bool(data.get("starter_chosen", true))
+
+
+## The free first kart: owned, selected, never asked again.
+func choose_starter(racer_id: String) -> void:
+	if not RacerRoster.is_valid(racer_id):
+		return
+	data.owned_karts = [racer_id]
+	data.selected_kart = racer_id
+	data.starter_chosen = true
+	save_profile()
 
 
 func set_selected_kart(racer_id: String, _paint_index: int = 0) -> void:

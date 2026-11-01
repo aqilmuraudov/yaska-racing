@@ -287,9 +287,11 @@ func _capture_racers() -> void:
 
 func _capture_screens() -> void:
 	var map := {"main": Game.State.MAIN_MENU, "mode": Game.State.MODE_SELECT, "kart": Game.State.KART_SELECT, "racer": Game.State.KART_SELECT,
-		"track": Game.State.TRACK_SELECT, "city": Game.State.CITY_SELECT, "settings": Game.State.SETTINGS, "credits": Game.State.CREDITS, "rewards": Game.State.REWARDS}
+		"track": Game.State.TRACK_SELECT, "city": Game.State.CITY_SELECT, "settings": Game.State.SETTINGS, "credits": Game.State.CREDITS, "rewards": Game.State.REWARDS,
+		"starter": Game.State.KART_SELECT, "garage": Game.State.GARAGE}
 	await get_tree().create_timer(1.0).timeout
 	for name in String(args.screens).split(","):
+		Game.starter_pick = name == "starter" # 0.14.4 first-launch kart pick
 		if name.begins_with("settings"):
 			Game.goto(Game.State.SETTINGS)
 			await get_tree().create_timer(1.2).timeout

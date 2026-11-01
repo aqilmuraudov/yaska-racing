@@ -94,6 +94,7 @@ func build() -> void:
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_theme_constant_override("separation", 8)
 	scroll.add_child(v)
+	_build_my_karts(v)
 	new_kart_box = VBoxContainer.new()
 	new_kart_box.name = "NewKart"
 	v.add_child(new_kart_box)
@@ -326,6 +327,61 @@ func _build_new_kart() -> void:
 	h.add_child(new_kart_btn)
 
 
+## 0.14.4 (owner) "Maşınlarım": every kart in one row. Owned: tap to make it
+## the kart for every race (selected one has a gold ring); locked: price, tap
+## to buy it with manat. Races no longer ask for a kart.
+var my_karts: HBoxContainer
+
+
+func _build_my_karts(v: VBoxContainer) -> void:
+	v.add_child(GameUI.label(tr("GARAGE_MY_KARTS"), UITheme.FS_H2, UITheme.TEXT, 6))
+	my_karts = HBoxContainer.new()
+	my_karts.name = "MyKarts"
+	my_karts.add_theme_constant_override("separation", 4)
+	v.add_child(my_karts)
+	var selected := SaveManager.get_selected_kart()
+	for d in RacerRoster.all():
+		var owned := SaveManager.is_kart_owned(d.id)
+		var b := Button.new()
+		b.name = "Kart_" + d.id
+		b.flat = true
+		b.focus_mode = Control.FOCUS_ALL
+		b.custom_minimum_size = Vector2(74, 92)
+		b.tooltip_text = d.display_name
+		var col := VBoxContainer.new()
+		col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_theme_constant_override("separation", 0)
+		b.add_child(col)
+		var ring := UITheme.YELLOW if d.id == selected else (Color.WHITE if owned else Color(0.4, 0.4, 0.5))
+		var pic := GameUI.portrait(d.id, 64, ring)
+		pic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		if not owned:
+			pic.modulate = Color(0.45, 0.45, 0.55)
+		col.add_child(pic)
+		var txt := "✓" if d.id == selected else (d.display_name if owned else Money.format(KartShop.price(d.id)))
+		var lb := GameUI.label(txt, UITheme.FS_CAPTION, UITheme.YELLOW if not owned or d.id == selected else UITheme.TEXT, 5)
+		lb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		lb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_child(lb)
+		var id := d.id
+		b.pressed.connect(func(): pick_kart(id))
+		my_karts.add_child(b)
+
+
+## Owned: race with it from now on (garage switches to it). Locked: buy it.
+func pick_kart(id: String) -> void:
+	AudioManager.play_ui("ui_confirm")
+	if SaveManager.is_kart_owned(id):
+		SaveManager.set_selected_kart(id)
+		Game.race_config.kart_id = id
+		Game.goto(Game.State.GARAGE)
+	else:
+		new_kart_id = id
+		shop_dialog = KartBuyDialog.open(root, id, confirm_buy, close_shop)
+
+
 func open_buy() -> void:
 	close_shop()
 	if new_kart_id == "":
@@ -346,8 +402,13 @@ func confirm_buy() -> void:
 		note_label.text = tr("SHOP_YOURS") % RacerRoster.get_def(id).display_name
 		if new_kart_btn:
 			UITheme.sparkle_burst(new_kart_box, new_kart_box.get_global_rect().get_center(), 14)
+		# 0.14.4: a new kart is the one you race with; the garage shows it.
+		SaveManager.set_selected_kart(id)
+		Game.race_config.kart_id = id
 		_build_new_kart()
 		refresh()
+		if is_inside_tree():
+			Game.goto.call_deferred(Game.State.GARAGE)
 	elif r == "funds":
 		open_buy()
 

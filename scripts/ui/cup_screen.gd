@@ -351,7 +351,7 @@ func _new_cup() -> void:
 	Game.reset_series()
 	Game.race_config.mode = "quick"
 	Game.race_config.series = "cup_new"
-	Game.goto(Game.State.KART_SELECT)
+	Game.start_race_with_selected()
 
 
 func _to_menu() -> void:

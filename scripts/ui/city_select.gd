@@ -162,7 +162,7 @@ func _make_card(id: String) -> Button:
 	return b
 
 
-## Picks the city, remembers it and goes on to kart select.
+## Picks the city, remembers it and starts the race with the garage kart.
 func choose(id: String, go := true) -> void:
 	selected = TrackList.valid(id)
 	Settings.set_value("gameplay", "track", selected)
@@ -170,7 +170,7 @@ func choose(id: String, go := true) -> void:
 	AudioManager.play_ui("ui_confirm")
 	_style_selected()
 	if go:
-		Game.goto(Game.State.KART_SELECT)
+		Game.start_race_with_selected()
 
 
 func _highlight(id: String) -> void:

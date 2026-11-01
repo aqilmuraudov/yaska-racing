@@ -96,6 +96,8 @@ func reset_series() -> void:
 func goto(new_state: State) -> void:
 	if _changing:
 		return
+	if new_state != State.KART_SELECT:
+		starter_pick = false
 	var path: String = SCENES.get(new_state, "")
 	if path.is_empty():
 		push_error("Game.goto: no scene for state %s" % new_state)
@@ -128,12 +130,37 @@ func start_lesson() -> void:
 	start_loading_race()
 
 
-## First "Oyna" on a new profile opens the lesson once; later, mode select.
+## 0.14.4 (owner): the racer select screen is only the first-launch starter
+## pick; races always use the kart chosen in the garage ("Maşınlarım").
+var starter_pick := false
+
+
+## First "Oyna" on a new profile: pick the starter kart, then the lesson
+## once; later, mode select.
 func play_pressed() -> void:
+	if SaveManager.needs_starter():
+		starter_pick = true
+		goto(State.KART_SELECT)
+		return
 	if not SaveManager.get_tutorial_flag(LessonDirector.FLAG):
 		start_lesson()
 	else:
 		goto(State.MODE_SELECT)
+
+
+## Races start with the garage's selected kart (no kart screen in between).
+## Time trial runs alone; a new Bakı Kuboku locks this kart for its 3 races.
+func start_race_with_selected() -> void:
+	race_config.kart_id = SaveManager.get_selected_kart()
+	race_config.paint = SaveManager.get_paint(race_config.kart_id)
+	if race_config.mode == "time_trial":
+		race_config.ai_count = 0
+		race_config.items = false
+	if String(race_config.get("series", "")) == "cup_new":
+		var cup := BakuCup.start(SaveManager.data, String(race_config.kart_id), randi_range(1, 1 << 30))
+		SaveManager.save_profile()
+		BakuCup.apply_config(race_config, cup)
+	start_loading_race()
 
 
 func start_loading_race() -> void:

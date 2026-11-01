@@ -94,3 +94,32 @@ func test_hold_badge_turns_kids_off() -> void:
 	Settings.set_value("controls", "kids_auto", false)
 	race.queue_free()
 	await tree.process_frame
+
+
+## 0.14.4 (owner): pick one starter kart on the first launch; races use the
+## garage's kart (no kart screen); "Maşınlarım" in the garage switches / buys.
+func test_starter_pick_and_garage_kart() -> void:
+	SaveManager.data = SaveManager.default_profile()
+	check(SaveManager.needs_starter(), "fresh profile: starter pick pending")
+	Game.play_pressed()
+	check(Game.starter_pick, "first Oyna opens the starter pick")
+	Game.starter_pick = false
+	SaveManager.choose_starter("leloyun")
+	check(not SaveManager.needs_starter(), "asked once")
+	check_eq(SaveManager.owned_karts(), ["leloyun"], "the pick is the only kart owned")
+	check_eq(SaveManager.get_selected_kart(), "leloyun", "and the race kart")
+	Game.race_config = Game.default_race_config()
+	Game.race_config.mode = "time_trial"
+	Game.race_config.kart_id = "havhav"
+	Game._changing = true # do not leave the test scene
+	Game.start_race_with_selected()
+	Game._changing = false
+	check_eq(String(Game.race_config.kart_id), "leloyun", "races use the garage kart")
+	check_eq(int(Game.race_config.ai_count), 0, "time trial runs alone")
+	SafeFile.write_json(PROFILE, {"version": 7, "owned_karts": ["havhav", "posi"], "selected_kart": "posi"})
+	SaveManager.load_profile()
+	check(not SaveManager.needs_starter(), "existing players are never asked")
+	var src := FileAccess.get_file_as_string("res://scripts/ui/city_select.gd")
+	check(src.find("Game.start_race_with_selected()") > 0 and src.find("State.KART_SELECT") < 0, "city select starts the race")
+	var g := FileAccess.get_file_as_string("res://scripts/ui/garage_screen.gd")
+	check(g.find("_build_my_karts(v)") > 0 and g.find("func pick_kart") > 0, "garage has My karts")

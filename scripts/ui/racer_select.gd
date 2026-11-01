@@ -44,6 +44,9 @@ var _dragging := false
 func _init() -> void:
 	back_state = Game.State.CITY_SELECT if picks_city() else Game.State.MODE_SELECT
 	screen_title_key = "RACER_TITLE"
+	if Game.starter_pick:
+		back_state = Game.State.MAIN_MENU
+		screen_title_key = "STARTER_TITLE"
 
 
 ## 0.11.1: plain Yarış / Rekord come here from "Şəhəri seç".
@@ -66,7 +69,7 @@ func build() -> void:
 	# are bought with manat in the garage (the "+" card leads there).
 	defs.clear()
 	for d in RacerRoster.all():
-		if SaveManager.is_kart_owned(d.id):
+		if Game.starter_pick or SaveManager.is_kart_owned(d.id):
 			defs.append(d)
 	current = maxi(_index_of(SaveManager.get_selected_kart()), 0)
 	_frame_preview()
@@ -151,7 +154,7 @@ func build() -> void:
 		b.focus_entered.connect(func(): _select(idx))
 		grid.add_child(b)
 		cards.append(b)
-	if defs.size() < RacerRoster.IDS.size():
+	if defs.size() < RacerRoster.IDS.size() and not Game.starter_pick:
 		grid.add_child(_more_card())
 	var sep := HSeparator.new()
 	sep.add_theme_constant_override("separation", 2)
@@ -287,8 +290,13 @@ func build() -> void:
 	actions2.add_child(setup_btn)
 	# Cup races have fixed settings: no race setup page.
 	setup_btn.visible = String(Game.race_config.get("series", "")) == ""
+	if Game.starter_pick:
+		# 0.14.4 first launch: one free kart, nothing else on this screen.
+		start_btn.text = tr("STARTER_PICK")
+		start_btn.icon = UITheme.icon("star")
+		actions2.visible = false
 	# 0.11.1: which city is about to load; tap to change it.
-	if picks_city():
+	if picks_city() and not Game.starter_pick:
 		var sp := Control.new()
 		sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -355,7 +363,7 @@ func _more_card() -> Button:
 
 
 func is_owned(i: int) -> bool:
-	return SaveManager.is_kart_owned(defs[i].id)
+	return Game.starter_pick or SaveManager.is_kart_owned(defs[i].id)
 
 
 func _refresh_locks() -> void:
@@ -561,6 +569,12 @@ func _commit() -> void:
 
 
 func _start() -> void:
+	if Game.starter_pick:
+		SaveManager.choose_starter(defs[current].id)
+		Game.starter_pick = false
+		AudioManager.play_ui("ui_confirm")
+		Game.play_pressed() # lesson once, else mode select
+		return
 	if not is_owned(current):
 		open_buy()
 		return

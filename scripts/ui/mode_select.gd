@@ -214,7 +214,7 @@ func _choose(mode: String) -> void:
 				Game.goto(Game.State.CUP) # resume: standings, then the next race
 			else:
 				Game.race_config.series = "cup_new"
-				Game.goto(Game.State.KART_SELECT)
+				Game.start_race_with_selected()
 		"daily":
 			# One tap: today's race with the challenge's kart (or yours).
 			var ch := DailyChallenge.generate(Progression.today(), SaveManager.owned_karts())
