@@ -74,9 +74,36 @@ static func flag_material() -> ShaderMaterial:
 	return _mats["flag"]
 
 
+## 0.14.4 Blender-made landmarks (tools/blender/landmarks.py); "<id>_far"
+## comes from the far glTF. Missing file -> the procedural mesh below.
+const GLTF_LANDMARKS := ["government_house", "carpet_museum", "crystal_hall", "tv_tower", "crescent"]
+const GLTF_LANDMARK_BASE := "res://assets/models/landmarks/landmarks"
+
+
+static func gltf_landmark(id: String) -> ArrayMesh:
+	var far := id.ends_with("_far")
+	var base_id := id.trim_suffix("_far")
+	if not PropKit.gltf_enabled or not base_id in GLTF_LANDMARKS:
+		return null
+	var path := GLTF_LANDMARK_BASE + ("_far" if far else "") + ".glb"
+	if not ResourceLoader.exists(path):
+		return null
+	var inst := (load(path) as PackedScene).instantiate()
+	var mi := inst.find_child(base_id, true, false) as MeshInstance3D
+	var mesh: ArrayMesh = mi.mesh as ArrayMesh if mi else null
+	inst.free()
+	if mesh:
+		mesh.surface_set_material(0, PropKit.baked_material(path.get_base_dir()))
+	return mesh
+
+
 static func get_mesh(id: String) -> ArrayMesh:
 	if _meshes.has(id):
 		return _meshes[id]
+	var gm := gltf_landmark(id)
+	if gm:
+		_meshes[id] = gm
+		return gm
 	var mesh: ArrayMesh
 	match id:
 		"flame_towers": mesh = _flame_towers(false)

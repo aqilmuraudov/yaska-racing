@@ -41,6 +41,10 @@ static func _mat(id: String) -> Material:
 static func get_mesh(id: String) -> ArrayMesh:
 	if _meshes.has(id):
 		return _meshes[id]
+	var gm := LandmarkKit.gltf_landmark(id) # 0.14.4 TV tower, Crystal Hall
+	if gm:
+		_meshes[id] = gm
+		return gm
 	var a := PropKit.Accum.new()
 	match id:
 		"tv_tower": _tv_tower(a)
