@@ -32,8 +32,9 @@ Həmişə Azərbaycan dilində cavab ver.
   Yoxlama: `apksigner verify --print-certs` → SHA-256 `726cd3535a49ffa4e7d8562fea1a2868e01194afa460ee38a0c0f2866d6e25d9`.
   Yeni açar YARATMA — yoxsa telefonda köhnə oyunun üstünə quraşdırılmaz.
 - `_builds/` və `_setup/` git-ə düşmür.
+- Ekran görüntüsü üçün GPU-lu Godot buraxılışlarında `--position -10000,-10000` (pəncərə ekrandan kənar); testlər həmişə `--headless`.
 
-## Vəziyyət (0.15.4, versionCode 39)
+## Vəziyyət (0.16.0, versionCode 40)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 3 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,

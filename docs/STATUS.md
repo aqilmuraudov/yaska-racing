@@ -1,6 +1,13 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-01 · Build: 0.15.4 · Engine: Godot 4.4.1-stable
+Date: 2026-11-01 · Build: 0.16.0 · Engine: Godot 4.4.1-stable
+
+## Update 0.16.0 (versionCode 40) — Carpet Museum from photos, store drafts
+- **Carpet Museum:** a fully rolled carpet lying on the ground, as built: bronze-gold loaf roll with ornament, glazed oval end with the spiral of the roll and a gold rim, dark glass foot band (was a flat red carpet curling up at one end).
+- Checked against photos, no change needed: Crystal Hall, TV tower, Baku Eye (SOCAR tower was modelled from the owner's photos earlier).
+- **Store drafts** (`docs/store/`): privacy policy AZ/EN (no data, no internet, no ads, no purchases; vibration is the only permission - its switch is in the developer panel only, so the policy does not promise a player switch), Play Console answers (data safety: nothing collected; Families; IARC expectation PEGI 3), listing texts AZ/EN, and the open release decisions: upload key / Play App Signing, the 200 MB base-module limit (APK 248 MB: 39 x 2048² ETC2 sets + engine), AAB via the Android build template, phone FPS test.
+- Screenshot runs now open their window off-screen (`--position -10000,-10000`); tests stay headless (owner works on the same PC).
+- Strict suite: 240 methods, 6046 checks, 0 failures. Not tested on a phone.
 
 ## Update 0.15.4 (versionCode 39) — owner fixes: Crescent round and on the shore, Maiden Tower at street level
 - **Crescent:** the owner: the real one is round and bulky, ours was tall and thin. Now a 68 m wide, ~66 m high round-topped arch, 26 m thick and bowed in plan like a crescent moon, tall opening right of the middle, wider banded podium.
