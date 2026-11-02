@@ -333,6 +333,28 @@ func _face(pos: Vector3, forward: Vector3) -> Transform3D:
 	return Transform3D(basis, pos)
 
 
+## 0.17.0: a Blender landmark prop (PropKit glTF id) as its own node - the
+## near model up to LANDMARK_NEAR m, the decimated far model beyond - and
+## registered for --landmark-views. Its footprint must be reserved before
+## the houses / towers are placed (see the decor's _begin).
+const LANDMARK_NEAR := 260.0
+
+
+func _landmark_prop(id: String, p: Vector3, yaw: float, node_name: String) -> MeshInstance3D:
+	var xf := Transform3D(Basis(Vector3.UP, yaw), p)
+	var near := _landmark(PropKit.get_mesh(id), xf, node_name)
+	near.visibility_range_end = LANDMARK_NEAR
+	near.visibility_range_end_margin = 20.0
+	near.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	var far := _landmark(PropKit.get_mesh(id + PropKit.LO_SUFFIX), xf, node_name + "Far")
+	far.visibility_range_begin = LANDMARK_NEAR
+	far.visibility_range_begin_margin = 20.0
+	far.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	landmarks[id] = near
+	return near
+
+
 func _landmark(mesh: Mesh, xform: Transform3D, node_name: String) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.name = node_name

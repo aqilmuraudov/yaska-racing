@@ -20,6 +20,17 @@ const MALLS := [
 const MALL_SIGN := {"mall_28": [Vector3(4.0, 15.9, 16.5), 0.02], "port_baku": [Vector3(0.0, 13.3, 33.7), 0.022],
 	"park_bulvar": [Vector3(2.0, 9.0, 15.4), 0.02], "ganjlik_mall": [Vector3(0.0, 21.6, 17.8), 0.022],
 	"mall_a": [Vector3(0, 15.35, 19.0), 0.022], "mall_b": [Vector3(0, 15.35, 19.0), 0.022]}
+## 0.17.0 (owner: mini Baku) the historic centre along the sea side of
+## Tower Avenue, west to east as in Baku: Philharmonic, City Hall, Ismailiyya;
+## Fountain Square (paving + both fountains) north of them in the infield.
+## [prop id, x, z, yaw, reserved radius, node name]
+const CENTRE := [
+	["philharmonic", -200.0, 44.0, PI, 28.5, "Philharmonic"],
+	["city_hall", -130.0, 44.0, PI, 26.0, "CityHall"],
+	["ismailiyya", -62.0, 42.0, PI, 24.0, "Ismailiyya"],
+]
+const FOUNTAIN_SQUARE := Vector3(-30.0, 0.0, -53.0)
+const FLAME_SITE := Vector3(-560.0, 0.0, 10.0) ## west, near the bay (sea = +z)
 const MALL_R := 38.0
 const TOWER_R := {"sky_a": 16.0, "sky_b": 17.0, "sky_c": 13.5, "sky_d": 19.0}
 const BRIDGE_CLEAR := 8.0 ## m of headroom under the mall bridge
@@ -35,7 +46,7 @@ func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
 	return [
 		func(): _begin(td),
 		_place_wall_props,
-		_place_malls,
+		func(): _place_centre(); _place_malls(),
 		_place_mall_bridge,
 		_place_avenue_towers,
 		_place_city_towers,
@@ -171,6 +182,32 @@ func _big_label(text: String, px: float) -> Label3D:
 
 
 # --- Malls ---------------------------------------------------------------------
+
+func _place_centre() -> void:
+	for c: Array in CENTRE:
+		var p := Vector3(float(c[1]), 0.0, float(c[2]))
+		if not clear_of_track(p, float(c[4]), 0.5):
+			push_warning("DowntownDecor: %s overlaps the course" % c[5])
+			continue
+		_landmark_prop(c[0], Vector3(p.x, -0.12, p.z), float(c[3]), c[5])
+		_reserved.append([p, float(c[4])])
+	var fs := FOUNTAIN_SQUARE
+	if clear_of_track(fs, 34.0, 0.5):
+		_landmark_prop("fountain_plaza", Vector3(fs.x, -0.12, fs.z), 0.0, "FountainSquare")
+		_landmark_prop("fountain_tiered", Vector3(fs.x - 12.0, -0.02, fs.z), 0.0, "FountainTiered")
+		_landmark_prop("fountain_spheres", Vector3(fs.x + 13.0, -0.02, fs.z + 2.0), 0.0, "FountainSpheres")
+		_reserved.append([fs, 34.0])
+		# Benches and lamps round the square, a few plane trees.
+		for k in 10:
+			var a := TAU * k / 10.0
+			var q := fs + Vector3(cos(a) * 26.0, -0.1, sin(a) * 18.0)
+			add_instance("lamp" if k % 2 == 0 else "bench", _face(q, fs - q))
+		for k in 6:
+			var a := TAU * (k + 0.5) / 6.0
+			add_instance("tree", Transform3D(Basis(Vector3.UP, rng.randf() * TAU), fs + Vector3(cos(a) * 31.0, -0.1, sin(a) * 23.0)))
+	else:
+		push_warning("DowntownDecor: Fountain Square overlaps the course")
+
 
 func _place_malls() -> void:
 	var i := 0
@@ -318,6 +355,11 @@ func _place_sidewalks() -> void:
 
 func _place_city_landmarks() -> void:
 	_build_gantry()
+	# The Flame Towers on the hill in the south-west, as seen from the centre.
+	var ft := _landmark(LandmarkKit.get_mesh("flame_towers_far"),
+		Transform3D(Basis(Vector3.UP, 1.2), Vector3(FLAME_SITE.x, (builder.terrain_height(FLAME_SITE.x, FLAME_SITE.z) if builder else 0.0) - 1.0, FLAME_SITE.z)), "FlameTowers")
+	ft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	landmarks["flame_towers"] = ft
 
 
 func _place_city_promenade() -> void:

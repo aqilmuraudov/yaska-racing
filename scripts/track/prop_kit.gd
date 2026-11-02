@@ -353,13 +353,26 @@ const GLTF_PROPS := {
 	"block9_a": "res://assets/models/blocks/blocks_props",
 	"block9_b": "res://assets/models/blocks/blocks_props",
 	"block9_c": "res://assets/models/blocks/blocks_props",
+	# 0.17.0 mini Baku, İçərişəhər (tools/blender/icheri_props.py)
+	"shirvanshah": "res://assets/models/icheri/icheri_props",
+	"juma_mosque": "res://assets/models/icheri/icheri_props",
+	"siniqqala": "res://assets/models/icheri/icheri_props",
+	"caravanserai": "res://assets/models/icheri/icheri_props",
+	# 0.17.0 mini Baku, city centre (tools/blender/center_props.py)
+	"philharmonic": "res://assets/models/center/center_props",
+	"city_hall": "res://assets/models/center/center_props",
+	"ismailiyya": "res://assets/models/center/center_props",
+	"fountain_tiered": "res://assets/models/center/center_props",
+	"fountain_spheres": "res://assets/models/center/center_props",
+	"fountain_plaza": "res://assets/models/center/center_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
 	"res://assets/models/city": "windows", "res://assets/models/seafront": "windows",
 	"res://assets/models/skyline": "windows", "res://assets/models/landmarks": "windows",
 	"res://assets/models/downtown": "windows", "res://assets/models/plaza": "windows",
-	"res://assets/models/malls": "windows", "res://assets/models/blocks": "windows"}
+	"res://assets/models/malls": "windows", "res://assets/models/blocks": "windows",
+	"res://assets/models/icheri": "windows", "res://assets/models/center": "windows"}
 const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true

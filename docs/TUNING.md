@@ -334,3 +334,13 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 | Road bump | asphalt 0.006, cobbles 0.03 (height = texture luminance), fades by 60 m |
 | Kerb ridges | every 0.4 m, 0.012 high |
 
+
+## Mini Baku: Old City and city centre (0.17.0)
+| Item | Value |
+|---|---|
+| Old City sites (x, z, yaw, plot r) | Shirvanshahs' Palace (-85, -143, 0, 31), Juma Mosque (-118.5, -28, -90°, 17.5), Sınıqqala (-100, -91, 180°, 11), caravanserai (-45, -81, 180°, 20); Maiden Tower stays at (-30, -28) |
+| Downtown sites (x, z, yaw, plot r) | Philharmonic (-200, 44, 180°, 28.5), City Hall (-130, 44, 180°, 26), Ismailiyya (-62, 42, 180°, 24), Fountain Square (-30, -53, plaza 56 x 40, plot 34), Flame Towers far model (-560, 10) |
+| Heights (game-fitted) | Juma minaret 24 m, Sınıqqala 26 m, Shah mosque minaret 24 m, caravanserai 9.4 m, Philharmonic towers 28.7 m, City Hall flag top 36.5 m, Ismailiyya gables 26 m |
+| Triangles near / far | Old City set 7,092 / 2,755 (four buildings); centre set 9,824 / 4,143 (three buildings, two fountains, plaza) |
+| Near → far switch | 260 m (20 m fade, `TrackDecor.LANDMARK_NEAR`) |
+| Textures | one 2048² set each (`assets/models/icheri`, `assets/models/center`), VRAM compressed + mipmaps |

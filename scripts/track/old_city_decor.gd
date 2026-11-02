@@ -12,11 +12,24 @@ extends TrackDecor
 const MAIDEN_SITE := Vector3(-30.0, 0.0, -28.0)
 const FLAME_SITE := Vector3(-470.0, 0.0, -430.0)
 const SEA_SIDE := 1.0 ## +z is the sea
+## 0.17.0 (owner: mini Baku) the Old City's own landmarks in their real
+## relative places (north = -z, the sea = +z): the Shirvanshahs' Palace on
+## the hill in the north-west (across the north street), the Juma Mosque west
+## of the tower, the Muhammad Mosque (Sınıqqala) north of it, a caravanserai
+## just north of the Maiden Tower. Each fronts a street so it is seen from
+## the road (the houses behind them are cleared by the reservation).
+## [prop id, x, z, yaw (front = +Z turned), reserved radius, node name]
+const OC_LANDMARKS := [
+	["shirvanshah", -85.0, -143.0, 0.0, 31.0, "ShirvanshahPalace"],
+	["juma_mosque", -118.5, -28.0, -PI * 0.5, 17.5, "JumaMosque"],
+	["siniqqala", -100.0, -91.0, PI, 11.0, "Siniqqala"],
+	["caravanserai", -45.0, -81.0, PI, 20.0, "Caravanserai"],
+]
 
 
 func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
 	return [
-		func(): _begin(td),
+		func(): _begin(td); _reserve_oc_landmarks(),
 		_place_wall_props,
 		_place_oc_boulevard,
 		_place_old_city,
@@ -37,7 +50,16 @@ func _tower_position() -> Vector3:
 	return Vector3(MAIDEN_SITE.x, ground_y(MAIDEN_SITE), MAIDEN_SITE.z)
 
 
+func _reserve_oc_landmarks() -> void:
+	for l: Array in OC_LANDMARKS:
+		_reserved.append([Vector3(float(l[1]), 0.0, float(l[2])), float(l[4])])
+
+
 func _place_oc_landmarks() -> void:
+	for l: Array in OC_LANDMARKS:
+		var p := Vector3(float(l[1]), 0.0, float(l[2]))
+		p.y = ground_y(p) - 0.02
+		_landmark_prop(l[0], p, float(l[3]), l[5])
 	var tp := _tower_position()
 	var tower := _landmark(PropKit.get_mesh("maiden_tower"),
 		Transform3D(Basis(Vector3.UP, -PI * 0.5).scaled(Vector3.ONE * 1.3), Vector3(tp.x, tp.y - 0.05, tp.z)), "MaidenTower")

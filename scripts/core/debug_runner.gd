@@ -645,7 +645,8 @@ func _capture_landmarks(race: RaceManager) -> void:
 				best = score
 				best_s = s
 			s += 4.0
-		var glance: bool = id in ["government_house", "carpet_museum", "maiden_tower", "caspian_horizon"]
+		var glance: bool = id in ["government_house", "carpet_museum", "maiden_tower", "caspian_horizon", "shirvanshah",
+			"juma_mosque", "siniqqala", "caravanserai", "philharmonic", "city_hall", "ismailiyya", "fountain_plaza"]
 		var gd := 62.0 if id == "maiden_tower" else (240.0 if id == "caspian_horizon" else 95.0)
 		if glance:
 			# Seen side-on from the nearest stretch of road (a driver's glance).
