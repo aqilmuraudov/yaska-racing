@@ -159,63 +159,69 @@ def build_government_house(hi):
 
 
 def build_carpet_museum(hi):
+    """Azerbaijan Carpet Museum (0.15.4, from photos): a carpet rolled up and
+    lying on the ground - a long loaf-shaped roll clad in bronze-gold panels
+    with carpet ornament, a gold rim around the oval glazed end showing the
+    spiral of the roll, a dark glass band along the foot."""
     tag = "H" if hi else "L"
     g = "carpet_museum"
-    W = 18.0
-    # A carpet lying on the ground that rolls up at the +x end (rolled carpet).
-    def profile(t):
-        if t < 0.55:
-            # Lying part rises gently into the roll.
-            k = t / 0.55
-            return Vector((-40.0 + k * 62.0, 3.6 + 2.4 * k * k))
-        a = (t - 0.55) / 0.45 * 1.3 * math.pi
-        rr = 6.0 - (t - 0.55) / 0.45 * 1.2
-        return Vector((22.0 + rr * math.sin(a), 12.0 - rr * math.cos(a)))
-    n = L(hi, 28, 120)
+    Lr, Wr, Hr = 58.0, 22.0, 15.0
+    n = L(hi, 20, 64)
+    m = L(hi, 6, 40)
+
+    def section(t):
+        # Superellipse "loaf": flat foot, round top.
+        a = 2 * math.pi * t
+        c, s_ = math.cos(a), math.sin(a)
+        y = Hr * 0.5 + Hr * 0.5 * math.copysign(abs(s_) ** 0.6, s_)
+        z = Wr * 0.5 * math.copysign(abs(c) ** 0.6, c)
+        return z, max(y, 0.0)
+
     bm = bmesh.new()
-    top, bot = [], []
-    for i in range(n + 1):
-        p = profile(i / n)
-        top.append([bm.verts.new((p.x, p.y, z)) for z in (-W / 2, W / 2)])
-        bot.append([bm.verts.new((p.x, p.y - 0.6, z)) for z in (-W / 2, W / 2)])
-    for i in range(n):
-        bm.faces.new((top[i][0], top[i][1], top[i + 1][1], top[i + 1][0]))
-        bm.faces.new((bot[i][1], bot[i][0], bot[i + 1][0], bot[i + 1][1]))
-        for s in (0, 1):
-            q = (top[i][s], top[i + 1][s], bot[i + 1][s], bot[i][s])
-            bm.faces.new(q if s == 0 else tuple(reversed(q)))
-    carpet = K.finish(bm, f"cm_carpet_{tag}", "carpet_red", g, hi, smooth=True)
-    bbox(f"cm_hall_{tag}", (36.0, 3.4, W - 2.0), (-14.0, 1.7, 0), "glass", g, hi, L(hi, 0.0, 0.2))
-    bbox(f"cm_hall2_{tag}", (12.0, 5.6, W - 2.0), (15.0, 2.8, 0), "glass", g, hi, L(hi, 0.0, 0.2))
-    for s in (-1, 1):
-        turned(f"cm_cap{s}_{tag}", [(0.0, 6.2), (0.4, 6.2), (0.4, 0.0)], (0, 0, 0), "carpet_navy", g, hi, L(hi, 16, 48)
-               ).data.transform(Matrix.Translation(Vector((22.0, 12.0, s * (W * 0.5 - 0.2)))) @ Matrix.Rotation(math.pi / 2, 4, "X") @ UP.inverted())
-    bbox(f"cm_plaza_{tag}", (80.0, 0.4, W + 12.0), (-4.0, 0.2, 2.0), "limestone", g, hi, L(hi, 0.0, 0.1))
+    rings = []
+    for k in range(m + 1):
+        x = -Lr * 0.5 + Lr * k / m
+        rings.append([bm.verts.new((x, section(t / n)[1], section(t / n)[0])) for t in range(n)])
+    for k in range(m):
+        for t in range(n):
+            bm.faces.new((rings[k][t], rings[k][(t + 1) % n], rings[k + 1][(t + 1) % n], rings[k + 1][t]))
+    bm.faces.new(list(reversed(rings[0])))
+    K.finish(bm, f"cm_roll_{tag}", "carpet_gold", g, hi, smooth=True,
+             outward=lambda p: Vector((0.0, p.y - Hr * 0.5, p.z)) if abs(p.x) < Lr * 0.5 - 0.01 else Vector((-1, 0, 0)))
+    # Glazed oval end (+x) with the spiral of the roll and a gold rim.
+    end = [section(t / n) for t in range(n)]
+    bm = bmesh.new()
+    vs = [bm.verts.new((Lr * 0.5, y, z)) for z, y in end]
+    bm.faces.new(vs)
+    K.finish(bm, f"cm_glass_{tag}", "glass_blue", g, hi, smooth=False, outward=lambda p: Vector((1, 0, 0)))
+    rim = [Vector((Lr * 0.5 + 0.2, y, z)) for z, y in end] + [Vector((Lr * 0.5 + 0.2, end[0][1], end[0][0]))]
+    tube(f"cm_rim_{tag}", rim, 0.55, "gold", g, hi, 1, L(hi, 6, 12), False)
     if hi:
-        # Carpet ornament on the top surface: borders, medallions, diamonds.
-        for z in (-W / 2 + 1.0, W / 2 - 1.0):
-            for x0 in range(-40, 12, 4):
-                decal(f"cm_border{z}{x0}", [(-2.0, -0.45), (2.0, -0.45), (2.0, 0.45), (-2.0, 0.45)],
-                      facing((x0 + 2.0, 6.0, z), (0, 1, 0), up=(1, 0, 0)), "carpet_navy", g, carpet, 0.01, 2)
-                decal(f"cm_bd{z}{x0}", [(-0.5, 0), (0, 0.35), (0.5, 0), (0, -0.35)],
-                      facing((x0 + 2.0, 6.0, z), (0, 1, 0), up=(1, 0, 0)), "carpet_gold", g, carpet, 0.02, 1)
-        for i, x in enumerate((-30.0, -15.0, 0.0)):
-            decal(f"cm_med{i}", [(math.cos(a) * 5.5 * (1 if k % 2 else 0.7), math.sin(a) * 5.5 * (1 if k % 2 else 0.7))
-                                 for k, a in enumerate([2 * math.pi * j / 16 for j in range(16)])],
-                  facing((x, 6.0, 0), (0, 1, 0), up=(1, 0, 0)), "carpet_navy", g, carpet, 0.01, 3)
-            decal(f"cm_medin{i}", circle_outline(3.0, 3.0, 20), facing((x, 6.0, 0), (0, 1, 0), up=(1, 0, 0)),
-                  "carpet_cream", g, carpet, 0.02, 2)
-            decal(f"cm_medc{i}", [(-1.6, 0), (0, 1.6), (1.6, 0), (0, -1.6)], facing((x, 6.0, 0), (0, 1, 0), up=(1, 0, 0)),
-                  "carpet_green", g, carpet, 0.03, 1)
-        for i in range(10):
-            x = -38.0 + i * 5.0
-            for z in (-4.5, 4.5):
-                decal(f"cm_dia{i}{z}", [(-0.9, 0), (0, 0.9), (0.9, 0), (0, -0.9)],
-                      facing((x, 6.0, z), (0, 1, 0), up=(1, 0, 0)), "carpet_gold", g, carpet, 0.015, 1)
-        # Mullions on the glass halls.
-        for k in range(18):
-            x = -31.5 + k * 2.0
-            bbox(f"cm_mull{k}", (0.12, 6.0, 0.1), (x, 3.0, (W - 2.0) * 0.5 + 0.03), "steel", g, True, 0.0)
+        for k in range(1, 5):
+            f = 1.0 - k * 0.17
+            sp = [Vector((Lr * 0.5 + 0.12, Hr * 0.5 + (y - Hr * 0.5) * f - k * 0.5, z * f + k * 0.4))
+                  for z, y in end] + [Vector((Lr * 0.5 + 0.12, Hr * 0.5 + (end[0][1] - Hr * 0.5) * f - k * 0.5,
+                                              end[0][0] * f + k * 0.4))]
+            tube(f"cm_spiral{k}", sp, 0.18, "gold", g, True, 1, 6, False)
+        # Carpet ornament: diamond medallions and border lines on the roll.
+        for k in range(7):
+            x = -Lr * 0.5 + 5.0 + k * (Lr - 10.0) / 6
+            for side in (-1, 1):
+                ang = side * 0.9
+                z = Wr * 0.5 * math.copysign(abs(math.cos(ang + math.pi / 2 * (1 - side))) ** 0.6, side)
+                puffy(f"cm_med{k}{side}", [(-2.4, 0), (0, 3.4), (2.4, 0), (0, -3.4)], 0.12, 0.05,
+                      Matrix.Translation(Vector((x, Hr * 0.72, side * (Wr * 0.47)))) @ Matrix.Rotation(
+                          side * 0.0, 4, "Y") @ (Matrix.Rotation(0.0 if side > 0 else math.pi, 4, "Y")),
+                      "carpet_red", g, True)
+        for yy in (Hr * 0.35, Hr * 0.9):
+            for side in (-1, 1):
+                tube(f"cm_border{yy:.0f}{side}", [Vector((-Lr * 0.5, yy, side * Wr * 0.5 * 0.985)),
+                                                   Vector((Lr * 0.5, yy, side * Wr * 0.5 * 0.985))], 0.15,
+                     "carpet_navy", g, True, 1, 4, False)
+    # Dark glass band along the foot and a few entrance doors.
+    for side in (-1, 1):
+        bbox(f"cm_band{side}_{tag}", (Lr - 4.0, 3.0, 0.3), (0, 1.5, side * (Wr * 0.5 - 0.6)), "window_dark", g, hi, 0.0)
+    bbox(f"cm_plinth_{tag}", (Lr + 6.0, 0.4, Wr + 6.0), (0, 0.2, 0), "concrete", g, hi, 0.0)
 
 
 def build_crystal_hall(hi):
