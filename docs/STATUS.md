@@ -1,6 +1,14 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-02 · Build: 0.17.1 · Engine: Godot 4.4.1-stable
+Date: 2026-11-02 · Build: 0.17.2 · Engine: Godot 4.4.1-stable
+
+## Update 0.17.2 (versionCode 43) — Nizami street's own houses and the Nizami Museum of Literature
+- Owner: Nizami street must have its real buildings, not the generic sandstone blocks. Modelled from Wikimedia Commons photos in `tools/blender/nizami_props.py` → `assets/models/nizami/` (one 2048² set, 9,268 tris near for the five models):
+  - **Nizami Museum of Literature** on the north side of Fountain Square, facing it: cream-yellow front, green-framed ground-floor windows between white pilasters, the deep loggia of tall pointed arches with blue tile spandrels and a white poet statue in every arch, the arcaded gallery with a balustrade and the raised centre on top.
+  - **Street houses** (both rows, facades continuous): the round-corner house (stacked curved iron balconies, ribbed dome with a lantern; it opens the south row at the square and closes the north row in the west), the four-storey house with a wrought-iron balcony in every bay and an attic balustrade, the three-storey house with the two-storey bay window under a pediment, the two-storey Taghiyev-passage-style arcade (tall round-arched windows between pilasters, square shop windows, raised attic). Every house has a window grid on its back.
+  - **Paving** as on the photos: dark grey stone with white fish-scale arcs (`assets/materials/nizami_paving.gdshader`, world-space, no new texture).
+- The generic Neftçilər blocks are no longer used on Nizami street.
+- Strict suite: round 31 passes (145 checks); the full run before the last test fix: 245 methods, 6185 checks, 4 failures, all in the round 31 count method (fixed). APK for 0.17.2 not built yet.
 
 ## Update 0.17.1 (versionCode 42) — Nizami street, open view onto Fountain Square
 - Owner: the two open points of 0.17.0 should not stay open. Nizami street is now built (see the 0.17.0 notes below) and the towers no longer stand between the avenue and Fountain Square.
@@ -22,7 +30,7 @@ Date: 2026-11-02 · Build: 0.17.1 · Engine: Godot 4.4.1-stable
 - New landmarks are separate nodes: near model to 260 m, far model beyond (`TrackDecor._landmark_prop`); they are in `landmarks` (`--landmark-views` shows them side-on).
 - Screenshots: `docs/screenshots/0.17.0/` (models, day and night race views, overview old vs new). Not compared against photos by the owner yet.
 - Strict suite: 245 methods, 6146 checks, 0 failures in 0.17.0 (round 31: models, plot sizes, heights, placement clear of road and houses / towers, west-to-east order).
-- Known / not verified: buildings are scripted, not sculpted (simpler than the photos: no carved inscriptions, the Divankhana portal and Ismailiyya tracery are simplified); Nizami street reuses the generic sandstone buildings (not the real facades one by one); no phone FPS. Build: `_builds/YaskaRacing-0.17.0-v41-debug.apk`, **282.2 MB** (0.16.0: 247.9 MB; two more 2048² sets in both VRAM formats), signed with the usual key (SHA-256 726cd353…6e25d9). Over the 200 MB Play base limit: AAB + Play Asset Delivery or smaller textures are needed before release.
+- Known / not verified: buildings are scripted, not sculpted (simpler than the photos: no carved inscriptions, the Divankhana portal and Ismailiyya tracery are simplified); no phone FPS. Build: `_builds/YaskaRacing-0.17.0-v41-debug.apk`, **282.2 MB** (0.16.0: 247.9 MB; two more 2048² sets in both VRAM formats), signed with the usual key (SHA-256 726cd353…6e25d9). Over the 200 MB Play base limit: AAB + Play Asset Delivery or smaller textures are needed before release.
 
 ## Update 0.16.0 (versionCode 40) — Carpet Museum from photos, store drafts
 - **Carpet Museum:** a fully rolled carpet lying on the ground, as built: bronze-gold loaf roll with ornament, glazed oval end with the spiral of the roll and a gold rim, dark glass foot band (was a flat red carpet curling up at one end).

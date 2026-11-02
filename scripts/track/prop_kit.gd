@@ -365,6 +365,12 @@ const GLTF_PROPS := {
 	"fountain_tiered": "res://assets/models/center/center_props",
 	"fountain_spheres": "res://assets/models/center/center_props",
 	"fountain_plaza": "res://assets/models/center/center_props",
+	# 0.17.2 Nizami street houses + Nizami Museum (tools/blender/nizami_props.py)
+	"lit_museum": "res://assets/models/nizami/nizami_props",
+	"nz_corner": "res://assets/models/nizami/nizami_props",
+	"nz_balcony": "res://assets/models/nizami/nizami_props",
+	"nz_bay": "res://assets/models/nizami/nizami_props",
+	"nz_arcade": "res://assets/models/nizami/nizami_props",
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
@@ -372,7 +378,8 @@ const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/mode
 	"res://assets/models/skyline": "windows", "res://assets/models/landmarks": "windows",
 	"res://assets/models/downtown": "windows", "res://assets/models/plaza": "windows",
 	"res://assets/models/malls": "windows", "res://assets/models/blocks": "windows",
-	"res://assets/models/icheri": "windows", "res://assets/models/center": "windows"}
+	"res://assets/models/icheri": "windows", "res://assets/models/center": "windows",
+	"res://assets/models/nizami": "windows"}
 const GLOW_COLOR := {"windows": Color(1.0, 0.78, 0.42), "lamps": Color("ffe2a0")}
 const PROP_BAKED_SHADER := preload("res://assets/materials/prop_baked.gdshader")
 static var gltf_enabled := true

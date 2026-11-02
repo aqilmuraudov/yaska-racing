@@ -34,11 +34,11 @@ Həmişə Azərbaycan dilində cavab ver.
 - `_builds/` və `_setup/` git-ə düşmür.
 - Ekran görüntüsü üçün GPU-lu Godot buraxılışlarında `--position -10000,-10000` (pəncərə ekrandan kənar); testlər həmişə `--headless`.
 
-## Vəziyyət (0.17.1, versionCode 42)
+## Vəziyyət (0.17.2, versionCode 43)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 3 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,
-7 maşın + sürücünün hamısı, 3 şəhərin binaları və abidələri ("mini Bakı": Şirvanşahlar sarayı, Cümə, Sınıqqala, karvansara, Filarmoniya, Bələdiyyə, İsmailiyyə, Fəvvarələr meydanı, Nizami küçəsi daxil) Blender modelidir (`tools/blender/`, ümumi `kart_common.py`).
+7 maşın + sürücünün hamısı, 3 şəhərin binaları və abidələri ("mini Bakı": Şirvanşahlar sarayı, Cümə, Sınıqqala, karvansara, Filarmoniya, Bələdiyyə, İsmailiyyə, Fəvvarələr meydanı, Nizami muzeyi, Nizami küçəsinin evləri daxil) Blender modelidir (`tools/blender/`, ümumi `kart_common.py`).
 Əvvəlki iş GPU-suz bulud mühitində aparılıb — **heç bir rəqəm real telefonda ölçülməyib.**
 
 ## İndiki plan (Aqil ilə razılaşdırılıb)

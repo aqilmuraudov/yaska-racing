@@ -31,12 +31,16 @@ const CENTRE := [
 ]
 const FOUNTAIN_SQUARE := Vector3(-30.0, 0.0, -53.0)
 ## Nizami street: the pedestrian street running west from Fountain Square,
-## lined both sides with 19th-century sandstone buildings (the Blender
-## Neftçilər-style blocks: rustication, arched shop fronts, iron balconies)
-## instead of glass towers; also keeps the view onto the square open.
+## lined both sides with its 19th-century sandstone houses, modelled from
+## photos (tools/blender/nizami_props.py): the domed round-corner house,
+## balconied four-storey houses, the bay-window house and the Taghiyev
+## passage-style arcade; dark paving with white arcs. The Nizami Museum of
+## Literature stands on the north side of the square.
 const NIZAMI_WEST := -205.0 ## x where the street ends
 const NIZAMI_W := 14.0 ## paved width
-const NIZAMI_BLOCKS := {"modern_a": 16.0, "modern_b": 12.0, "modern_c": 20.0} ## width; depth 12
+const NIZAMI_HOUSES := {"nz_corner": 18.0, "nz_balcony": 16.0, "nz_bay": 14.0, "nz_arcade": 20.0} ## width; depth 12
+const MUSEUM_SITE := Vector3(-48.0, 0.0, -81.5) ## Nizami Museum of Literature, faces the square
+const MUSEUM_R := 24.0
 const FLAME_SITE := Vector3(-560.0, 0.0, 10.0) ## west, near the bay (sea = +z)
 const MALL_R := 38.0
 const TOWER_R := {"sky_a": 16.0, "sky_b": 17.0, "sky_c": 13.5, "sky_d": 19.0}
@@ -215,6 +219,16 @@ func _place_centre() -> void:
 			add_instance("tree", Transform3D(Basis(Vector3.UP, rng.randf() * TAU), fs + Vector3(cos(a) * 31.0, -0.1, sin(a) * 23.0)))
 	else:
 		push_warning("DowntownDecor: Fountain Square overlaps the course")
+	# Nizami Museum of Literature on the north side of the square, facing it.
+	var ms := MUSEUM_SITE
+	if _nizami_clear(ms, MUSEUM_R): # its front touches the square's round plot
+		var my := INF
+		for c in [Vector2(-22, -7), Vector2(22, -7), Vector2(-22, 7), Vector2(22, 7)]:
+			my = minf(my, _street_y(ms.x + c.x, ms.z + c.y))
+		_landmark_prop("lit_museum", Vector3(ms.x, my - 0.15, ms.z), 0.0, "NizamiMuseum")
+		_reserved.append([ms, MUSEUM_R])
+	else:
+		push_warning("DowntownDecor: Nizami Museum overlaps the course")
 	_place_nizami()
 
 
@@ -222,7 +236,7 @@ func _place_nizami() -> void:
 	var z := FOUNTAIN_SQUARE.z
 	var x_east := FOUNTAIN_SQUARE.x - 28.0 # the plaza's west edge
 	var length := x_east - NIZAMI_WEST
-	# Paving (cobbles, warm) following the gentle slope up to the flyover;
+	# Paving (dark stone, white arcs) following the gentle slope up to the flyover;
 	# visual only, no collision.
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -244,11 +258,9 @@ func _place_nizami() -> void:
 	paving.name = "NizamiStreet"
 	paving.mesh = st.commit()
 	paving.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var mat := StandardMaterial3D.new()
-	mat.roughness = 0.9
-	mat.albedo_color = Color("e8d2b0")
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	TextureLibrary.bind(mat, "albedo_texture", "cobbles")
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://assets/materials/nizami_paving.gdshader")
+	TextureLibrary.bind(mat, "cobble_tex", "cobbles")
 	paving.material_override = mat
 	add_child(paving)
 	var mark := Node3D.new()
@@ -256,30 +268,24 @@ func _place_nizami() -> void:
 	mark.position = Vector3(x_east - length * 0.5, 4.0, z)
 	add_child(mark)
 	landmarks["nizami_street"] = mark
-	# Sandstone buildings on both sides of the street.
-	var ids: Array = NIZAMI_BLOCKS.keys()
+	# The houses, both sides of the street, facades continuous (0.3 m joints).
 	var placed := 0
 	for side: float in [-1.0, 1.0]: # -1 north (-z), +1 south
-		var x := x_east - 2.0
-		var k := 0 if side < 0.0 else 1
-		while true:
-			var id: String = ids[k % ids.size()]
-			var w: float = NIZAMI_BLOCKS[id]
-			if x - w < NIZAMI_WEST:
-				break
-			var p := Vector3(x - w * 0.5, 0.0, z + side * (NIZAMI_W * 0.5 + 6.5))
-			if clear_of_track(p, 9.0, 1.0):
-				# On the slope: stand on the lowest corner (the uphill side sinks in).
-				var gy := INF
-				for c in [Vector2(-w * 0.5, -6.0), Vector2(w * 0.5, -6.0), Vector2(-w * 0.5, 6.0), Vector2(w * 0.5, 6.0)]:
-					gy = minf(gy, _street_y(p.x + c.x, p.z + c.y))
-				# Fronts face the race road nearest to each row (the players never
-				# drive the street itself): south row to the avenue, north row to
-				# the flyover.
-				add_instance(id, Transform3D(Basis(Vector3.UP, PI if side < 0.0 else 0.0), Vector3(p.x, gy - 0.15, p.z)))
-				placed += 1
-			x -= w + 1.5
-			k += 1
+		for e: Array in _nizami_row(x_east - 1.0, side):
+			var id: String = e[0]
+			var w: float = NIZAMI_HOUSES[id]
+			var p := Vector3(float(e[1]), 0.0, z + side * (NIZAMI_W * 0.5 + 6.5))
+			if not _nizami_clear(p, 9.0):
+				continue
+			# On the slope: stand on the lowest corner (the uphill side sinks in).
+			var gy := INF
+			for c in [Vector2(-w * 0.5, -6.0), Vector2(w * 0.5, -6.0), Vector2(-w * 0.5, 6.0), Vector2(w * 0.5, 6.0)]:
+				gy = minf(gy, _street_y(p.x + c.x, p.z + c.y))
+			# Fronts face the race road nearest to each row (the players never
+			# drive the street itself): south row to the avenue, north row to
+			# the flyover. Their backs carry plain window rows.
+			add_instance(id, Transform3D(Basis(Vector3.UP, PI if side < 0.0 else 0.0), Vector3(p.x, gy - 0.15, p.z)))
+			placed += 1
 	nizami_buildings = placed
 	# Lamps and benches down the street, a plane tree now and then.
 	var lx := x_east - 6.0
@@ -299,6 +305,42 @@ func _place_nizami() -> void:
 	while rx > NIZAMI_WEST:
 		_reserved.append([Vector3(rx, 0.0, z), NIZAMI_W * 0.5 + 13.0])
 		rx -= 10.0
+
+
+## clear_of_track, but the square's round plot may touch the houses at its
+## corner (the real street opens straight onto the square).
+func _nizami_clear(p: Vector3, r: float) -> bool:
+	var saved := _reserved
+	_reserved = saved.filter(func(e: Array) -> bool: return not (e[0] as Vector3).is_equal_approx(FOUNTAIN_SQUARE))
+	var ok := clear_of_track(p, r, 1.0)
+	_reserved = saved
+	return ok
+
+
+## [id, centre x] east to west. South row: the round-corner house at the
+## square (its corner, local +x, points east), then the street houses in
+## turn. North row (turned 180°, so local +x points west): the street houses
+## in turn, the round-corner house closing the row in the west.
+func _nizami_row(x_start: float, side: float) -> Array:
+	var cycle: Array = ["nz_balcony", "nz_arcade", "nz_bay"] if side > 0.0 else ["nz_balcony", "nz_bay", "nz_arcade"]
+	var out: Array = []
+	var x := x_start
+	var k := 0
+	if side > 0.0:
+		out.append(["nz_corner", x - NIZAMI_HOUSES.nz_corner * 0.5])
+		x -= NIZAMI_HOUSES.nz_corner + 0.3
+	var corner_w: float = NIZAMI_HOUSES.nz_corner if side < 0.0 else 0.0
+	while true:
+		var id: String = cycle[k % cycle.size()]
+		var w: float = NIZAMI_HOUSES[id]
+		if x - w - (corner_w + 0.3 if corner_w > 0.0 else 0.0) < NIZAMI_WEST:
+			break
+		out.append([id, x - w * 0.5])
+		x -= w + 0.3
+		k += 1
+	if side < 0.0 and x - corner_w >= NIZAMI_WEST:
+		out.append(["nz_corner", x - corner_w * 0.5])
+	return out
 
 
 ## Ground height on Nizami street (the city ground is -0.12; the terrain

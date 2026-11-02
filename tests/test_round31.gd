@@ -6,7 +6,8 @@ extends TestCase
 ## their real relative places, clear of the road and of the houses / towers.
 
 const ICHERI := ["shirvanshah", "juma_mosque", "siniqqala", "caravanserai"]
-const CENTRE := ["philharmonic", "city_hall", "ismailiyya", "fountain_tiered", "fountain_spheres", "fountain_plaza"]
+const CENTRE := ["philharmonic", "city_hall", "ismailiyya", "fountain_tiered", "fountain_spheres", "fountain_plaza",
+	"lit_museum", "nz_corner", "nz_balcony", "nz_bay", "nz_arcade"]
 const TEST_SETTINGS := "user://test_settings_r31.json"
 const TEST_PROFILE := "user://test_profile_r31.json"
 var _orig_settings_path := ""
@@ -153,6 +154,23 @@ func test_downtown_centre_placed() -> void:
 	# Nizami street west of the square: sandstone rows, no glass towers on it.
 	check(decor.landmarks.has("nizami_street"), "Nizami street built")
 	check(decor.nizami_buildings >= 12, "sandstone buildings line it (%d)" % decor.nizami_buildings)
+	var kinds := {}
+	for id in DowntownDecor.NIZAMI_HOUSES.keys():
+		kinds[id] = 0
+		for n in decor._chunk_nodes:
+			if String(n.get_meta("prop", "")) == id:
+				kinds[id] += (n.get_meta("instance_xforms", []) as Array).size()
+		check(kinds[id] >= 1, "%s on the street (%d)" % [id, kinds[id]])
+	check(decor.instance_transforms("modern_a").size() + decor.instance_transforms("modern_c").size() == 0,
+		"no generic blocks left on Nizami street")
+	check(decor.landmarks.has("lit_museum"), "Nizami Museum of Literature on the square")
+	if decor.landmarks.has("lit_museum"):
+		var mp: Vector3 = decor.landmarks.lit_museum.position
+		check(mp.z < DowntownDecor.FOUNTAIN_SQUARE.z, "museum on the north side of the square")
+	for id in ["nz_corner", "nz_balcony", "nz_bay", "nz_arcade"]:
+		var bb := PropKit.get_mesh(id).get_aabb()
+		check(absf(bb.size.x - float(DowntownDecor.NIZAMI_HOUSES[id])) < 1.6, "%s width matches its slot (%.1f)" % [id, bb.size.x])
+		check(bb.size.z < 14.5, "%s depth fits the row" % id)
 	var z := DowntownDecor.FOUNTAIN_SQUARE.z
 	for id in CityKit.TOWERS:
 		for x: Transform3D in decor.instance_transforms(id):
