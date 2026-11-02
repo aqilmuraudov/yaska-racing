@@ -42,18 +42,22 @@ const WHEEL_SITE := Vector3(-40.0, 0.0, 22.0)
 ## east, the sea is +z): Flag Square + Crystal Hall at Bayil in the west, the
 ## TV tower on the western hill, Flame Towers and the Carpet Museum west of
 ## the centre, Government House in the centre-east, Port Baku and the
-## Crescent in the east, the Heydar Aliyev Center inland to the north-east.
+## the Crescent in the east, the Heydar Aliyev Center inland to the north-east.
+## 0.17.3 (owner: the landmarks stood too far from the road to be seen or
+## recognised): every one moved up to the road, ~5 m behind the run-off,
+## keeping the west-to-east order.
 const LANDMARK_SITES := {
 	# id: [x, z, footprint radius, yaw]
-	"flag_square": [-395.0, -15.0, 36.0, 0.0],
+	"flag_square": [-353.0, -27.0, 36.0, 0.0],
 	"heydar_aliyev": [175.0, -285.0, 66.0, 0.45],
-	"flame_towers": [-175.0, -435.0, 66.0, 0.69],
+	"flame_towers": [-164.0, -404.0, 66.0, 0.69],
 	# Crescent stands on the shore of the Boulevard, facing Port Baku Mall
 	# across the avenue (owner).
-	"crescent": [338.0, 38.0, 42.0, 0.0],
-	"government_house": [40.0, -104.0, 64.0, 0.0],
-	"carpet_museum": [-160.0, -84.0, 56.0, 0.55],
-	"port_baku": [338.0, -45.0, 38.0, 0.0],
+	"crescent": [266.0, 38.0, 42.0, 0.0],
+	"government_house": [41.0, -43.0, 64.0, 0.0],
+	# Lies along the Boulevard like the real rolled carpet.
+	"carpet_museum": [-226.0, -55.5, 56.0, 0.0],
+	"port_baku": [317.0, -53.0, 38.0, 0.0],
 }
 
 
@@ -66,7 +70,7 @@ func build(td: TrackData, env: RaceEnvironment) -> void:
 ## report real progress between them. Order matters; run all of them.
 func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
 	return [
-		func(): _begin(td),
+		func(): _begin(td); _reserve_seafront(),
 		_place_wall_props,
 		_place_promenade,
 		_place_boulevard_inland,
@@ -86,10 +90,37 @@ func _begin(td: TrackData) -> void:
 	data = td
 	builder = get_parent().get_node_or_null("Track")
 	rng.seed = 20251022
+
+
+## Seafront plots (before 0.17.3 every map reserved them, which left holes
+## in the Old City where the seafront landmarks would stand).
+func _reserve_seafront() -> void:
 	for id in LANDMARK_SITES.keys():
 		var site: Array = LANDMARK_SITES[id]
 		_reserved.append([Vector3(site[0], 0.0, site[1]), float(site[2])])
+		if id in ["government_house", "carpet_museum"]:
+			# Long buildings: the round plot does not reach their ends.
+			_reserve_footprint(Vector3(site[0], 0.0, site[1]), float(site[3]), 1.5 if id == "carpet_museum" else 1.0,
+				LandmarkKit.get_mesh(id).get_aabb())
+	for id in EXTRA_SITES.keys():
+		var es: Array = EXTRA_SITES[id]
+		_reserved.append([Vector3(es[0], 0.0, es[1]), float(es[3])])
 	_reserved.append([WHEEL_SITE, 34.0])
+
+
+## Reserves a row of circles covering a (turned, scaled) mesh footprint.
+func _reserve_footprint(c: Vector3, yaw: float, scale: float, bb: AABB) -> void:
+	var b := Basis(Vector3.UP, yaw)
+	var long_x := bb.size.x >= bb.size.z
+	var r := minf(bb.size.x, bb.size.z) * 0.5 * scale + 1.0
+	var length := maxf(bb.size.x, bb.size.z) * scale
+	var mid := (bb.position + bb.size * 0.5) * scale
+	var n := int(ceil(length / r))
+	for i in n + 1:
+		var t := -length * 0.5 + length * i / n
+		var local := Vector3(mid.x + (t if long_x else 0.0), 0.0, mid.z + (0.0 if long_x else t))
+		var w := c + b * local
+		_reserved.append([Vector3(w.x, 0.0, w.z), r])
 
 
 func _finish(env: RaceEnvironment) -> void:
@@ -119,6 +150,28 @@ func clear_of_track(p: Vector3, r: float, margin: float = 1.0) -> bool:
 		var c := path.closest(p)
 		var limit: float = path.half_width_at(c.s) + e.ow + 0.6 + margin + r
 		if c.distance < limit:
+			return false
+	return true
+
+
+## 0.17.3: a turned footprint (mesh AABB at p, yaw) clear of every driving
+## corridor by `margin` m; tighter than a round plot for long buildings.
+func footprint_clear_of_road(p: Vector3, yaw: float, bb: AABB, margin: float = 1.0) -> bool:
+	var b := Basis(Vector3.UP, yaw)
+	for i in 7:
+		for j in 7:
+			var q := p + b * Vector3(lerpf(bb.position.x, bb.end.x, i / 6.0), 0.0, lerpf(bb.position.z, bb.end.z, j / 6.0))
+			for e in _paths():
+				var path: TrackPath = e.path
+				var c := path.closest(Vector3(q.x, 0.0, q.z))
+				if c.distance < path.half_width_at(c.s) + e.ow + margin:
+					return false
+	return true
+
+
+func _free_of_reserved(p: Vector3) -> bool:
+	for z in _reserved:
+		if Vector2(p.x - z[0].x, p.z - z[0].z).length() < z[1]:
 			return false
 	return true
 
@@ -191,6 +244,7 @@ func _exit_tree() -> void:
 ## _instances is cleared after the MultiMeshes are built, so the props listed
 ## in KEEP_TRANSFORMS are copied into _kept first.
 const KEEP_TRANSFORMS := ["lamp"]
+const FULL_LOD_PROPS := ["ganjlik_mall", "mall_28", "port_baku", "park_bulvar"]
 var _kept := {} # prop_id -> Array[Transform3D]
 
 
@@ -269,7 +323,9 @@ func _register_occluders(mesh: Mesh, list: Array) -> void:
 func _flush_instances() -> void:
 	for prop in _instances.keys():
 		var mesh := PropKit.get_mesh(prop)
-		var lo := PropKit.get_mesh(prop + PropKit.LO_SUFFIX)
+		# 0.17.3: the malls keep their full model far away too (a few hundred
+		# triangles; Ganjlik Mall's far model read as a blank grey box).
+		var lo := mesh if prop in FULL_LOD_PROPS else PropKit.get_mesh(prop + PropKit.LO_SUFFIX)
 		for key in _instances[prop].keys():
 			var list: Array = _instances[prop][key]
 			_register_occluders(mesh, list)
@@ -355,6 +411,29 @@ func _landmark_prop(id: String, p: Vector3, yaw: float, node_name: String) -> Me
 	return near
 
 
+## 0.17.3: the Flame Towers beside the road (downtown, Old City) - the near
+## model up to 380 m like on the seafront, the light far model beyond.
+func _flame_towers_node(p: Vector3, yaw: float) -> Node3D:
+	var root := Node3D.new()
+	root.name = "FlameTowers"
+	root.transform = Transform3D(Basis(Vector3.UP, yaw), p)
+	add_child(root)
+	var near := MeshInstance3D.new()
+	near.name = "Near"
+	near.mesh = LandmarkKit.get_mesh("flame_towers")
+	near.visibility_range_end = 380.0
+	near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(near)
+	var far := MeshInstance3D.new()
+	far.name = "Far"
+	far.mesh = LandmarkKit.get_mesh("flame_towers_far")
+	far.visibility_range_begin = 380.0
+	far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(far)
+	landmarks["flame_towers"] = root
+	return root
+
+
 func _landmark(mesh: Mesh, xform: Transform3D, node_name: String) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.name = node_name
@@ -397,7 +476,8 @@ func _place_promenade() -> void:
 	var x := x0
 	while x < x1:
 		var p := Vector3(x, -0.05, sea - 0.4)
-		add_instance("baluster", Transform3D(Basis.IDENTITY, p))
+		if _free_of_reserved(p):
+			add_instance("baluster", Transform3D(Basis.IDENTITY, p))
 		x += 2.0
 	# Palms and lamps alternate along the promenade, benches between.
 	x = x0 + 4.0
@@ -709,9 +789,9 @@ func _place_baku_landmarks() -> void:
 			# promenade, so it stands on land like the real one.
 			var shore := MeshInstance3D.new()
 			shore.name = "CrescentShore"
-			shore.mesh = ShapeKit.cylinder(48.0, 3.0, 40)
+			shore.mesh = ShapeKit.cylinder(40.0, 3.0, 40)
 			shore.material_override = ShapeKit.mat(Color("d9d2c4"), 0.85)
-			shore.position = Vector3(0, -1.55, 0)
+			shore.position = Vector3(0, -1.55, 8.0)
 			root.add_child(shore)
 		if id == "flag_square":
 			# Wind blows towards the sea (+z): seen from the Boulevard the
@@ -983,9 +1063,12 @@ func _place_backdrop() -> void:
 ## 0.9.6 ambiance: TV Tower on the northern hills, Crystal Hall on the bay,
 ## oil platforms and ships on the Caspian horizon, flag poles along the
 ## promenade and Azerbaijani street signs beside the road.
+## 0.17.3: the TV tower stands beside the north-west corner (was on a far
+## hill, 330 m off the road), Crystal Hall right at the seawall.
 const EXTRA_SITES := {
-	"tv_tower": [-330.0, -600.0, 0.0],
-	"crystal_hall": [-320.0, 75.0, 0.0],
+	# id: [x, z, yaw, footprint radius]
+	"tv_tower": [-314.0, -230.0, 0.0, 12.0],
+	"crystal_hall": [-320.0, 69.0, 0.0, 44.0],
 }
 const STREET_NAMES := ["Neftçilər prospekti", "Dənizkənarı bulvar", "İçərişəhər", "Azadlıq meydanı", "Üzeyir Hacıbəyov küç."]
 

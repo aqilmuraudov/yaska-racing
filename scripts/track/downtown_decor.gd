@@ -23,13 +23,15 @@ const MALL_SIGN := {"mall_28": [Vector3(4.0, 15.9, 16.5), 0.02], "port_baku": [V
 ## 0.17.0 (owner: mini Baku) the historic centre along the sea side of
 ## Tower Avenue, west to east as in Baku: Philharmonic, City Hall, Ismailiyya;
 ## Fountain Square (paving + both fountains) north of them in the infield.
+## 0.17.3 (owner: too far from the road): the three fronts ~5 m behind the
+## run-off (were ~19 m), the square, the street and the museum 10 m closer.
 ## [prop id, x, z, yaw, reserved radius, node name]
 const CENTRE := [
-	["philharmonic", -200.0, 44.0, PI, 28.5, "Philharmonic"],
-	["city_hall", -130.0, 44.0, PI, 26.0, "CityHall"],
-	["ismailiyya", -62.0, 42.0, PI, 24.0, "Ismailiyya"],
+	["philharmonic", -200.0, 29.5, PI, 28.5, "Philharmonic"],
+	["city_hall", -130.0, 31.0, PI, 26.0, "CityHall"],
+	["ismailiyya", -62.0, 26.0, PI, 24.0, "Ismailiyya"],
 ]
-const FOUNTAIN_SQUARE := Vector3(-30.0, 0.0, -53.0)
+const FOUNTAIN_SQUARE := Vector3(-30.0, 0.0, -43.0)
 ## Nizami street: the pedestrian street running west from Fountain Square,
 ## lined both sides with its 19th-century sandstone houses, modelled from
 ## photos (tools/blender/nizami_props.py): the domed round-corner house,
@@ -39,9 +41,10 @@ const FOUNTAIN_SQUARE := Vector3(-30.0, 0.0, -53.0)
 const NIZAMI_WEST := -205.0 ## x where the street ends
 const NIZAMI_W := 14.0 ## paved width
 const NIZAMI_HOUSES := {"nz_corner": 18.0, "nz_balcony": 16.0, "nz_bay": 14.0, "nz_arcade": 20.0} ## width; depth 12
-const MUSEUM_SITE := Vector3(-48.0, 0.0, -81.5) ## Nizami Museum of Literature, faces the square
+const MUSEUM_SITE := Vector3(-48.0, 0.0, -71.5) ## Nizami Museum of Literature, faces the square
 const MUSEUM_R := 24.0
-const FLAME_SITE := Vector3(-560.0, 0.0, 10.0) ## west, near the bay (sea = +z)
+const FLAME_SITE := Vector3(-352.0, 0.0, -40.0) ## west of the course, beside the west bend (0.17.3; was 320 m off)
+const FLAME_R := 76.0
 const MALL_R := 38.0
 const TOWER_R := {"sky_a": 16.0, "sky_b": 17.0, "sky_c": 13.5, "sky_d": 19.0}
 const BRIDGE_CLEAR := 8.0 ## m of headroom under the mall bridge
@@ -198,13 +201,13 @@ func _big_label(text: String, px: float) -> Label3D:
 func _place_centre() -> void:
 	for c: Array in CENTRE:
 		var p := Vector3(float(c[1]), 0.0, float(c[2]))
-		if not clear_of_track(p, float(c[4]), 0.5):
+		if not footprint_clear_of_road(p, float(c[3]), PropKit.get_mesh(c[0]).get_aabb(), 3.0):
 			push_warning("DowntownDecor: %s overlaps the course" % c[5])
 			continue
 		_landmark_prop(c[0], Vector3(p.x, -0.12, p.z), float(c[3]), c[5])
 		_reserved.append([p, float(c[4])])
 	var fs := FOUNTAIN_SQUARE
-	if clear_of_track(fs, 34.0, 0.5):
+	if footprint_clear_of_road(fs, 0.0, PropKit.get_mesh("fountain_plaza").get_aabb(), 3.0):
 		_landmark_prop("fountain_plaza", Vector3(fs.x, -0.12, fs.z), 0.0, "FountainSquare")
 		_landmark_prop("fountain_tiered", Vector3(fs.x - 12.0, -0.02, fs.z), 0.0, "FountainTiered")
 		_landmark_prop("fountain_spheres", Vector3(fs.x + 13.0, -0.02, fs.z + 2.0), 0.0, "FountainSpheres")
@@ -230,6 +233,8 @@ func _place_centre() -> void:
 	else:
 		push_warning("DowntownDecor: Nizami Museum overlaps the course")
 	_place_nizami()
+	# The Flame Towers' plot, before the towers are placed.
+	_reserved.append([FLAME_SITE, FLAME_R])
 
 
 func _place_nizami() -> void:
@@ -496,11 +501,8 @@ func _place_sidewalks() -> void:
 
 func _place_city_landmarks() -> void:
 	_build_gantry()
-	# The Flame Towers on the hill in the south-west, as seen from the centre.
-	var ft := _landmark(LandmarkKit.get_mesh("flame_towers_far"),
-		Transform3D(Basis(Vector3.UP, 1.2), Vector3(FLAME_SITE.x, (builder.terrain_height(FLAME_SITE.x, FLAME_SITE.z) if builder else 0.0) - 1.0, FLAME_SITE.z)), "FlameTowers")
-	ft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	landmarks["flame_towers"] = ft
+	# The Flame Towers west of the course, right beside the west bend.
+	_flame_towers_node(Vector3(FLAME_SITE.x, (builder.terrain_height(FLAME_SITE.x, FLAME_SITE.z) if builder else 0.0) - 1.0, FLAME_SITE.z), 1.2)
 
 
 func _place_city_promenade() -> void:

@@ -1,6 +1,16 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-02 · Build: 0.17.2 · Engine: Godot 4.4.1-stable
+Date: 2026-11-02 · Build: 0.17.3 · Engine: Godot 4.4.1-stable
+
+## Update 0.17.3 (versionCode 44) — owner screenshots: overlapping buttons, landmarks beside the road, softer windows
+- **Overlapping touch buttons** (owner screenshots): with manual gas + Easy Drift, NITRO sat on BRAKE - it now takes the TURBO slot of the current layout (left of GAS), without Easy Drift it sits left of ITEM. The camera switch overlapped the "best lap" line and the cup pill - it is now placed under the HUD's whole top-right column (lap / timer / best lap / delta / cup pill), re-synced whenever that column changes size. Round 32 checks every button pair in every layout (auto / manual gas, Easy Drift on / off, default / swapped) on 1600×720, 2400×1080 (Mi 12 Lite), 1280×720, 1024×768.
+- **Landmarks beside the road** (owner: they stood far away, nobody saw or recognised them). Each one moved up to ~5 m behind the run-off (measured on its turned footprint):
+  - Seafront: Flag Square, Carpet Museum (now lying along the Boulevard), Government House, Port Baku, Crescent, Flame Towers, the TV tower (was 330 m away on a hill, now at the north-west corner), Crystal Hall 6 m nearer the seawall. West-to-east order kept.
+  - Göydələnlər: Philharmonic, City Hall, Ismailiyya ~5 m from the avenue (were ~19 m); Fountain Square, Nizami street and the museum 10 m nearer; Flame Towers right beside the west bend (were 320 m away, far model only) - near model now.
+  - İçərişəhər: Maiden Tower beside the Boulevard street (was 55 m inside the block), Flame Towers just west of the course (were 380 m away).
+  - Fixes found on the way: seafront plots were reserved on every map (holes in the Old City); now seafront-only, the Old City keeps its 0.17.2 clearings so the house count stays (296 vs 299). Ganjlik Mall's far model read as a blank grey box in front of the Flame Towers - malls now use their full model at every distance (228-1700 tris each).
+- **Lit windows** at sunset / night (owner: ugly): fewer windows lit, only a small pane in the middle of each window cell glows, lower energy, sunset glow 0.25 (was 0.45). Both the baked Blender buildings and the downtown towers.
+- Strict suite: 251 methods, 7127 checks; the 2 failures (round 14: TV tower / Crystal Hall "away from the road" used the reservation check, which now also contains their own plots) were fixed to a footprint-vs-road check and round 14 re-run passes. Build: `_builds/YaskaRacing-0.17.3-v44-debug.apk`, 299.3 MB, signed with the usual key (SHA-256 726cd353…6e25d9). Screenshots / top-down maps: `docs/screenshots/0.17.3/` (taken before the mall far-model fix). Not tested on a phone; no phone FPS.
 
 ## Update 0.17.2 (versionCode 43) — Nizami street's own houses and the Nizami Museum of Literature
 - Owner: Nizami street must have its real buildings, not the generic sandstone blocks. Modelled from Wikimedia Commons photos in `tools/blender/nizami_props.py` → `assets/models/nizami/` (one 2048² set, 9,268 tris near for the five models):

@@ -30,7 +30,7 @@ static func params(id: String) -> Dictionary:
 				"sun_color": Color(1.0, 0.56, 0.3), "sun_energy": 1.55, "sun_pitch": -9.0, "sun_yaw": -150.0,
 				"ambient_source": Environment.AMBIENT_SOURCE_SKY, "ambient_energy": 0.42, "ambient_color": Color(1.0, 0.72, 0.68),
 				"exposure": Palette.ENV_EXPOSURE * 0.92, "fog": Color(0.92, 0.6, 0.58),
-				"glow": 0.6, "led": 1.0, "lamps": 0.55, "windows": 0.45, "hac": 0.55, "floodlight": 0.6,
+				"glow": 0.6, "led": 1.0, "lamps": 0.55, "windows": 0.25, "hac": 0.55, "floodlight": 0.6,
 				"headlights": false,
 			}
 		"night":
@@ -76,7 +76,7 @@ static func apply_materials(id: String) -> void:
 		var w := float(p.windows) * (1.0 if id_w == "glass" else 0.5)
 		g.emission_enabled = w > 0.0
 		g.emission = Color(1.0, 0.78, 0.42)
-		g.emission_energy_multiplier = w * 1.4
+		g.emission_energy_multiplier = w * 0.9 # 0.17.3: was 1.4
 	CityKit.set_window_glow(float(p.windows)) # 0.11.0 downtown towers
 	PropKit.set_window_glow(float(p.windows)) # 0.14.1 baked Old City houses
 	PropKit.set_lamp_glow(lerpf(0.8, 5.0, float(p.lamps))) # 0.14.2 baked boulevard lamps

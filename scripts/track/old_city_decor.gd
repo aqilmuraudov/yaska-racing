@@ -9,8 +9,17 @@ extends TrackDecor
 ## a few market umbrellas and kiosks, the Flame Towers on the far hill.
 ## Exactly 13 build steps (the loading screen weights them).
 
-const MAIDEN_SITE := Vector3(-30.0, 0.0, -28.0)
-const FLAME_SITE := Vector3(-470.0, 0.0, -430.0)
+## 0.17.3 (owner: landmarks too far from the road): the Maiden Tower beside
+## the Boulevard street, as in Baku (was 55 m inside the block); the Flame
+## Towers just west of the course (were 380 m away on the far hill).
+const MAIDEN_SITE := Vector3(-30.0, 0.0, 27.5)
+const FLAME_SITE := Vector3(-257.5, 0.0, -20.0)
+const FLAME_R := 76.0
+## Open ground kept from the 0.17.2 layout: until then every map reserved the
+## seafront landmark plots, which left these clearings among the houses.
+## Keeping them keeps the house count (the heaviest part of this map on a phone).
+const OPEN_PLOTS := [[-395.0, -15.0, 36.0], [175.0, -285.0, 66.0], [-175.0, -435.0, 66.0], [338.0, 38.0, 42.0],
+	[40.0, -104.0, 64.0], [-160.0, -84.0, 56.0], [338.0, -45.0, 38.0], [-40.0, 22.0, 34.0]]
 const SEA_SIDE := 1.0 ## +z is the sea
 ## 0.17.0 (owner: mini Baku) the Old City's own landmarks in their real
 ## relative places (north = -z, the sea = +z): the Shirvanshahs' Palace on
@@ -53,6 +62,9 @@ func _tower_position() -> Vector3:
 func _reserve_oc_landmarks() -> void:
 	for l: Array in OC_LANDMARKS:
 		_reserved.append([Vector3(float(l[1]), 0.0, float(l[2])), float(l[4])])
+	_reserved.append([FLAME_SITE, FLAME_R])
+	for o: Array in OPEN_PLOTS:
+		_reserved.append([Vector3(o[0], 0.0, o[1]), o[2]])
 
 
 func _place_oc_landmarks() -> void:
@@ -67,10 +79,7 @@ func _place_oc_landmarks() -> void:
 	landmarks["maiden_tower"] = tower
 	_build_gate()
 	_build_gantry()
-	var ft := _landmark(LandmarkKit.get_mesh("flame_towers_far"),
-		Transform3D(Basis(Vector3.UP, 0.7), Vector3(FLAME_SITE.x, ground_y(FLAME_SITE) - 1.0, FLAME_SITE.z)), "FlameTowers")
-	ft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	landmarks["flame_towers"] = ft
+	_flame_towers_node(Vector3(FLAME_SITE.x, ground_y(FLAME_SITE) - 1.0, FLAME_SITE.z), 0.7)
 
 
 ## The Boulevard start straight: palms and lamps on the sea side, a

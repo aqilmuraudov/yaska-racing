@@ -346,3 +346,11 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 | Near → far switch | 260 m (20 m fade, `TrackDecor.LANDMARK_NEAR`) |
 | Textures | one 2048² set each (`assets/models/icheri`, `assets/models/center`), VRAM compressed + mipmaps |
 | Nizami set | 9,268 tris near (museum 2,984, corner 2,360, balcony 2,052, bay 956, arcade 916), one 2048² set |
+
+## Roadside landmarks, touch layout, softer windows (0.17.3)
+- Landmarks stand ~5 m behind the run-off (oriented footprint, measured): seafront `LANDMARK_SITES` flag (-353, -27), Flame Towers (-164, -404), Crescent (266, 38) (shore disc r 40, offset +8 z), Government House (41, -43), Carpet Museum (-226, -55.5, yaw 0, along the Boulevard), Port Baku (317, -53); `EXTRA_SITES` TV tower (-314, -230, r 12), Crystal Hall (-320, 69, r 44). Long buildings reserve a row of circles (`_reserve_footprint`). Seafront plots are reserved only on the seafront (`_reserve_seafront`).
+- Downtown: Philharmonic z 29.5, City Hall 31, Ismailiyya 26 (placement check `footprint_clear_of_road`, margin 3 m); Fountain Square z -43, Nizami Museum z -71.5; Flame Towers (-352, -40), reserved r 76, near model to 380 m.
+- Old City: Maiden Tower (-30, 27.5) beside the Boulevard street; Flame Towers (-257.5, -20), r 76; `OPEN_PLOTS` keep the 0.17.2 clearings (house count 296 vs 299).
+- Malls (`FULL_LOD_PROPS`) use the full model at every distance (228–1700 tris).
+- Touch: nitro takes the TURBO slot when Easy Drift hides TURBO (with manual gas: (-460, -250)), else (-300, -390) left of ITEM. Camera switch centre y = max(150 / 290 × s, top-right column bottom + 46 × s), synced on the column's resize.
+- Windows: sunset `windows` 0.25 (was 0.45). Baked props: lit_share 0.38 (was 0.55), only a pane (x 0.24–0.76, y 0.30–0.82 of a 1.8 × 3.6 m cell), energy × 0.85 (was 1.4). Skyscrapers: hash > 0.7 (was 0.6), pane x 0.22–0.78 / y 0.12–0.88 of the glass part, energy × 0.8 (was 1.2). House glass material energy `windows` × 0.9 (was 1.4).

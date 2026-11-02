@@ -62,7 +62,13 @@ void fragment() {
 	EMISSION = glass * 0.18 * (1.0 - is_band) * (0.4 + fres);
 	if (window_glow > 0.0) {
 		vec2 cell = vec2(floor(along), floor(fy)) + floor(lpos.xz * 0.013) * 17.0;
-		float lit = step(0.6, hash2(cell)) * (1.0 - is_band) * (1.0 - mull);
-		EMISSION += glow_color * lit * window_glow * 1.2;
+		// 0.17.3: fewer, smaller, softer lit panes (whole cells read as a
+		// bright checkerboard at sunset / night).
+		float px = fract(along);
+		float py = (fl - band) / (1.0 - band);
+		float pane = smoothstep(0.22, 0.3, px) * (1.0 - smoothstep(0.7, 0.78, px))
+			* smoothstep(0.12, 0.22, py) * (1.0 - smoothstep(0.78, 0.88, py));
+		float lit = step(0.7, hash2(cell)) * (1.0 - is_band) * (1.0 - mull) * mix(pane, 0.35, 1.0 - fade);
+		EMISSION += glow_color * lit * window_glow * 0.8;
 	}
 }

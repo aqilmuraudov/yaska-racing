@@ -49,10 +49,12 @@ func test_baku_extras_present() -> void:
 			flags += 1
 	check(signs >= 3, "street signs placed (%d)" % signs)
 	check(flags >= 5, "flag poles on the promenade (%d)" % flags)
-	# Landmarks stay off the playable corridor (full check in round 4).
+	# Landmarks stay off the playable corridor (full check in round 4). 0.17.3:
+	# their own plots are reserved now, so test the footprint against the road.
 	for id in ["tv_tower", "crystal_hall"]:
-		var p: Vector3 = d.landmarks[id].global_position
-		check(d.clear_of_track(p, 10.0, 3.6), "%s away from the road" % id)
+		var n: Node3D = d.landmarks[id]
+		var mesh: Mesh = (n.get_node("Near") as MeshInstance3D).mesh
+		check(d.footprint_clear_of_road(n.global_position, n.rotation.y, mesh.get_aabb(), 3.6), "%s away from the road" % id)
 
 
 func test_soft_shadows_per_preset() -> void:

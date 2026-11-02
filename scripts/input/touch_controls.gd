@@ -56,6 +56,9 @@ var kids := false
 ## Rekord: the best-lap line and the ghost delta pill fill the top-right
 ## column, so the camera switch moves below them (owner: icons overlapped).
 var camera_low := false
+## 0.17.3: bottom (y, this control's space) of the HUD's top-right column
+## (lap / timer / best lap / delta / cup pill); the camera switch sits under it.
+var camera_min_y := 0.0
 var nitro_level := 0
 var nitro_charge := 0.0
 
@@ -138,16 +141,18 @@ func _layout() -> void:
 		"boost": [right_base + Vector2(-296, -228) * s, 58.0],
 		"gas": [right_base + Vector2(-300, -96) * s, 74.0],
 		"look": [Vector2(-1000, -1000), 30.0],
-		# Nitro add-on: where TURBO sits when Easy Drift hides it, else above ITEM.
-		"nitro": [right_base + (Vector2(-300, -236) if easy else Vector2(-124, -474)) * s, 60.0],
 		"recover": [Vector2(sz.x * 0.5, 210.0 * s), 50.0],
-		# Camera view switch: small, top-right under the pause / timer row.
-		"camera": [Vector2(sz.x - m - 40.0 * s - ox, (290.0 if camera_low else 150.0) * s), 36.0],
+		# Camera view switch: small, top-right, under the HUD's top-right column.
+		"camera": [Vector2(sz.x - m - 40.0 * s - ox,
+			maxf((290.0 if camera_low else 150.0) * s, camera_min_y + 46.0 * s)), 36.0],
 	}
 	if not auto_gas:
 		defs["gas"] = [right_base + Vector2(-292, -92) * s, 74.0]
 		defs["brake"] = [right_base + Vector2(-310, -262) * s, 54.0]
 		defs["boost"] = [right_base + Vector2(-460, -250) * s, 58.0]
+	# Nitro add-on: the TURBO slot when Easy Drift hides TURBO (0.17.3: with
+	# manual gas that slot moves, nitro used to cover BRAKE), else left of ITEM.
+	defs["nitro"] = [defs["boost"][0] if easy else right_base + Vector2(-300, -390) * s, 60.0]
 	for b in buttons:
 		var d: Array = defs[b.id]
 		var c: Vector2 = d[0]
@@ -179,6 +184,12 @@ func _layout() -> void:
 		l.center = r.center
 		r.center = tmp
 	queue_redraw()
+
+
+func set_camera_min_y(y: float) -> void:
+	if absf(y - camera_min_y) > 0.5:
+		camera_min_y = y
+		_layout()
 
 
 func _button_at(p: Vector2) -> TouchButton:

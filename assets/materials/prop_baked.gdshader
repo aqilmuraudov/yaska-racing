@@ -17,7 +17,7 @@ uniform vec3 tex_mean = vec3(0.768, 0.617, 0.371); // linear mean of the limesto
 uniform float detail_fade = 60.0;
 uniform float window_glow = 0.0;
 uniform float window_cells = 1.0; // 1 = windows (random cells lit), 0 = lamps (all lit)
-uniform float lit_share = 0.55;
+uniform float lit_share = 0.38; // 0.17.3: was 0.55 (whole facades lit up)
 uniform float glass_grid = 1.0;
 uniform vec3 frame_color : source_color = vec3(0.85, 0.88, 0.92);
 uniform vec3 glow_color : source_color = vec3(1.0, 0.78, 0.42);
@@ -68,6 +68,11 @@ void fragment() {
 	// variation - like the old skyscraper shader. Lamps (window_cells = 0) glow whole.
 	vec3 cell = floor(vec3(wpos.x / 1.8, wpos.y / 3.6, wpos.z / 1.8));
 	float h = fract(sin(dot(cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-	float lit = mix(1.0, step(h, lit_share) * (0.75 + 0.5 * fract(h * 7.31)) * (1.0 - line), window_cells);
-	EMISSION = glow_color * orm.a * window_glow * 1.4 * lit;
+	// 0.17.3 (owner: lit windows looked ugly at sunset / night): only a small
+	// pane in the middle of each cell glows, softer than before.
+	vec2 pa = fwidth(gf) * 1.5;
+	float pane = smoothstep(0.24 - pa.x, 0.24 + pa.x, gf.x) * (1.0 - smoothstep(0.76 - pa.x, 0.76 + pa.x, gf.x))
+		* smoothstep(0.3 - pa.y, 0.3 + pa.y, gf.y) * (1.0 - smoothstep(0.82 - pa.y, 0.82 + pa.y, gf.y));
+	float lit = mix(1.0, step(h, lit_share) * (0.75 + 0.5 * fract(h * 7.31)) * (1.0 - line) * pane, window_cells);
+	EMISSION = glow_color * orm.a * window_glow * mix(1.4, 0.85, window_cells) * lit;
 }

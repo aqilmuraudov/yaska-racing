@@ -53,6 +53,7 @@ var trap_warning: Label
 var _last_place := 0
 var _place_flash := 0.0
 var delta_pill: PanelContainer
+var _tr_box: VBoxContainer
 var delta_label: Label
 var series_pill: PanelContainer
 var _delta_timer := 0.0
@@ -183,6 +184,7 @@ func setup(p_race: RaceManager) -> void:
 
 	# Upper right: lap pill, compact timer pill and the pause button
 	var tr_box := VBoxContainer.new()
+	_tr_box = tr_box
 	tr_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	tr_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	tr_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -350,6 +352,9 @@ func setup(p_race: RaceManager) -> void:
 	touch.camera_low = String(race.config.get("mode", "")) == "time_trial"
 	touch.setup(race.player.player_input)
 	touch.visible = _uses_touch
+	# The camera switch stays under the top-right column whatever it shows.
+	tr_box.resized.connect(_sync_camera_slot)
+	tr_box.item_rect_changed.connect(_sync_camera_slot)
 	pause_menu = PauseMenu.new()
 	pause_menu.name = "PauseMenu"
 	root.add_child(pause_menu)
@@ -883,6 +888,11 @@ func _process(delta: float) -> void:
 		(speed_blur.material as ShaderMaterial).set_shader_parameter("strength", _blur)
 	var shield_on := p.kart.has_shield()
 	item_panel.modulate = Color(0.75, 0.95, 1.0) if shield_on else Color.WHITE
+
+
+func _sync_camera_slot() -> void:
+	if touch and is_instance_valid(_tr_box):
+		touch.set_camera_min_y(_tr_box.get_global_rect().end.y - touch.get_global_rect().position.y)
 
 
 func _update_delta() -> void:
