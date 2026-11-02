@@ -8,7 +8,7 @@ Date: 2026-11-02 · Build: 0.17.2 · Engine: Godot 4.4.1-stable
   - **Street houses** (both rows, facades continuous): the round-corner house (stacked curved iron balconies, ribbed dome with a lantern; it opens the south row at the square and closes the north row in the west), the four-storey house with a wrought-iron balcony in every bay and an attic balustrade, the three-storey house with the two-storey bay window under a pediment, the two-storey Taghiyev-passage-style arcade (tall round-arched windows between pilasters, square shop windows, raised attic). Every house has a window grid on its back.
   - **Paving** as on the photos: dark grey stone with white fish-scale arcs (`assets/materials/nizami_paving.gdshader`, world-space, no new texture).
 - The generic Neftçilər blocks are no longer used on Nizami street.
-- Strict suite: round 31 passes (145 checks); the full run before the last test fix: 245 methods, 6185 checks, 4 failures, all in the round 31 count method (fixed). APK for 0.17.2 not built yet.
+- Strict suite: 245 methods, 6185 checks, 0 failures. Build: `_builds/YaskaRacing-0.17.2-v43-debug.apk`, **299.3 MB** (0.17.1: 282.2 MB; one more 2048² set), signed with the usual key (SHA-256 726cd353…6e25d9). Screenshots `docs/screenshots/0.17.0/nizami_houses.jpg`, `fountain_square_museum.jpg`, `models_nizami.jpg`. Not tested on a phone.
 
 ## Update 0.17.1 (versionCode 42) — Nizami street, open view onto Fountain Square
 - Owner: the two open points of 0.17.0 should not stay open. Nizami street is now built (see the 0.17.0 notes below) and the towers no longer stand between the avenue and Fountain Square.

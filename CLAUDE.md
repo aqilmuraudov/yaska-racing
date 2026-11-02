@@ -23,7 +23,7 @@ Həmişə Azərbaycan dilində cavab ver.
 
 ## Testlər və build
 - Strict testlər: `GODOT="<godot console exe>" python tools/run_tests.py` — skript xətası olan testi də uğursuz sayır.
-  Əvvəlki tam qaçış: 245 metod, 6150 yoxlama, 0 uğursuz (0.17.1).
+  Əvvəlki tam qaçış: 245 metod, 6185 yoxlama, 0 uğursuz (0.17.2).
 - Debug runner bayraqları `docs/BUILD.md`-də (`--race --autopilot --track=old_city --tod=night --capture=DIR ...`).
 - Android export: `--export-debug "Android" <apk>`. JDK 17 PATH-da olmalıdır, yoxsa APK imzasız çıxır.
 - İmza açarı: `_setup/yaska-debug.keystore` (alias `androiddebugkey`, şifrə `android`).
