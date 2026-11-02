@@ -23,7 +23,7 @@ Həmişə Azərbaycan dilində cavab ver.
 
 ## Testlər və build
 - Strict testlər: `GODOT="<godot console exe>" python tools/run_tests.py` — skript xətası olan testi də uğursuz sayır.
-  Əvvəlki tam qaçış: 245 metod, 6146 yoxlama, 0 uğursuz (0.17.0).
+  Əvvəlki tam qaçış: 245 metod, 6150 yoxlama, 0 uğursuz (0.17.1).
 - Debug runner bayraqları `docs/BUILD.md`-də (`--race --autopilot --track=old_city --tod=night --capture=DIR ...`).
 - Android export: `--export-debug "Android" <apk>`. JDK 17 PATH-da olmalıdır, yoxsa APK imzasız çıxır.
 - İmza açarı: `_setup/yaska-debug.keystore` (alias `androiddebugkey`, şifrə `android`).
@@ -34,11 +34,11 @@ Həmişə Azərbaycan dilində cavab ver.
 - `_builds/` və `_setup/` git-ə düşmür.
 - Ekran görüntüsü üçün GPU-lu Godot buraxılışlarında `--position -10000,-10000` (pəncərə ekrandan kənar); testlər həmişə `--headless`.
 
-## Vəziyyət (0.17.0, versionCode 41)
+## Vəziyyət (0.17.1, versionCode 42)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 3 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,
-7 maşın + sürücünün hamısı, 3 şəhərin binaları və abidələri ("mini Bakı": Şirvanşahlar sarayı, Cümə, Sınıqqala, karvansara, Filarmoniya, Bələdiyyə, İsmailiyyə, Fəvvarələr meydanı daxil) Blender modelidir (`tools/blender/`, ümumi `kart_common.py`).
+7 maşın + sürücünün hamısı, 3 şəhərin binaları və abidələri ("mini Bakı": Şirvanşahlar sarayı, Cümə, Sınıqqala, karvansara, Filarmoniya, Bələdiyyə, İsmailiyyə, Fəvvarələr meydanı, Nizami küçəsi daxil) Blender modelidir (`tools/blender/`, ümumi `kart_common.py`).
 Əvvəlki iş GPU-suz bulud mühitində aparılıb — **heç bir rəqəm real telefonda ölçülməyib.**
 
 ## İndiki plan (Aqil ilə razılaşdırılıb)

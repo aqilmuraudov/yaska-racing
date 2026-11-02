@@ -2,7 +2,7 @@ extends TestCase
 ## Round 31 (0.17.0, owner: "mini Baku" on every map): the Old City's own
 ## landmarks (Shirvanshahs' Palace, Juma Mosque, Sınıqqala, caravanserai) and
 ## the historic centre in Göydələnlər (Philharmonic, City Hall, Ismailiyya,
-## Fountain Square, Flame Towers on the western hill) as Blender models in
+## Fountain Square, Nizami street, Flame Towers on the western hill) as Blender models in
 ## their real relative places, clear of the road and of the houses / towers.
 
 const ICHERI := ["shirvanshah", "juma_mosque", "siniqqala", "caravanserai"]
@@ -150,3 +150,11 @@ func test_downtown_centre_placed() -> void:
 		xs.append(decor.landmarks[id].position.x)
 	check(xs[0] < xs[1] and xs[1] < xs[2], "west-to-east order")
 	check(decor.towers_placed >= 50, "still a city of towers (%d)" % decor.towers_placed)
+	# Nizami street west of the square: sandstone rows, no glass towers on it.
+	check(decor.landmarks.has("nizami_street"), "Nizami street built")
+	check(decor.nizami_buildings >= 12, "sandstone buildings line it (%d)" % decor.nizami_buildings)
+	var z := DowntownDecor.FOUNTAIN_SQUARE.z
+	for id in CityKit.TOWERS:
+		for x: Transform3D in decor.instance_transforms(id):
+			if x.origin.x < DowntownDecor.FOUNTAIN_SQUARE.x - 28.0 and x.origin.x > DowntownDecor.NIZAMI_WEST:
+				check(absf(x.origin.z - z) > DowntownDecor.NIZAMI_W * 0.5 + 12.0, "%s off Nizami street (%.1f)" % [id, x.origin.z])

@@ -1,8 +1,12 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-02 · Build: 0.17.0 · Engine: Godot 4.4.1-stable
+Date: 2026-11-02 · Build: 0.17.1 · Engine: Godot 4.4.1-stable
 
-## Update 0.17.0 (versionCode 41) — mini Baku on every map: Old City and city-centre landmarks
+## Update 0.17.1 (versionCode 42) — Nizami street, open view onto Fountain Square
+- Owner: the two open points of 0.17.0 should not stay open. Nizami street is now built (see the 0.17.0 notes below) and the towers no longer stand between the avenue and Fountain Square.
+- Strict suite: 245 methods, 6150 checks, 0 failures. Build: `_builds/YaskaRacing-0.17.1-v42-debug.apk`, 282.2 MB, signed with the usual key (SHA-256 726cd353…6e25d9). Not tested on a phone.
+
+## Update 0.17.0 (versionCode 41) — mini Baku on every map: Old City and city-centre landmarks (Nizami street added in 0.17.1)
 - **Owner's goal:** every map a mini Baku. Dəniz sahili was done in 0.15.x; now the other two cities get their own famous places, modelled in Blender from Wikimedia Commons photos (study only, not shipped), in their real relative places (north = -z, sea = +z).
 - **İçərişəhər** (`tools/blender/icheri_props.py` → `assets/models/icheri/`, one 2048² set, 7,092 tris near / 2,755 far):
   - Shirvanshahs' Palace on its terrace, north-west across the north street: palace block, Shah mosque with the big star-net stone dome and the slender minaret (stalactite corbel, iron railing, upper drum, ribbed cap), octagonal Divankhana behind the carved portal, mausoleum dome, bath domes, stair.
@@ -13,11 +17,12 @@ Date: 2026-11-02 · Build: 0.17.0 · Engine: Godot 4.4.1-stable
 - **Göydələnlər** (`tools/blender/center_props.py` → `assets/models/center/`, one 2048² set, 9,824 tris near / 4,143 far):
   - Along the sea side of Tower Avenue, west to east as in Baku: Philharmonic (ochre with white trim, two towers with open belvederes and gold finials, ribbed dome, round corner rotunda), City Hall (sandstone with red panels, slate mansards, clock tower over a tall arch, blue cupola, flag pole), Ismailiyya Palace (cream Venetian Gothic: stepped gables with pinnacles, lancet and rose windows, crest of pinnacles).
   - Fountain Square in the infield: grey paving with white wave bands, the stepped round fountain, the three steel spheres, lamps, benches, plane trees.
+  - Nizami street running west from the square (140 m, 14 m cobbled, following the gentle rise towards the flyover): both sides lined with the Blender sandstone buildings (rustication, arched shop fronts, iron balconies), lamps, benches, plane trees; glass towers kept off it. The rows face the race roads (avenue / flyover), so the drivers see facades, not back walls. The open square is now seen from the avenue between the trees.
   - The Flame Towers (far model) on the western hill.
 - New landmarks are separate nodes: near model to 260 m, far model beyond (`TrackDecor._landmark_prop`); they are in `landmarks` (`--landmark-views` shows them side-on).
 - Screenshots: `docs/screenshots/0.17.0/` (models, day and night race views, overview old vs new). Not compared against photos by the owner yet.
-- Strict suite: 245 methods, 6146 checks, 0 failures (round 31: models, plot sizes, heights, placement clear of road and houses / towers, west-to-east order).
-- Known / not verified: buildings are scripted, not sculpted (simpler than the photos: no carved inscriptions, the Divankhana portal and Ismailiyya tracery are simplified); Nizami street is not modelled; no phone FPS. Build: `_builds/YaskaRacing-0.17.0-v41-debug.apk`, **282.2 MB** (0.16.0: 247.9 MB; two more 2048² sets in both VRAM formats), signed with the usual key (SHA-256 726cd353…6e25d9). Over the 200 MB Play base limit: AAB + Play Asset Delivery or smaller textures are needed before release.
+- Strict suite: 245 methods, 6146 checks, 0 failures in 0.17.0 (round 31: models, plot sizes, heights, placement clear of road and houses / towers, west-to-east order).
+- Known / not verified: buildings are scripted, not sculpted (simpler than the photos: no carved inscriptions, the Divankhana portal and Ismailiyya tracery are simplified); Nizami street reuses the generic sandstone buildings (not the real facades one by one); no phone FPS. Build: `_builds/YaskaRacing-0.17.0-v41-debug.apk`, **282.2 MB** (0.16.0: 247.9 MB; two more 2048² sets in both VRAM formats), signed with the usual key (SHA-256 726cd353…6e25d9). Over the 200 MB Play base limit: AAB + Play Asset Delivery or smaller textures are needed before release.
 
 ## Update 0.16.0 (versionCode 40) — Carpet Museum from photos, store drafts
 - **Carpet Museum:** a fully rolled carpet lying on the ground, as built: bronze-gold loaf roll with ornament, glazed oval end with the spiral of the roll and a gold rim, dark glass foot band (was a flat red carpet curling up at one end).

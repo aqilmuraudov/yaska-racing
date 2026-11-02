@@ -340,6 +340,7 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 |---|---|
 | Old City sites (x, z, yaw, plot r) | Shirvanshahs' Palace (-85, -143, 0, 31), Juma Mosque (-118.5, -28, -90°, 17.5), Sınıqqala (-100, -91, 180°, 11), caravanserai (-45, -81, 180°, 20); Maiden Tower stays at (-30, -28) |
 | Downtown sites (x, z, yaw, plot r) | Philharmonic (-200, 44, 180°, 28.5), City Hall (-130, 44, 180°, 26), Ismailiyya (-62, 42, 180°, 24), Fountain Square (-30, -53, plaza 56 x 40, plot 34), Flame Towers far model (-560, 10) |
+| Nizami street | from the square's west edge (x -58) to x -205 at z -53, 14 m wide cobbles on the terrain; sandstone rows 6.5 m off each kerb (modern_a/b/c 16/12/20 m wide, 1.5 m gaps), towers kept 20 m off its axis |
 | Heights (game-fitted) | Juma minaret 24 m, Sınıqqala 26 m, Shah mosque minaret 24 m, caravanserai 9.4 m, Philharmonic towers 28.7 m, City Hall flag top 36.5 m, Ismailiyya gables 26 m |
 | Triangles near / far | Old City set 7,092 / 2,755 (four buildings); centre set 9,824 / 4,143 (three buildings, two fountains, plaza) |
 | Near → far switch | 260 m (20 m fade, `TrackDecor.LANDMARK_NEAR`) |

@@ -30,6 +30,13 @@ const CENTRE := [
 	["ismailiyya", -62.0, 42.0, PI, 24.0, "Ismailiyya"],
 ]
 const FOUNTAIN_SQUARE := Vector3(-30.0, 0.0, -53.0)
+## Nizami street: the pedestrian street running west from Fountain Square,
+## lined both sides with 19th-century sandstone buildings (the Blender
+## Neftçilər-style blocks: rustication, arched shop fronts, iron balconies)
+## instead of glass towers; also keeps the view onto the square open.
+const NIZAMI_WEST := -205.0 ## x where the street ends
+const NIZAMI_W := 14.0 ## paved width
+const NIZAMI_BLOCKS := {"modern_a": 16.0, "modern_b": 12.0, "modern_c": 20.0} ## width; depth 12
 const FLAME_SITE := Vector3(-560.0, 0.0, 10.0) ## west, near the bay (sea = +z)
 const MALL_R := 38.0
 const TOWER_R := {"sky_a": 16.0, "sky_b": 17.0, "sky_c": 13.5, "sky_d": 19.0}
@@ -38,6 +45,7 @@ const SIGN_COL := Color("ffd23f")
 const SIGN_OUT := Color("1b2a4a")
 
 var towers_placed := 0
+var nizami_buildings := 0
 var malls_placed := 0
 var bridge: Node3D
 
@@ -207,6 +215,97 @@ func _place_centre() -> void:
 			add_instance("tree", Transform3D(Basis(Vector3.UP, rng.randf() * TAU), fs + Vector3(cos(a) * 31.0, -0.1, sin(a) * 23.0)))
 	else:
 		push_warning("DowntownDecor: Fountain Square overlaps the course")
+	_place_nizami()
+
+
+func _place_nizami() -> void:
+	var z := FOUNTAIN_SQUARE.z
+	var x_east := FOUNTAIN_SQUARE.x - 28.0 # the plaza's west edge
+	var length := x_east - NIZAMI_WEST
+	# Paving (cobbles, warm) following the gentle slope up to the flyover;
+	# visual only, no collision.
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var cols := int(ceil(length / 4.0))
+	for i in cols:
+		for jz in 2:
+			var x0 := x_east - length * i / cols
+			var x1 := x_east - length * (i + 1) / cols
+			var z0 := z - NIZAMI_W * 0.5 + NIZAMI_W * jz * 0.5
+			var z1 := z0 + NIZAMI_W * 0.5
+			var q := [Vector3(x0, _street_y(x0, z0), z0), Vector3(x1, _street_y(x1, z0), z0),
+				Vector3(x1, _street_y(x1, z1), z1), Vector3(x0, _street_y(x0, z1), z1)]
+			for t in [0, 1, 2, 0, 2, 3]:
+				var v: Vector3 = q[t]
+				st.set_normal(Vector3.UP)
+				st.set_uv(Vector2(v.x, v.z) / 3.0)
+				st.add_vertex(v)
+	var paving := MeshInstance3D.new()
+	paving.name = "NizamiStreet"
+	paving.mesh = st.commit()
+	paving.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mat := StandardMaterial3D.new()
+	mat.roughness = 0.9
+	mat.albedo_color = Color("e8d2b0")
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	TextureLibrary.bind(mat, "albedo_texture", "cobbles")
+	paving.material_override = mat
+	add_child(paving)
+	var mark := Node3D.new()
+	mark.name = "NizamiStreetMark"
+	mark.position = Vector3(x_east - length * 0.5, 4.0, z)
+	add_child(mark)
+	landmarks["nizami_street"] = mark
+	# Sandstone buildings on both sides of the street.
+	var ids: Array = NIZAMI_BLOCKS.keys()
+	var placed := 0
+	for side: float in [-1.0, 1.0]: # -1 north (-z), +1 south
+		var x := x_east - 2.0
+		var k := 0 if side < 0.0 else 1
+		while true:
+			var id: String = ids[k % ids.size()]
+			var w: float = NIZAMI_BLOCKS[id]
+			if x - w < NIZAMI_WEST:
+				break
+			var p := Vector3(x - w * 0.5, 0.0, z + side * (NIZAMI_W * 0.5 + 6.5))
+			if clear_of_track(p, 9.0, 1.0):
+				# On the slope: stand on the lowest corner (the uphill side sinks in).
+				var gy := INF
+				for c in [Vector2(-w * 0.5, -6.0), Vector2(w * 0.5, -6.0), Vector2(-w * 0.5, 6.0), Vector2(w * 0.5, 6.0)]:
+					gy = minf(gy, _street_y(p.x + c.x, p.z + c.y))
+				# Fronts face the race road nearest to each row (the players never
+				# drive the street itself): south row to the avenue, north row to
+				# the flyover.
+				add_instance(id, Transform3D(Basis(Vector3.UP, PI if side < 0.0 else 0.0), Vector3(p.x, gy - 0.15, p.z)))
+				placed += 1
+			x -= w + 1.5
+			k += 1
+	nizami_buildings = placed
+	# Lamps and benches down the street, a plane tree now and then.
+	var lx := x_east - 6.0
+	var j := 0
+	while lx > NIZAMI_WEST + 4.0:
+		for side: float in [-1.0, 1.0]:
+			var q := Vector3(lx, 0.0, z + side * (NIZAMI_W * 0.5 - 1.0))
+			q.y = _street_y(q.x, q.z) - 0.05
+			if j % 3 == 2:
+				add_instance("tree", Transform3D(Basis(Vector3.UP, rng.randf() * TAU), q))
+			else:
+				add_instance("lamp" if j % 3 == 0 else "bench", _face(q, Vector3(0, 0, -side)))
+		lx -= 12.0
+		j += 1
+	# Keep towers off the street and both rows.
+	var rx := x_east
+	while rx > NIZAMI_WEST:
+		_reserved.append([Vector3(rx, 0.0, z), NIZAMI_W * 0.5 + 13.0])
+		rx -= 10.0
+
+
+## Ground height on Nizami street (the city ground is -0.12; the terrain
+## rises gently towards the flyover).
+func _street_y(x: float, z: float) -> float:
+	var t := builder.terrain_height(x, z) if builder else 0.0
+	return maxf(-0.06, t + 0.04)
 
 
 func _place_malls() -> void:
