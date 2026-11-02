@@ -1,6 +1,12 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-01 · Build: 0.15.3 · Engine: Godot 4.4.1-stable
+Date: 2026-11-01 · Build: 0.15.4 · Engine: Godot 4.4.1-stable
+
+## Update 0.15.4 (versionCode 39) — owner fixes: Crescent round and on the shore, Maiden Tower at street level
+- **Crescent:** the owner: the real one is round and bulky, ours was tall and thin. Now a 68 m wide, ~66 m high round-topped arch, 26 m thick and bowed in plan like a crescent moon, tall opening right of the middle, wider banded podium.
+- **Crescent placement:** on the shore of the Boulevard facing Port Baku Mall across the avenue (Crescent (338, 38) on a paved reclaimed-shore plaza joined to the promenade; Port Baku moved inland to (338, -45)). Was standing in the sea.
+- **Maiden Tower:** no rock pedestal (it made the tower look like it stood on a round platform); a low footing at the real street level of the Old City block (terrain height).
+- Strict suite: 240 methods, 6046 checks, 0 failures. Not tested on a phone.
 
 ## Update 0.15.3 (versionCode 38) — "mini Baku": landmarks from real photos, real malls, real layout, 9-storey city, track relief
 - **Owner's goal (2026-11-02):** a mini model of Baku - famous places look like the real ones (silhouette, facade, colour; game-fitted heights), sit in their real relative positions, ordinary buildings are new 9-storey blocks. References: Wikimedia Commons photos (downloaded for study only, not shipped) and the architects' descriptions.

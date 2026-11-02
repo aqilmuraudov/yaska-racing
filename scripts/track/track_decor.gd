@@ -48,10 +48,12 @@ const LANDMARK_SITES := {
 	"flag_square": [-395.0, -15.0, 36.0, 0.0],
 	"heydar_aliyev": [175.0, -285.0, 66.0, 0.45],
 	"flame_towers": [-175.0, -435.0, 66.0, 0.69],
-	"crescent": [380.0, 120.0, 44.0, -0.3],
+	# Crescent stands on the shore of the Boulevard, facing Port Baku Mall
+	# across the avenue (owner).
+	"crescent": [338.0, 38.0, 42.0, 0.0],
 	"government_house": [40.0, -104.0, 64.0, 0.0],
 	"carpet_museum": [-160.0, -84.0, 56.0, 0.55],
-	"port_baku": [338.0, -14.0, 38.0, 0.0],
+	"port_baku": [338.0, -45.0, 38.0, 0.0],
 }
 
 
@@ -604,7 +606,9 @@ func _place_landmarks() -> void:
 	# Maiden-Tower-inspired keep inside the Old City block.
 	var tp := _tower_position()
 	if tp != Vector3.INF:
-		_landmark(PropKit.get_mesh("maiden_tower"), Transform3D(Basis(Vector3.UP, -PI * 0.5).scaled(Vector3.ONE * 1.3), Vector3(tp.x, tp.y - 0.05, tp.z)), "OldTower")
+		# Street level of the Old City block (the real tower has no pedestal).
+		var ty := builder.terrain_height(tp.x, tp.z) if builder else tp.y
+		_landmark(PropKit.get_mesh("maiden_tower"), Transform3D(Basis(Vector3.UP, -PI * 0.5).scaled(Vector3.ONE * 1.3), Vector3(tp.x, ty - 0.05, tp.z)), "OldTower")
 	_build_gate()
 	_build_gantry()
 	_place_baku_landmarks()
@@ -637,7 +641,7 @@ func _place_baku_landmarks() -> void:
 		var p := Vector3(site[0], 0.0, site[1])
 		var y := ground_y(p)
 		if id == "crescent":
-			y = data.sea_level - 0.5
+			y = maxf(ground_y(p), data.sea_level + 0.4) # on the shore, not in the sea
 		elif id == "flag_square":
 			# 0.15.3: the round plaza sits on the highest ground under it (its
 			# skirt reaches down), so the slope never buries half of it.
@@ -678,6 +682,15 @@ func _place_baku_landmarks() -> void:
 			root.add_child(far)
 		if id in ["crescent", "flame_towers"]:
 			near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if id == "crescent":
+			# Reclaimed shore under the Crescent: a paved plaza joined to the
+			# promenade, so it stands on land like the real one.
+			var shore := MeshInstance3D.new()
+			shore.name = "CrescentShore"
+			shore.mesh = ShapeKit.cylinder(48.0, 3.0, 40)
+			shore.material_override = ShapeKit.mat(Color("d9d2c4"), 0.85)
+			shore.position = Vector3(0, -1.55, 0)
+			root.add_child(shore)
 		if id == "flag_square":
 			# Wind blows towards the sea (+z): seen from the Boulevard the
 			# hoist is on the left and the flag reads the right way round.

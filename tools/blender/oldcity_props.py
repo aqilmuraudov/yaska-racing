@@ -167,9 +167,11 @@ def build_house(v, hi):
 def build_tower(hi):
     tag = "H" if hi else "L"
     g = "maiden_tower"
-    r0, r1, h, base = 8.25, 7.6, 29.5, 1.2
+    # 0.15.3 (owner): the tower stands at street level in the Old City - no
+    # rock pedestal, only a low stone footing.
+    r0, r1, h, base = 8.25, 7.6, 29.5, 0.25
     up = K.trs((0, 0, 0), (0, 0, math.pi / 2))  # lathe axis X -> Y
-    lathe(f"rock_{tag}", [(-0.2, r0 * 1.35), (0.5, r0 * 1.3), (base + 0.2, r0 * 1.15), (base + 0.2, 0.0)], (0, 0, 0),
+    lathe(f"rock_{tag}", [(-0.2, r0 + 0.35), (base + 0.1, r0 + 0.3), (base + 0.1, 0.0)], (0, 0, 0),
           "rock", g, hi, L(hi, 24, 64), False, False).data.transform(up)
     lathe(f"body_{tag}", [(base, r0), (base + h, r1), (base + h, 0.0)], (0, 0, 0), "tower_stone", g, hi,
           L(hi, 40, 128), False, False).data.transform(up)

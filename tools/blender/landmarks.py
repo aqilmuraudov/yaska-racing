@@ -300,29 +300,37 @@ def _arc(c, rad, a0, a1, toward, n):
 
 
 def build_crescent(hi):
-    """Baku Crescent (0.15.3, from photos): a huge glass arch, an asymmetric
-    inverted U - straight thick left leg, broad round top, the right side
-    curving down to a thinner leg - with a tall arched opening between the
-    legs, standing on its round podium in the sea."""
+    """Baku Crescent (0.15.3, owner: the real one is round and bulky): a wide,
+    thick, round-topped glass arch - outline close to a circle standing on a
+    flat foot, a tall arched opening right of the middle, the whole body bowed
+    in plan like a crescent moon, on its banded round podium in the sea."""
     tag = "H" if hi else "L"
     g = "crescent"
-    n = L(hi, 14, 48)
+    n = L(hi, 18, 56)
+    R = 34.0   # outer radius: 68 m wide, ~66 m high
+    cy = 32.0
     outer = []
     for k in range(n + 1):
-        a = math.pi * (1.0 - k / n)
-        outer.append((24.0 * math.cos(a), 44.0 + 28.0 * math.sin(a) if a > math.pi / 2 else 40.0 + 32.0 * math.sin(a)))
+        a = math.pi + 0.3 - (math.pi + 0.6) * k / n  # from lower-left round to lower-right
+        outer.append((R * math.cos(a), cy + R * math.sin(a)))
     hole = []
     for k in range(n + 1):
         a = math.pi * k / n
-        hole.append((5.0 - 9.0 * math.cos(a), 30.0 + 14.0 * math.sin(a)))
-    # Around the solid: left foot, into the opening (up its left side, over
-    # its arch, down its right side), right foot, up the right side, over the
-    # top and down the left side.
-    outline = [(-24.0, 0.0), (-4.0, 0.0)] + hole + [(14.0, 0.0), (24.0, 0.0)] + list(reversed(outer))[:-1]
+        hole.append((6.0 - 11.0 * math.cos(a), 26.0 + 16.0 * math.sin(a)))
+    foot_l = (outer[0][0], 0.0)
+    foot_r = (outer[-1][0], 0.0)
+    # Around the solid: left foot, into the opening, right foot, up the right
+    # side, over the round top and down the left side.
+    outline = [foot_l, (-5.0, 0.0)] + hole + [(17.0, 0.0), foot_r] + list(reversed(outer))
     from mathutils.geometry import tessellate_polygon
     bm = bmesh.new()
-    fr = [bm.verts.new((x, y, 8.0)) for x, y in outline]
-    bk = [bm.verts.new((x, y, -8.0)) for x, y in outline]
+    depth = 13.0
+
+    def bow(x):
+        return 9.0 * (1.0 - (x / R) ** 2)
+
+    fr = [bm.verts.new((x, y, depth + bow(x))) for x, y in outline]
+    bk = [bm.verts.new((x, y, -depth + bow(x))) for x, y in outline]
     for tri in tessellate_polygon([[Vector((x, y, 0.0)) for x, y in outline]]):
         bm.faces.new([fr[i] for i in tri])
         bm.faces.new([bk[i] for i in reversed(tri)])
@@ -332,14 +340,14 @@ def build_crescent(hi):
         bm.faces.new((fr[j], fr[i], bk[i], bk[j]))
     K.finish(bm, f"cr_body_{tag}", "glass_blue", g, hi, smooth=False)
     # Low round podium of glass floors with white bands around the feet.
-    turned(f"cr_pod_{tag}", [(0.0, 32.0), (9.6, 32.0), (9.6, 0.0)], (0, 0, 0), "glass", g, hi, L(hi, 24, 64))
+    turned(f"cr_pod_{tag}", [(0.0, 40.0), (9.6, 40.0), (9.6, 0.0)], (0, 0, 0), "glass", g, hi, L(hi, 24, 64))
     for k, y in enumerate((0.0, 3.2, 6.4, 9.6)):
-        turned(f"cr_podband{k}_{tag}", [(y - 0.3, 32.5), (y + 0.4, 32.5), (y + 0.4, 31.8), (y - 0.3, 31.8)], (0, 0, 0),
+        turned(f"cr_podband{k}_{tag}", [(y - 0.3, 40.5), (y + 0.4, 40.5), (y + 0.4, 39.8), (y - 0.3, 39.8)], (0, 0, 0),
                "white", g, hi, L(hi, 24, 64))
     turned(f"cr_base_{tag}", [(-3.5, 41.0), (0.0, 41.0), (0.0, 0.0)], (0, 0, 0), "white", g, hi, L(hi, 24, 64))
     if hi:
         poly = outline
-        for k in range(1, 26):
+        for k in range(1, 19):
             y = k * 3.6
             xs = []
             for i in range(len(poly)):
@@ -349,8 +357,11 @@ def build_crescent(hi):
             xs.sort()
             for q in range(0, len(xs) - 1, 2):
                 for sgn in (-1, 1):
-                    tube(f"cr_floor{k}_{q}{sgn}", [(xs[q], y, sgn * 8.05), (xs[q + 1], y, sgn * 8.05)], 0.1, "white", g,
-                         True, 1, 4, False)
+                    pts = []
+                    for t in range(9):
+                        x = xs[q] + (xs[q + 1] - xs[q]) * t / 8
+                        pts.append((x, y, sgn * (depth + 0.05) + bow(x)))
+                    tube(f"cr_floor{k}_{q}{sgn}", pts, 0.1, "white", g, True, 1, 4, False)
 
 
 BUILDERS = {"government_house": build_government_house, "carpet_museum": build_carpet_museum,
