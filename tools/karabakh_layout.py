@@ -63,6 +63,14 @@ WANT = [
     ("kb_house_c", "lachin", (-718, -62), "S", 12, 11, 0, 0),
     ("kb_house_a", "lachin", (-760, 45), "W", 12, 11, 0, 0),
     ("kb_house_b", "lachin", (-748, 140), "W", 12, 11, 0, 0),
+    ("kb_house_c", "lachin", (-600, -128), "N", 12, 11, 0, 0),
+    ("kb_house_a", "lachin", (-620, -122), "S", 12, 11, 0, 0),
+    ("kb_house_b", "lachin", (-575, -135), "S", 12, 11, 0, 0),
+    ("kb_house_c", "lachin", (-762, -25), "W", 12, 11, 0, 0),
+    ("kb_house_a", "lachin", (-771, 95), "W", 12, 11, 0, 0),
+    ("kb_house_b", "lachin", (-690, 260), "E", 12, 11, 0, 0),
+    ("kb_house_c", "lachin", (-695, 245), "W", 12, 11, 0, 0),
+    ("kb_house_a", "lachin", (-715, 200), "W", 12, 11, 0, 0),
 ]
 SMALL_SETBACK = {"kb_shusha_sign"}   # a sign stands close to the road (guardrail in front)
 
