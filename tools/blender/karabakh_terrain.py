@@ -79,6 +79,11 @@ SHUSHA = (50.0, -255.0, 300.0, 150.0)   # plateau centre and radii (the town tab
 # Daşaltı gorge: a winding canyon under the southern edge of the plateau.
 GORGE = np.array([[345.0, -140.0], [200.0, -92.0], [20.0, -68.0], [-150.0, -92.0]])
 ZONES = TRACK.get("zones", [])          # [id, x, z, radius]
+# 0.19.1 landmarks (tools/karabakh_layout.py): level pads under the footprints,
+# terraces under boulevard runs, big peaks (Hoçaz).
+LANDMARKS = TRACK.get("landmarks", [])
+LINES = TRACK.get("lines", [])
+PEAKS = TRACK.get("peaks", [])
 
 
 def _chaikin(pts, rounds=3):
@@ -269,6 +274,11 @@ def natural(xs, zs, droad, inside):
     far = smooth(70.0, 520.0, droad)
     mount = (55.0 + 95.0 * ridge(xs, zs)) * far * far + fbm(xs, zs, 4, 1.0 / 90.0) * 6.0 * far
     h = np.where(inside, h, h + mount)
+    # Big peaks (Hoçaz): a rocky mass well above the ring, a ridged crest.
+    for pk in PEAKS:
+        rr = np.hypot(xs - pk["x"], (zs - pk["z"]) * 1.25) / pk["r"]
+        crest = pk["h"] * (1.0 - smooth(0.0, 1.0, rr)) ** 1.6 * (0.82 + 0.3 * ridge(xs * 1.7, zs * 1.7))
+        h = np.maximum(h, h * smooth(0.6, 1.0, rr) + crest)
     # Towns and sights stand on open, nearly level ground at road height;
     # the Şuşa plateau is a full table.
     zm = zone_mask(xs, zs)
@@ -306,9 +316,80 @@ def height(xs, zs, with_canopy=False):
     fill_min = yroad - 0.7 - np.maximum(k, 0.0) * 1.4
     h = np.clip(h, fill_min, cut_max)
     h = np.where(k < 0.0, yroad - 0.7, h)
-    info = {"droad": droad, "yroad": yroad, "edge": edge, "inside": inside, "rdist": rdist, "zone": zm}
+    # Level pads under the landmarks and terraces under the boulevard (after
+    # the road cut: their edges stay >= 3 m behind the run-off).
+    pad = np.zeros(xs.shape)
+    for lm in LANDMARKS:
+        fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
+        u = np.abs((xs - lm["x"]) * fz - (zs - lm["z"]) * fx) - lm["w"] / 2
+        v = np.abs((xs - lm["x"]) * fx + (zs - lm["z"]) * fz) - lm["d"] / 2
+        e = np.maximum(u, v)                     # < 0 inside the footprint
+        m = 1.0 - smooth(1.0, 24.0, e)   # gentle banks round the pad
+        h = h * (1.0 - m) + lm["y"] * m
+        pad = np.maximum(pad, 1.0 - smooth(0.0, 2.0, e))
+    for ln in LINES:
+        pts = [q for q in ln["points"] if q[2] is not None]
+        if len(pts) < 2:
+            continue
+        d = np.full(xs.shape, 1e9)
+        ly = np.zeros(xs.shape)
+        for a, b in zip(pts[:-1], pts[1:]):
+            vx, vz = b[0] - a[0], b[1] - a[1]
+            t2 = np.clip(((xs - a[0]) * vx + (zs - a[1]) * vz) / (vx * vx + vz * vz), 0.0, 1.0)
+            dd = np.hypot(xs - (a[0] + t2 * vx), zs - (a[1] + t2 * vz))
+            mm = dd < d
+            d = np.where(mm, dd, d)
+            ly = np.where(mm, a[2] + (b[2] - a[2]) * t2, ly)
+        m = 1.0 - smooth(ln["width"] / 2, ln["width"] / 2 + 10.0, d)
+        h = h * (1.0 - m) + ly * m
+        pad = np.maximum(pad, 1.0 - smooth(ln["width"] / 2, ln["width"] / 2 + 2.0, d))
+    info = {"droad": droad, "yroad": yroad, "edge": edge, "inside": inside, "rdist": rdist, "zone": zm, "pad": pad}
     return h, info
 
+
+
+def write_lines(hs):
+    """Module instances along the wall / boulevard runs -> lines.json
+    [module, x, y, z, yaw] (Godot space; local +x along the run). y follows
+    the ground (lowest point under the module) or the run's terrace height."""
+    def ground(x, z):
+        fx = np.clip((x - X0) / CELL, 0, hs.shape[1] - 1.001)
+        fz = np.clip((z - Z0) / CELL, 0, hs.shape[0] - 1.001)
+        ix, iz = int(fx), int(fz)
+        tx, tz = fx - ix, fz - iz
+        a = hs[iz, ix] * (1 - tx) + hs[iz, ix + 1] * tx
+        b = hs[iz + 1, ix] * (1 - tx) + hs[iz + 1, ix + 1] * tx
+        return float(a * (1 - tz) + b * tz)
+    out = []
+    for ln in LINES:
+        pts = np.array([[q[0], q[1]] for q in ln["points"]], dtype=np.float64)
+        ys = [q[2] for q in ln["points"]]
+        cum = np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(pts, axis=0).T))])
+        step = float(ln["step"])
+        n = int(cum[-1] // step)
+        gate_k = int(n * ln.get("gate_at", -1)) if "gate" in ln else -1
+        for k in range(n):
+            s0, s1 = k * step, (k + 1) * step
+            a = np.array([np.interp(s0, cum, pts[:, 0]), np.interp(s0, cum, pts[:, 1])])
+            b = np.array([np.interp(s1, cum, pts[:, 0]), np.interp(s1, cum, pts[:, 1])])
+            mid = (a + b) / 2
+            yaw = math.atan2(-(b[1] - a[1]), b[0] - a[0])
+            if ys[0] is None:
+                y = min(ground(*a), ground(*b), ground(*mid)) - 0.3
+            else:
+                y = float(np.interp(s0 + step / 2, cum, ys))
+            mod = ln["gate"] if k == gate_k else ln["module"]
+            out.append([mod, round(float(mid[0]), 2), round(y, 2), round(float(mid[1]), 2), round(yaw, 4)])
+            if "tower" in ln and k % ln["tower_every"] == 0 and abs(k - gate_k) > 1:
+                out.append([ln["tower"], round(float(a[0]), 2), round(min(ground(*a), y + 0.3) - 0.3, 2),
+                            round(float(a[1]), 2), round(yaw, 4)])
+        if "tower" in ln:
+            e = pts[-1]
+            out.append([ln["tower"], round(float(e[0]), 2), round(ground(*e) - 0.6, 2), round(float(e[1]), 2),
+                        round(math.atan2(-(pts[-1][1] - pts[-2][1]), pts[-1][0] - pts[-2][0]), 4)])
+    json.dump({"doc": "module, x, y, z, yaw (Godot space; local +x along the run)", "instances": out},
+              open(os.path.join(OUT, "lines.json"), "w", encoding="utf-8", newline="\n"))
+    print(f"LINES {len(out)} module instances")
 
 # --- Build ------------------------------------------------------------------------------
 
@@ -668,6 +749,7 @@ def main():
     json.dump({"x0": X0, "z0": Z0, "cell": CELL, "nx": nx, "nz": nz,
                "doc": "float32 little-endian, row-major (z rows, x columns), Godot metres; ground height (no canopy)"},
               open(os.path.join(OUT, "heights.json"), "w"))
+    write_lines(hs)
     k = info["droad"] - info["edge"]
     forest = smooth(18.0, 40.0, k)
     verge = 1.0 - smooth(-0.5, 1.0, k)
@@ -714,7 +796,7 @@ def main():
                 gx = int(round((v.co.x - X0) / CELL))
                 gz = int(round((-v.co.y - Z0) / CELL))
                 border = gx in (j0, j1 - 1) or gz in (i0, i1 - 1)
-                if k[gz, gx] < 30.0 or border:
+                if k[gz, gx] < 30.0 or border or info["pad"][gz, gx] > 0.0:
                     vg.add([v.index], 1.0, "REPLACE")
                 if border:
                     vgb.add([v.index], 1.0, "REPLACE")
@@ -736,7 +818,11 @@ def main():
         far.data = ob.data.copy()
         far.name = ob.name + "_far"
         coll.objects.link(far)
-        decimate(far, 0.06, "border")
+        # Tiles carrying a peak keep more of it far away (Hoçaz is seen from 400+ m).
+        cx = np.mean([v.co.x for v in far.data.vertices])
+        cz = -np.mean([v.co.y for v in far.data.vertices])
+        big = any(math.hypot(cx - pk["x"], cz - pk["z"]) < pk["r"] for pk in PEAKS)
+        decimate(far, 0.2 if big else 0.06, "border")
         fars.append(far)
         decimate(ob, 0.28, "road")
     for o in tiles:

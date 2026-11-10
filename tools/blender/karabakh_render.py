@@ -258,6 +258,60 @@ def place_trees(coll):
             coll.objects.link(ob)
 
 
+LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin"]
+TRACK = json.load(open(os.path.join(ROOT, "data", "tracks", "karabakh.json"), encoding="utf-8"))
+
+
+def place_landmarks(coll):
+    """The named landmarks (track JSON "landmarks") and the wall / boulevard
+    modules (lines.json), from every landmark set already built."""
+    proto = {}
+    for name in LANDMARK_SETS:
+        folder = os.path.join(ROOT, "assets", "models", name)
+        if not os.path.exists(os.path.join(folder, name + ".glb")):
+            continue
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.gltf(filepath=os.path.join(folder, name + ".glb"))
+        mat = flora_mat(folder)
+        for o in set(bpy.data.objects) - before:
+            if o.type == "MESH":
+                o.data.materials.clear()
+                o.data.materials.append(mat)
+                proto[o.name] = o
+                o.hide_render = True
+                o.hide_viewport = True
+    items = [[lm["id"], lm["x"], lm["y"], lm["z"], lm["yaw"]] for lm in TRACK.get("landmarks", [])]
+    lp = os.path.join(KB, "lines.json")
+    if os.path.exists(lp):
+        items += json.load(open(lp, encoding="utf-8"))["instances"]
+    n = 0
+    for t in items:
+        if t[0] not in proto:
+            continue
+        ob = bpy.data.objects.new(t[0], proto[t[0]].data)
+        ob.location = B(t[1], t[2], t[3])
+        ob.rotation_euler = (0.0, 0.0, t[4])
+        coll.objects.link(ob)
+        n += 1
+        if t[0] == "kb_shusha_sign":   # flat stand-in for the waving flag (Godot: LandmarkKit.flag_mesh)
+            flag_stand_in(coll, ob)
+    print("LANDMARKS placed", n)
+
+
+def flag_stand_in(coll, sign):
+    import mathutils
+    top = mathutils.Vector((-5.6, 0.0, 10.6))   # SIGN_MAST_TOP (Godot x, -z, y)
+    for k, hx in enumerate(("00B5E2", "EF3340", "509E2F")):
+        me = bpy.data.meshes.new("flag")
+        y0 = -k * 0.6
+        me.from_pydata([(0, 0, y0), (0, 3.6, y0), (0, 3.6, y0 - 0.6), (0, 0, y0 - 0.6)], [], [(0, 1, 2, 3)])
+        me.materials.append(flat("flag%d" % k, hx, 0.7))
+        ob = bpy.data.objects.new("Flag", me)
+        ob.parent = sign
+        ob.location = top
+        coll.objects.link(ob)
+
+
 def place_bridges(coll):
     """The Xudafərin bridges: module instances from bridges.json."""
     folder = os.path.join(ROOT, "assets", "models", "karabakh_bridges")
@@ -353,6 +407,7 @@ def main():
     build_road(coll)
     place_trees(coll)
     place_bridges(coll)
+    place_landmarks(coll)
     sky(sc)
     sc.render.engine = "CYCLES"
     try:
@@ -393,6 +448,11 @@ def main():
         ("kb_13_bridge15_bank.jpg", B(20, 6, 668), B(80, 1, 705), 28),
         ("kb_14_bridge11_bank.jpg", B(-110, 8, 672), B(-170, 0, 703), 28),
         ("kb_15_both_bridges.jpg", B(-45, 80, 520), B(-45, 0, 700), 17),
+        ("kb_16_victory_square.jpg", B(598, 17, -508), B(600, 12, -585), 24),
+        ("kb_17_khankendi_overview.jpg", B(720, 75, -390), B(610, 5, -525), 24),
+        ("kb_18_hocaz_from_lachin.jpg", B(-735, 23, 40), B(-1160, 140, -330), 30),
+        ("kb_19_our_mountains.jpg", B(462, 17, -505), B(450, 16, -537), 30),
+        ("kb_20_university.jpg", B(760, 16, -470), B(800, 18, -522), 30),
     ]
     for name, eye, look, lens in wide:
         if not ONLY or any(k in name for k in ONLY.split(",")):

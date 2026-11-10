@@ -28,8 +28,8 @@ func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
 		_place_kb_forest,
 		_place_corner_signs,
 		_place_kb_bridges,
-		func(): pass,
-		func(): pass,
+		_place_kb_landmarks,
+		_place_kb_lines,
 		_place_kb_sky,
 		func(): pass,
 		_flush_instances,
@@ -127,6 +127,61 @@ func _place_kb_bridges() -> void:
 		return
 	for t: Array in parsed.instances:
 		add_instance(String(t[0]), Transform3D(Basis(Vector3.UP, float(t[4])), Vector3(float(t[1]), float(t[2]), float(t[3]))))
+
+
+## 0.19.1: the landmarks the owner named (2026-11-10), Blender models
+## (tools/blender/karabakh_{khankendi,shusha,lachin}.py), laid out by
+## tools/karabakh_layout.py: "landmarks" in the track JSON, each on the level
+## pad the Blender terrain made for it (y). One-off buildings get a near / far
+## node (LANDMARK_NEAR switch); the Laçın houses are instanced.
+## A model not built yet is skipped (the pad stays an open meadow).
+func _place_kb_landmarks() -> void:
+	for lm: Dictionary in data.raw.get("landmarks", []):
+		var id := String(lm.id)
+		if not kb_model_ready(id):
+			continue
+		var p := Vector3(float(lm.x), float(lm.y), float(lm.z))
+		var yaw := float(lm.yaw)
+		if id.begins_with("kb_house"):
+			add_instance(id, Transform3D(Basis(Vector3.UP, yaw), p))
+			continue
+		var node := _landmark_prop(id, p, yaw, id.trim_prefix("kb_").to_pascal_case())
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		if id == "kb_shusha_sign":
+			_add_flag(node, SIGN_MAST_TOP)
+
+
+## Top of the flag mast on the Şuşa sign (model space, kb_shusha_sign).
+const SIGN_MAST_TOP := Vector3(-5.6, 10.6, 0.0)
+
+
+## The Azerbaijani flag (waving shader, as on the seafront) on a mast top.
+func _add_flag(parent: Node3D, top: Vector3) -> void:
+	var f := MeshInstance3D.new()
+	f.name = "Flag"
+	f.mesh = LandmarkKit.flag_mesh(3.6, 1.8)
+	f.position = top
+	f.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	f.extra_cull_margin = 3.0
+	parent.add_child(f)
+	landmarks["shusha_flag"] = f
+
+
+## Wall segments / towers / the gate of the Şuşa fortress along the plateau
+## rim and the Həkəri boulevard in Laçın (Blender terrain -> lines.json).
+func _place_kb_lines() -> void:
+	var dir := String(data.raw.get("terrain_dir", ""))
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(dir + "/lines.json")) if dir != "" else null
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for t: Array in parsed.instances:
+		var id := String(t[0])
+		if kb_model_ready(id):
+			add_instance(id, Transform3D(Basis(Vector3.UP, float(t[4])), Vector3(float(t[1]), float(t[2]), float(t[3]))))
+
+
+static func kb_model_ready(id: String) -> bool:
+	return PropKit.GLTF_PROPS.has(id) and ResourceLoader.exists(String(PropKit.GLTF_PROPS[id]) + ".glb")
 
 
 ## Soft clouds only (the other maps' backdrop carries Baku's skyline).
