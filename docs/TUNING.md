@@ -179,7 +179,7 @@ Nitro level L: strength 7+0,8L, duration 1,2+0,15L s, recharge 20−2,5L s; char
 `tests/test_round5.gd::test_economy_payouts_and_pacing` keeps these inside the targets.
 
 ## Kart shop (0.9.1: prices rise with shop order, same 64 ₼ total)
-Prices live in `scripts/progression/kart_shop.gd` (`PRICES`, qəpik). New profiles own only HavHav.
+Prices live in `scripts/progression/kart_shop.gd` (`PRICES`, qəpik). A new profile picks ONE free starter kart (any racer); the rest are bought. 0.17.4: HavHav costs 8,50 ₼ (was 0, which made it a free second kart for anyone whose starter was another racer) and is offered first when not owned (`KartShop.shop_order()`). The table below assumes the HavHav starter.
 | Kart | Price | Cumulative | Races (race pay only) | Races (+avg goals 0.40 ₼) |
 |---|---|---|---|---|
 | Posi | 9,00 ₼ | 9 ₼ | 4.8 | 4.1 |

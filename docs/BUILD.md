@@ -34,6 +34,8 @@ python tools/check_scripts.py            # parse every .gd file (refreshes class
 python tools/check_csv.py                # localisation table sanity
 "$G" --headless -s tests/run_tests.gd    # unit + integration tests (exit code 0 = pass)
 GODOT="$G" python tools/run_tests.py    # 0.12.0 STRICT run: also fails a test that hit a SCRIPT ERROR (use this one)
+# 0.17.4: the runner sends every settings / profile save to user://test_run_*.json (deleted after the run),
+# so tests never touch the player's own settings.json / profile.json.
 "$G" --headless -s tests/run_tests.gd -- --only=test_items   # subset
 ```
 
@@ -61,6 +63,8 @@ Arguments after `--` (see `scripts/core/debug_runner.gd`):
 | `--startup-trace [--trace-secs=S]` | every 0.1 s print scene + frame brightness (black-frame check); frames saved with `--capture` |
 | `--nitro-at=T`, `--give-item=ID` | fire the player's nitro at race time T / give an item at the start (captures) |
 | `--fake-load-ms=N` | add N ms of CPU work per frame (weak-device simulation for the steady-30 fallback) |
+| `--uncapped`, `--env-off=fog+glow+adjust+sky+tonemap+sun+particles` | 0.17.4 phone profiling: no frame cap / vsync; switch environment effects off for an A/B |
+| `--fresh-profile [--money=N]`, `--no-login` | throw-away profile `user://shots_profile.json` (use it for every non-autopilot debug race) / no login popup |
 | `--no-gltf` | 0.14.0: procedural karts only (A/B against the Blender models in `assets/models/`) |
 
 Blender karts: `blender --background --factory-startup --python tools/blender/yaska_star.py -- [--preview]` (see TUNING.md); triangle/draw counts: `godot --headless --path . -s tools/kart_stats.gd -- yaska`.

@@ -3,12 +3,24 @@ extends SceneTree
 ##   godot --headless -s tests/run_tests.gd [-- --only=test_name_fragment]
 ## Exit code 0 when every check passes.
 
+const RUN_SETTINGS := "user://test_run_settings.json"
+const RUN_PROFILE := "user://test_run_profile.json"
+
+
 func _init() -> void:
 	# Wait one frame so autoloads are ready.
 	process_frame.connect(_run, CONNECT_ONE_SHOT)
 
 
 func _run() -> void:
+	# 0.17.4: no test may write the player's real files. Several tests change
+	# settings in memory without redirecting the path, and a later
+	# Settings.set_value() then saved them into the owner's settings.json
+	# (Quality "high" with preset "medium" after every full run). Every save
+	# of this process goes to throw-away files, removed at the end.
+	# (autoloads are looked up at run time: a -s script cannot name them)
+	root.get_node("Settings").save_path = RUN_SETTINGS
+	root.get_node("SaveManager").save_path = RUN_PROFILE
 	var only := ""
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--only="):
@@ -47,6 +59,10 @@ func _run() -> void:
 			for f in tc.failures:
 				print("    ✗ ", f)
 			all_failures.append_array(tc.failures)
+	for p in [RUN_SETTINGS, RUN_PROFILE]:
+		for f in [p, p + ".tmp", p + ".bak"]:
+			if FileAccess.file_exists(f):
+				DirAccess.remove_absolute(f)
 	print("")
 	print("%d test methods, %d checks, %d failures" % [methods_run, total_checks, all_failures.size()])
 	quit(0 if all_failures.is_empty() else 1)

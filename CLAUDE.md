@@ -16,14 +16,15 @@ Həmişə Azərbaycan dilində cavab ver.
 2. UI oyun stilində, sadə, vizual, az mətnli — kiçik uşaq üçün.
 3. Əvvəl test et, ekran görüntülərini tənqidi yoxla, yalnız sonra APK çıxar.
 4. Hər buraxılışda `export_presets.cfg`-də versionCode-u 1 artır; STATUS.md və TUNING.md-ni yenilə;
-   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 32).
+   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 33).
 5. Dəyişiklikdən əvvəl backup (git commit və ya zip).
 6. Zəif yerləri dürüst de; ölçülməyəni ölçülmüş kimi göstərmə.
 7. Aqil bir neçə xüsusiyyəti **bir APK-da** almağı üstün tutur (hər addıma ayrı APK yox).
 
 ## Testlər və build
 - Strict testlər: `GODOT="<godot console exe>" python tools/run_tests.py` — skript xətası olan testi də uğursuz sayır.
-  Əvvəlki tam qaçış: 251 metod, 7127 yoxlama (0.17.3; 2 round14 uğursuzluğu düzəldilib, round14 təkrar keçib).
+  Runner bütün settings/profile yazılarını `user://test_run_*.json`-a yönləndirir (sahibin faylları toxunulmaz qalır).
+  Son tam qaçış: STATUS.md-də (0.17.4).
 - Debug runner bayraqları `docs/BUILD.md`-də (`--race --autopilot --track=old_city --tod=night --capture=DIR ...`).
 - Android export: `--export-debug "Android" <apk>`. JDK 17 PATH-da olmalıdır, yoxsa APK imzasız çıxır.
 - İmza açarı: `_setup/yaska-debug.keystore` (alias `androiddebugkey`, şifrə `android`).
@@ -32,9 +33,10 @@ Həmişə Azərbaycan dilində cavab ver.
   Yoxlama: `apksigner verify --print-certs` → SHA-256 `726cd3535a49ffa4e7d8562fea1a2868e01194afa460ee38a0c0f2866d6e25d9`.
   Yeni açar YARATMA — yoxsa telefonda köhnə oyunun üstünə quraşdırılmaz.
 - `_builds/` və `_setup/` git-ə düşmür.
-- Ekran görüntüsü üçün GPU-lu Godot buraxılışlarında `--position -10000,-10000` (pəncərə ekrandan kənar); testlər həmişə `--headless`.
+- Hər Godot qaçışı `--headless` (sahib pəncərə görmək istəmir, ekrandan kənar pəncərə də olmaz). Avtopilotsuz debug yarışlarında `--fresh-profile`.
+- GitHub: `aqilmuraudov/yaska-racing` (köhnə `bakucitykart` yönləndirilir). Push yalnız sahib istəyəndə.
 
-## Vəziyyət (0.17.3, versionCode 44)
+## Vəziyyət (0.17.4, versionCode 45)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 3 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,

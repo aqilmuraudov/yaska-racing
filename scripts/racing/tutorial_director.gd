@@ -282,7 +282,21 @@ func _process(delta: float) -> void:
 func _finish() -> void:
 	SaveManager.set_tutorial_flag("drift_done", true)
 	SaveManager.set_tutorial_flag(LessonDirector.FLAG, true)
+	if not race.headless_test:
+		award(race.config)
 	race.quit_to_mode_select()
+
+
+## 0.17.4: the tour ends on its last card ("Davam"), not at a finish line, so
+## the race never reached _apply_rewards and the "school" trophy could not be
+## won. Applies the tutorial event once (same ledger key as a finished tour
+## race, so it never pays twice). Returns the progression result.
+static func award(config: Dictionary) -> Dictionary:
+	if bool(config.get("debug_autopilot", false)):
+		return {}
+	return SaveManager.apply_progression(String(config.get("event_instance_id", "")), {"mode": "tutorial",
+		"finished": true, "tutorial_done": true, "place": 1, "drift_boosts": 0, "stars": 0, "coins": 0,
+		"track_id": String(config.get("track_id", ""))})
 
 
 ## Pulsing ring + bouncing arrow over the button of the current step.

@@ -11,3 +11,6 @@ __pycache__/
 tools/**/out/
 _setup/
 _builds/
+# Owner reference screenshots (not ours to ship or publish)
+trans image*.webp
+trans image*.webp.import

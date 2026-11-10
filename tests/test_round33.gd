@@ -265,3 +265,20 @@ func test_garage_waits_for_the_starter_kart() -> void:
 	Game._changing = was
 	Game.garage_back = back0
 	Game.starter_pick = pick0
+
+
+func test_tour_awards_the_school_trophy() -> void:
+	var cfg := {"mode": "tutorial", "event_instance_id": "r33-tour", "track_id": "seafront_sprint"}
+	var money0 := SaveManager.get_money()
+	var out := TutorialDirector.award(cfg)
+	check("school" in SaveManager.data.trophies, "school trophy won by finishing the tour")
+	check(SaveManager.get_money() > money0, "its money paid")
+	check(not (out.unlocks as Array).is_empty(), "shown as an unlock")
+	var money1 := SaveManager.get_money()
+	TutorialDirector.award(cfg)
+	check_eq(SaveManager.get_money(), money1, "once per tour")
+	cfg.debug_autopilot = true
+	cfg.event_instance_id = "r33-tour-2"
+	check(TutorialDirector.award(cfg).is_empty(), "debug runs never touch the profile")
+	var src := FileAccess.get_file_as_string("res://scripts/racing/tutorial_director.gd")
+	check(src.substr(src.find("func _finish()"), 300).contains("award(race.config)"), "the last card awards it")
