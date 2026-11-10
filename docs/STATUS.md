@@ -1,6 +1,21 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-10 · Build: 0.17.4 · Engine: Godot 4.4.1-stable
+Date: 2026-11-10 · Build: 0.18.0 · Engine: Godot 4.4.1-stable
+
+## Update 0.18.0 (versionCode 46) — Qarabağ map: environment (landmarks follow one by one)
+- **Owner's brief:** a new map "Qarabağ" with the famous places of Karabakh, above all Laçın, Şuşa and Xankəndi; forest all round, asphalt roads, realistic models, everything modelled in Blender. Environment first; the owner names the landmarks one by one. Summer forest (owner's pick). Visual checks by Blender renders only (owner: no Godot window).
+- **Route** (`data/tracks/karabakh.json`, 1725 m, two lanes): the start straight in the Laçın valley (west, y 0), the climb (max grade 7.5 %) to the Şuşa plateau (north-east, y 28), the descent towards Xankəndi (east) and the forest valley road back west beside the Həkəri river. Tightest bend r 13 m, distant legs ≥ 73 m apart. Guardrails (new `THEME_FOREST`), no sea (`has_sea`), lane count from the JSON.
+- **Blender** (all background, see TUNING.md "Qarabağ map"):
+  - terrain from the road samples (`tools/export_road_samples.gd`): valley, plateau, the Daşaltı gorge with limestone cliffs east of the descent, the Həkəri river, a ring of forested mountains; cut / fill banks within ~25 m of the road; baked colour × AO (trees as occluders); near / far LOD tiles; a height grid for Godot.
+  - forest after the real species of the Shusha / Lachin forests (oriental beech, oak, Caucasian hornbeam dominate; maple; a few Kochi pines on rocky heights), hazel thickets, limestone boulders: 3917 placed by Blender (meadow strip along the road, closed forest behind, the baked canopy on the far hillsides).
+  - roadside: white reflector posts (red reflector) every 25 m, modern LED highway lamps every 46 m; both glow at night, light pools under the lamp heads.
+- **Landmark plots** reserved now (round 34 checks they sit 3 m behind the run-off and stay free of forest): 2 in Laçın, 3 on the Şuşa plateau, 2 towards Xankəndi. Nothing is built on them until the owner names the landmarks.
+- Menu: fourth city card (Blender render), names AZ/EN, seven Qarabağ trophies, enters the daily challenge rotation. Autopilot lap 58.9 s (`LAP_SCALE` 1.15).
+- Review renders: `docs/screenshots/0.18.0/` (Laçın start, climb, Şuşa plateau, descent / gorge, Xankəndi valley, river road, overview).
+- Round 34: registration, layout limits (grade, crests, leg separation, plots), the ground under road / verges and clear of the chase camera everywhere, forest clearance / species / budget, the race scene with forest, lamps and night pools, four cities.
+- Strict suite: 270 methods, 7414 checks; 3 failures were tests still expecting three cities (track list, lap scale ≤ 1.0, city card ≥ 300 px - four cards are ~280 px wide at the 1280 base); updated, rounds 20-29 re-run: 0 failures. Headless Qarabağ races (day / sunset / night, chaos): every race finished, longest stuck 1.0 s, no respawn.
+- Build: `_builds/YaskaRacing-0.18.0-v46-debug.apk`, 312.4 MB (0.17.4: 299.4 MB; terrain 2048² + 1024² and the forest set), signed with the usual key (SHA-256 726cd353…6e25d9). Not tested on a phone.
+- Not measured: phone FPS on this map (forest of ~3900 instances, near trees 300–1130 tris; far LOD beyond 109 m). Road, kerbs and barriers stay spline-built in Godot (physics); their look is not a Blender model yet.
 
 ## Update 0.17.4 (versionCode 45) — name "Yaska Racing" everywhere, production logic pass
 - **Name:** the game was already "Yaska Racing" in the app (project name, launcher label, splash, credits). Now also the GitHub repo (`aqilmuraudov/yaska-racing`; the old `bakucitykart` URL redirects), README (rewritten for the current game), build file names (`YaskaRacing-debug.apk`, `YaskaRacing.exe`), tool docstrings. The package id `az.bakuturbo.game` is kept on purpose (updates must install over the old app). `tools/gen_splash.py` now warns that the shipped splash / icons are the owner's artwork and must not be regenerated.

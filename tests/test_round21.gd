@@ -113,7 +113,8 @@ func test_city_select_screen() -> void:
 	for nm in ["Image", "MiniMap", "Name", "Length", "Best", "Trophies", "Go"]:
 		check(card.find_child(nm, true, false) != null, "card has %s" % nm)
 	check_eq((card.find_child("Name", true, false) as Label).text, tr("TRACK_DOWNTOWN"), "city name")
-	check(card.size.x >= 300.0 and card.size.y >= 320.0, "big cards (%s)" % card.size)
+	# 0.18.0: four cities share the row (~280 px each at the 1280 base width).
+	check(card.size.x >= 270.0 and card.size.y >= 320.0, "big cards (%s)" % card.size)
 	var a: Rect2 = screen.cards["seafront_sprint"].get_global_rect()
 	check(not a.intersects(card.get_global_rect()), "cards don't overlap")
 	check(a.end.x <= 1280.0 + 1.0 and card.get_global_rect().end.x <= 1280.0 + 1.0, "cards fit on screen")

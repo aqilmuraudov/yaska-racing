@@ -352,7 +352,7 @@ def main():
     # Overview from the south-west, high.
     shoot(sc, cam, B(-650, 260, 620), B(60, 0, 20), "kb_0_overview.jpg", lens=28)
     # City card.
-    eye, look = road_cam(640.0, back=10.0, up=4.0, ahead=40.0)
+    eye, look = road_cam(1380.0, back=14.0, up=6.5, ahead=70.0)
     shoot(sc, cam, eye, look, "karabakh_card.jpg", res=(640, 400), lens=22)
     import shutil
     shutil.copy(os.path.join(OUT, "karabakh_card.jpg"), os.path.join(ROOT, "assets", "ui", "cities", "karabakh.jpg"))

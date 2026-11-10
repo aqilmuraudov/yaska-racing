@@ -49,8 +49,8 @@ func _host() -> Control:
 # --- Track list / data ----------------------------------------------------------
 
 func test_track_list() -> void:
-	# 0.13.0: İçərişəhər added as the third city.
-	check_eq(TrackList.IDS, ["seafront_sprint", "downtown_towers", "old_city"], "three tracks, seafront first")
+	# 0.13.0: İçərişəhər added as the third city; 0.18.0 Qarabağ the fourth.
+	check_eq(TrackList.IDS, ["seafront_sprint", "downtown_towers", "old_city", "karabakh"], "four tracks, seafront first")
 	check_eq(TrackList.valid("nope"), "seafront_sprint", "unknown -> seafront")
 	TranslationServer.set_locale("az")
 	check_eq(tr(TrackList.name_key("downtown_towers")), "Göydələnlər şəhəri", "Azerbaijani name")
@@ -59,7 +59,7 @@ func test_track_list() -> void:
 		var td := TrackData.load_from_file(TrackList.path(id))
 		check(td != null and td.main != null, "%s loads" % id)
 		check_eq(td.id, id, "id matches file")
-		check(TrackList.lap_scale(id) > 0.4 and TrackList.lap_scale(id) <= 1.0, "lap scale sane")
+		check(TrackList.lap_scale(id) > 0.4 and TrackList.lap_scale(id) <= 1.3, "lap scale sane")
 
 
 func test_downtown_data() -> void:
