@@ -595,7 +595,11 @@ def bake_to(ob, mat, res, name, occluders, ao_dist):
     node.image = img_a
     sc.cycles.samples = 48
     t0 = time.time()
-    bpy.ops.object.bake(type="AO", margin=4, use_clear=True, target="IMAGE_TEXTURES")
+    if ao_dist > 0.0:
+        bpy.ops.object.bake(type="AO", margin=4, use_clear=True, target="IMAGE_TEXTURES")
+    else:   # no AO (the 20 m mountain triangles baked as dark / light facets)
+        # 0.5: the tone of the inner bake's open ground (measured at the seam), so both textures meet
+        img_a.pixels.foreach_set(np.full(res * res * 4, 0.5, dtype=np.float32))
     print(f"BAKE {name} ao {time.time() - t0:.1f}s")
     for o in occluders:
         o.hide_render = True
@@ -770,6 +774,9 @@ def main():
     mountains_full.data = mountains.data.copy()
     coll.objects.link(mountains_full)
     decimate(mountains, 0.35)
+    for o in [mountains] + tiles + fars:   # decimation left hard facets (dark blotches on the far bank)
+        for poly in o.data.polygons:
+            poly.use_smooth = True
     print(f"MOUNTAINS {tri_count(mountains)} tris")
 
     # River ribbon ----------------------------------------------------------------------
@@ -800,7 +807,7 @@ def main():
 
     # Bake --------------------------------------------------------------------------------
     if BAKE:
-        bake_to(mountains_full, terrain_material("mount_mat", 0.15, (0.72, 0.3)), RES, "mountains_albedo", [], 30.0)
+        bake_to(mountains_full, terrain_material("mount_mat", 0.15, (0.72, 0.3)), RES, "mountains_albedo", [], 0.0)
         bpy.data.objects.remove(prox)
     bpy.data.objects.remove(mountains_full)
 

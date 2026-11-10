@@ -16,7 +16,7 @@ Həmişə Azərbaycan dilində cavab ver.
 2. UI oyun stilində, sadə, vizual, az mətnli — kiçik uşaq üçün.
 3. Əvvəl test et, ekran görüntülərini tənqidi yoxla, yalnız sonra APK çıxar.
 4. Hər buraxılışda `export_presets.cfg`-də versionCode-u 1 artır; STATUS.md və TUNING.md-ni yenilə;
-   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 34).
+   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 35).
 5. Dəyişiklikdən əvvəl backup (git commit və ya zip).
 6. Zəif yerləri dürüst de; ölçülməyəni ölçülmüş kimi göstərmə.
 7. Aqil bir neçə xüsusiyyəti **bir APK-da** almağı üstün tutur (hər addıma ayrı APK yox).
@@ -36,12 +36,12 @@ Həmişə Azərbaycan dilində cavab ver.
 - Hər Godot qaçışı `--headless` (sahib pəncərə görmək istəmir, ekrandan kənar pəncərə də olmaz). Avtopilotsuz debug yarışlarında `--fresh-profile`.
 - GitHub: `aqilmuraudov/yaska-racing` (köhnə `bakucitykart` yönləndirilir). Push yalnız sahib istəyəndə.
 
-## Vəziyyət (0.18.0, versionCode 46)
+## Vəziyyət (0.19.0, versionCode 47)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 4 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər, Qarabağ), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,
 7 maşın + sürücünün hamısı, 3 şəhərin binaları və abidələri ("mini Bakı": Şirvanşahlar sarayı, Cümə, Sınıqqala, karvansara, Filarmoniya, Bələdiyyə, İsmailiyyə, Fəvvarələr meydanı, Nizami muzeyi, Nizami küçəsinin evləri daxil) Blender modelidir (`tools/blender/`, ümumi `kart_common.py`).
-Qarabağ xəritəsi (0.18.0): dağ yolu Laçın → Şuşa yaylası → Xankəndi, relyef/meşə/lampalar tam Blender-də
+Qarabağ xəritəsi (0.19.0, böyük): 4,9 km bir dövrə, Xankəndi → Şuşa yaylası → Laçın → Həkəri → Araz sahili (Xudafərin körpüləri: 15 və 11 aşırımlı, `karabakh_bridges.py`) → Xankəndi; relyef/meşə/lampalar/körpülər tam Blender-də
 (`tools/blender/karabakh_*.py`, ardıcıllıq TUNING.md-də). Landşaftları Aqil bir-bir deyir; yerləri `landmark_plots`-da ayrılıb.
 Vizual yoxlama yalnız Blender render ilə (Godot pəncərəsi yox).
 Əvvəlki iş GPU-suz bulud mühitində aparılıb — **heç bir rəqəm real telefonda ölçülməyib.**

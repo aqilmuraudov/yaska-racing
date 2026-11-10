@@ -355,20 +355,24 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 - Touch: nitro takes the TURBO slot when Easy Drift hides TURBO (with manual gas: (-460, -250)), else (-300, -390) left of ITEM. Camera switch centre y = max(150 / 290 × s, top-right column bottom + 46 × s), synced on the column's resize.
 - Windows: sunset `windows` 0.25 (was 0.45). Baked props: lit_share 0.38 (was 0.55), only a pane (x 0.24–0.76, y 0.30–0.82 of a 1.8 × 3.6 m cell), energy × 0.85 (was 1.4). Skyscrapers: hash > 0.7 (was 0.6), pane x 0.22–0.78 / y 0.12–0.88 of the glass part, energy × 0.8 (was 1.2). House glass material energy `windows` × 0.9 (was 1.4).
 
-## Qarabağ map (0.18.0, `data/tracks/karabakh.json`, `KarabakhDecor`, `tools/blender/karabakh_*.py`)
-Owner's brief: famous places of Karabakh (Laçın, Şuşa, Xankəndi), forest all round, asphalt roads, everything modelled in Blender; environment first, landmarks one by one when the owner names them. Season: summer (owner's pick).
+## Qarabağ map (0.19.0 big map, `data/tracks/karabakh.json`, `KarabakhDecor`, `tools/blender/karabakh_*.py`)
+Owner's brief: famous places of Karabakh (Laçın, Şuşa, Xankəndi, the Xudafərin bridge), forest all round, asphalt roads, everything modelled in Blender; really big; landmarks one by one when the owner names them. Season: summer (owner's pick).
 | | value |
 |---|---|
-| lap | 1725 m, 2 lanes (`"lanes": 2` → road shader `lane_count`), width 15–16 m, run-off 3 m, no sea |
-| profile | y 0 (Laçın valley start straight) → climb, max grade 7.5 % → Şuşa plateau y 28 → descent towards Xankəndi → forest valley road by the Həkəri river |
-| bends | tightest r 13 m (Laçın turn); distant legs ≥ 73 m apart (tracker search window 45 m) |
-| autopilot lap | 58.9 s best (seafront 51 s) → `TrackList.LAP_SCALE` 1.15 |
+| lap | 4916 m, **one lap** (`TrackList.MAX_LAPS`), 2 lanes, width 15–16 m, run-off 3 m, no sea |
+| profile | Xankəndi y 12 (start) → climb, max grade 7.9 % → Şuşa plateau y 44 → Laçın y 20 → Həkəri valley → Araz bank y 2 → forest hills → Xankəndi |
+| bends | tightest r 18 m; distant legs ≥ 95 m apart (tracker search window 45 m) |
+| autopilot lap | 174.9 s (seafront 51 s) → `TrackList.LAP_SCALE` 3.4 |
 | barriers | `THEME_FOREST` style "guardrail": galvanised grey, white reflector line, 0.85 m |
-| landmark plots | `landmark_plots` in the JSON: 2 Laçın, 3 Şuşa, 2 Xankəndi, each 3 m behind the run-off (round 34 checks), kept free of forest |
+| zones | `zones` [id, x, z, radius]: khankendi 150, shusha 190, lachin 150, khudafarin 210 m - flattened 75 %, 90 % fewer trees, no canopy |
+| rivers | `rivers`: araz width 64, level −2.6; hakari width 22, `drop` 26 → −2.4; bed 1.4 m under the water; road ≥ 31 m from a bank |
+| bridges | `bridges`: khudafarin15 at x 80, khudafarin11 at x −170 (across the Araz, north-south) |
+| landmark plots | 16: Şuşa 6, Xankəndi 4, Laçın 4, Xudafərin 2; 3 m behind the run-off, free of forest |
 Pipeline (headless / background only):
 1. `godot --headless --path . -s tools/export_road_samples.gd -- karabakh` → `tools/blender/out/karabakh_road.json` (the road is TrackPath's)
-2. `blender --background --factory-startup --python tools/blender/karabakh_flora.py -- --bake-res 2048 --tex-res 1024` → `assets/models/karabakh_flora/` (oriental beech, oak, Caucasian hornbeam, maple, Kochi pine, hazel bush, limestone rock, reflector post, LED highway lamp; near 300–1130 tris, far ~1/6)
-3. `blender --background --factory-startup --python tools/blender/karabakh_terrain.py` → `assets/models/karabakh/`: 54 near tiles (3 m grid, decimated 0.28 with the road band and tile borders protected, 77k tris) + far tiles (45k, from 240 m), mountain ring (16 m grid, 28k), river ribbon; `terrain_albedo.png` 2048² + `mountains_albedo.png` 1024² (colour × AO with tree proxies); `heights.bin` (3 m grid, `TrackBuilder.terrain_height`); `trees.json` (3917 trees / bushes / rocks: meadow strip along the road, closed forest 22–82 m from the run-off, beyond that the baked canopy on the hillsides)
-4. `blender --background --python tools/blender/karabakh_render.py` → review renders `docs/screenshots/0.18.0/` and the city card `assets/ui/cities/karabakh.jpg`
-After a rebuild: `godot --headless --import`, `python tools/blender/fix_imports.py assets/models/karabakh_flora` (terrain PNGs keep `compress/mode=2` + mipmaps in their .import).
+2. `blender --background --factory-startup --python tools/blender/karabakh_flora.py -- --bake-res 2048 --tex-res 1024` → `assets/models/karabakh_flora/`
+3. `blender --background --factory-startup --python tools/blender/karabakh_terrain.py` (~1 min) → `assets/models/karabakh/`: 221 near tiles (3 m grid over x −1200..1248, z −912..960; decimated 0.28, road band + borders protected, 326k tris) + far tiles (0.06, borders protected, 61k, from 240 m), mountain ring (20 m grid ±2300 / −2100..2220, 27k), `River_araz`, `River_hakari`; `terrain_albedo.png` + `mountains_albedo.png` 4096² (inner: colour × AO with tree proxies; ring: colour × flat 0.71 tone, no AO); `heights.bin`; `trees.json` (8229; step 7.5 m, band 78 m, canopy from 70 m)
+4. `blender --background --factory-startup --python tools/blender/karabakh_bridges.py -- --bake-res 4096 --tex-res 2048` (~5 min; `--layout-only` rewrites just `bridges.json`) → `assets/models/karabakh_bridges/` (kb_br_pier / arch_w 6.4 m / arch_n 4.8 m / ramp 9 m; kb_br11_arch 8 m / pier / ruin_a / ruin_b; deck 6.5 m and 6.9 m above the water)
+5. `blender --background --factory-startup --python tools/blender/karabakh_render.py [-- --only bridge,overview]` → `docs/screenshots/0.19.0/` and the city card
+After a rebuild: `godot --headless --import`, `python tools/blender/fix_imports.py assets/models/karabakh_flora` / `assets/models/karabakh_bridges` (terrain PNGs keep `compress/mode=2` + mipmaps in their .import).
 Ground stays ≥ 0.25 m under road and verges, the chase camera clears every bank (round 34). Night: LED lamps every 46 m (alternate sides) with light pools under the heads; reflector posts every 25 m (both glow, `PropKit.PROP_GLOW` "lamps").
