@@ -507,6 +507,12 @@ func restart() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var _pt := Time.get_ticks_usec()
+	_phys_tick(delta)
+	Prof.add(&"race", _pt)
+
+
+func _phys_tick(delta: float) -> void:
 	state_time += delta
 	match state:
 		RaceState.INTRO:
@@ -526,13 +532,18 @@ func _physics_process(delta: float) -> void:
 				replay.step(delta) # emits finished at the end -> results
 				return
 			race_time += delta
+			var _t := Time.get_ticks_usec()
 			_tick_racers(delta)
+			Prof.add(&"r_racers", _t); _t = Time.get_ticks_usec()
 			if replay:
 				replay.record(race_time)
+			Prof.add(&"r_replay", _t); _t = Time.get_ticks_usec()
 			_resolve_contacts()
 			_update_ranking()
+			Prof.add(&"r_contacts_rank", _t); _t = Time.get_ticks_usec()
 			_tick_goals()
 			_tick_near_miss(delta)
+			Prof.add(&"r_goals_near", _t)
 			if state == RaceState.RACING and nitro:
 				nitro.tick(delta)
 				if Input.is_action_just_pressed(InputActions.NITRO) and player.player_input and (player.player_input.enabled or kids_mode()):
@@ -605,7 +616,9 @@ func _tick_racers(delta: float) -> void:
 		var ww_vel := k.velocity
 		if k.is_touching_wall() and Vector2(k.velocity.x, k.velocity.z).length() < WALL_PIN_SPEED:
 			ww_vel = Vector3.ZERO
+		var _t := Time.get_ticks_usec()
 		var events := r.tracker.update(r.prev_pos, pos, race_time, ww_vel, delta)
+		Prof.add(&"r_tracker", _t)
 		r.prev_pos = pos
 		var rt := track.route_tangent(pos, {"s": r.tracker.s, "on_shortcut": r.tracker.on_shortcut})
 		k.route_forward = Vector3(rt.x, 0.0, rt.z).normalized()

@@ -117,6 +117,10 @@ func project(pos: Vector3, hint_s: float = -1.0) -> Dictionary:
 	for i in shortcuts.size():
 		var sc: Dictionary = shortcuts[i]
 		var p: TrackPath = sc.path
+		# 0.17.4: a shortcut can only win within its widest half width +
+		# run-off + 2 m (the check below) - skip the full search beyond that.
+		if not p.near_xz(pos, offroad_width + 2.5):
+			continue
 		var c := p.closest(pos)
 		var excess: float = c.distance - p.half_width_at(c.s)
 		if excess < main_excess and c.distance < p.half_width_at(c.s) + offroad_width + 2.0:

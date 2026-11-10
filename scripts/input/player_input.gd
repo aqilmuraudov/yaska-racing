@@ -41,6 +41,12 @@ func steer_mode() -> String:
 
 
 func _physics_process(delta: float) -> void:
+	var _pt := Time.get_ticks_usec()
+	_phys_tick(delta)
+	Prof.add(&"input", _pt)
+
+
+func _phys_tick(delta: float) -> void:
 	if kart == null:
 		return
 	var inp := kart.input

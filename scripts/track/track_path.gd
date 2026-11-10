@@ -126,14 +126,24 @@ func _seg(s: float) -> Array:
 	return [i, i2, f]
 
 
+## 0.17.4: position_at / half_width_at inline _seg (no Array per call) - the
+## AI and the trackers call them dozens of times per kart and physics tick.
 func position_at(s: float) -> Vector3:
-	var g := _seg(s)
-	return points[g[0]].lerp(points[g[1]], g[2])
+	s = wrap_s(s)
+	var count := points.size()
+	var step := length / (count if closed else count - 1)
+	var i := clampi(int(s / step), 0, count - 1)
+	var i2 := (i + 1) % count if closed else mini(i + 1, count - 1)
+	return points[i].lerp(points[i2], clampf((s - i * step) / step, 0.0, 1.0))
 
 
 func half_width_at(s: float) -> float:
-	var g := _seg(s)
-	return lerpf(half_widths[g[0]], half_widths[g[1]], g[2])
+	s = wrap_s(s)
+	var count := points.size()
+	var step := length / (count if closed else count - 1)
+	var i := clampi(int(s / step), 0, count - 1)
+	var i2 := (i + 1) % count if closed else mini(i + 1, count - 1)
+	return lerpf(half_widths[i], half_widths[i2], clampf((s - i * step) / step, 0.0, 1.0))
 
 
 func theme_at(s: float) -> int:
@@ -178,7 +188,10 @@ func closest(pos: Vector3, hint_s: float = -1.0, window: float = 40.0) -> Dictio
 	var best_d := INF
 	if hint_s < 0.0:
 		for i in count:
-			var d := _flat_dist_sq(points[i], pos)
+			var q := points[i]
+			var dx := q.x - pos.x
+			var dz := q.z - pos.z
+			var d := dx * dx + dz * dz
 			if d < best_d:
 				best_d = d
 				best_i = i
@@ -192,9 +205,12 @@ func closest(pos: Vector3, hint_s: float = -1.0, window: float = 40.0) -> Dictio
 				i = posmod(i, count)
 			elif i < 0 or i >= count:
 				continue
-			var d := _flat_dist_sq(points[i], pos)
+			var q := points[i]
+			var dx := q.x - pos.x
+			var dz := q.z - pos.z
+			var dy := q.y - pos.y
 			# Small elevation term separates stacked sections.
-			d += pow(points[i].y - pos.y, 2) * 0.25
+			var d := dx * dx + dz * dz + dy * dy * 0.25
 			if d < best_d:
 				best_d = d
 				best_i = i
@@ -227,6 +243,26 @@ func closest(pos: Vector3, hint_s: float = -1.0, window: float = 40.0) -> Dictio
 	var right := right_at(best_s)
 	var lateral := (pos - best_point).dot(right)
 	return {"s": best_s, "lateral": lateral, "distance": best_dist, "point": best_point}
+
+
+## 0.17.4: flat (xz) bounds of the samples grown by the widest half width
+## plus `margin` - lets callers skip a full closest() search for a far-away
+## branch.
+var _bounds := Rect2()
+var _bounds_n := -1
+
+
+func near_xz(pos: Vector3, margin: float) -> bool:
+	if _bounds_n != points.size():
+		_bounds_n = points.size()
+		_bounds = Rect2(points[0].x, points[0].z, 0, 0) if _bounds_n > 0 else Rect2()
+		for q in points:
+			_bounds = _bounds.expand(Vector2(q.x, q.z))
+		var hw := 0.0
+		for w in half_widths:
+			hw = maxf(hw, w)
+		_bounds = _bounds.grow(hw)
+	return _bounds.grow(margin).has_point(Vector2(pos.x, pos.z))
 
 
 static func _flat_dist_sq(a: Vector3, b: Vector3) -> float:

@@ -50,6 +50,7 @@ func defaults() -> Dictionary:
 		# Player-facing picture choice (auto|low|medium|high) and 30 FPS saver;
 		# they drive the detailed keys above via the presets.
 		"quality": "auto", "battery_saver": false, "auto_cap": "high",
+		"auto_cap_build": "", # 0.17.4: game version the cap was learned on
 		"speed_effects": true, # speed lines + boost FOV kick (0.9.1)
 	})
 	return {
@@ -139,6 +140,32 @@ func load_settings() -> void:
 	if from_version < 5:
 		_migrate_v4()
 	_sanitize()
+	_forget_old_auto_cap()
+
+
+## 0.17.4: a cap learned by PerfMonitor belongs to the build it was measured
+## on. After an update (faster code, lighter scenes) "auto" starts from the
+## device tier again and steps down only if this build is slow too. Before,
+## one slow session left a phone on Low for good.
+func _forget_old_auto_cap() -> void:
+	var g: Dictionary = values.graphics
+	if String(g.get("auto_cap", "high")) == "high" or String(g.get("auto_cap_build", "")) == build_version():
+		return
+	g.auto_cap = "high"
+	g.auto_cap_build = ""
+	if String(g.get("quality", "auto")) == "auto":
+		var preset_name := auto_preset()
+		for key in PRESET_KEYS:
+			if presets.get(preset_name, {}).has(key):
+				g[key] = presets[preset_name][key]
+		g.preset = preset_name
+		if bool(g.get("battery_saver", false)):
+			g.fps_cap = 30
+		_sanitize()
+
+
+static func build_version() -> String:
+	return String(ProjectSettings.get_setting("application/config/version", ""))
 
 
 ## v1 → v2: volumes/mute become switches, the free sensitivity and button
@@ -264,6 +291,7 @@ func auto_step_down() -> bool:
 	if i <= 0:
 		return false
 	values.graphics.auto_cap = TIERS[i - 1]
+	values.graphics.auto_cap_build = build_version()
 	apply_preset(TIERS[i - 1], false)
 	save_settings()
 	apply_graphics()

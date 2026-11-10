@@ -70,6 +70,12 @@ func reset() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var _pt := Time.get_ticks_usec()
+	_phys_tick(delta)
+	Prof.add(&"stars", _pt)
+
+
+func _phys_tick(delta: float) -> void:
 	if player == null or _positions.is_empty():
 		return
 	_streak_timer = maxf(_streak_timer - delta, 0.0)

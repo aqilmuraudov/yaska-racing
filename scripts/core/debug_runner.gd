@@ -55,6 +55,34 @@ var _chaos_steer := 0.0
 var _chaos_stuck := 0.0
 var _chaos_stuck_events := 0
 var _chaos_max_stuck := 0.0
+var _env_off_done := false
+## --stats (0.17.4): wall time of the whole _process / _physics_process pass
+## (all scripts), measured by a first and a last node in process order.
+var _tick_first: _Tick
+var _tick_last: _Tick
+
+
+class _Tick extends Node:
+	var first := false
+	var t0 := 0
+	var p0 := 0
+	var other: _Tick
+	var proc_us := 0
+	var phys_us := 0
+	var phys_steps := 0
+
+	func _process(_d: float) -> void:
+		if first:
+			t0 = Time.get_ticks_usec()
+		else:
+			other.proc_us += Time.get_ticks_usec() - other.t0
+
+	func _physics_process(_d: float) -> void:
+		if first:
+			p0 = Time.get_ticks_usec()
+		else:
+			other.phys_us += Time.get_ticks_usec() - other.p0
+			other.phys_steps += 1
 
 
 static func parse_args() -> Dictionary:
@@ -76,6 +104,26 @@ func _ready() -> void:
 			_capture_times.append(float(t))
 	_quit_after = float(args.get("quit-after", "-1"))
 	_stats = args.has("stats")
+	if args.has("uncapped"):
+		# TEMP 0.17.4 phone profiling: no frame cap / vsync, so the GPU and
+		# CPU clocks stay up and the ms numbers show the real cost.
+		Engine.max_fps = 0
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		Settings.graphics_changed.connect(func():
+			Engine.max_fps = 0
+			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED))
+	if _stats:
+		_tick_first = _Tick.new()
+		_tick_first.first = true
+		_tick_first.process_priority = -2147483647
+		_tick_first.process_physics_priority = -2147483647
+		_tick_last = _Tick.new()
+		_tick_last.other = _tick_first
+		_tick_last.process_priority = 2147483647
+		_tick_last.process_physics_priority = 2147483647
+		for t in [_tick_first, _tick_last]:
+			t.process_mode = Node.PROCESS_MODE_ALWAYS
+			add_child(t)
 	if args.has("no-gltf"):
 		KartModel.gltf_enabled = false # 0.14.0 A/B: procedural karts only
 		PropKit.gltf_enabled = false # 0.14.1 and procedural props
@@ -492,6 +540,23 @@ func _process(delta: float) -> void:
 		print("PERF_CHILDREN ", " ".join(kids))
 		if args.has("perf-top"):
 			print(PerfReport.top(race, 30))
+	if args.has("env-off") and race != null and race.environment and race.environment.env and not _env_off_done:
+		# TEMP 0.17.4 phone A/B: --env-off=fog,glow,adjust,sky,tonemap,sun,particles
+		_env_off_done = true
+		var e: Environment = race.environment.env
+		for k in String(args["env-off"]).split("+"):
+			match k:
+				"fog": e.fog_enabled = false
+				"glow": e.glow_enabled = false
+				"adjust": e.adjustment_enabled = false
+				"sky": e.background_mode = Environment.BG_COLOR
+				"tonemap": e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+				"sun": race.environment.sun.visible = false
+				"particles":
+					for n in race.find_children("*", "GPUParticles3D", true, false):
+						n.visible = false
+					for n in race.find_children("*", "CPUParticles3D", true, false):
+						n.visible = false
 	if _stats:
 		_frame_times.append(delta)
 		_stat_timer += delta
@@ -584,6 +649,22 @@ func _print_stats(race: RaceManager) -> void:
 		worst = maxf(worst, f)
 		total += f
 	var avg := total / maxf(_frame_times.size(), 1)
+	var frames := maxi(_frame_times.size(), 1)
+	var scripts := ""
+	if _tick_first:
+		# Script time per frame; physics script+engine time per step (not the
+		# Jolt solve, which runs outside _physics_process callbacks).
+		scripts = " script_proc_ms=%.2f script_phys_ms=%.2f phys_steps=%.2f render_cpu_ms=%.2f" % [
+			_tick_first.proc_us / 1000.0 / frames, _tick_first.phys_us / 1000.0 / maxi(_tick_first.phys_steps, 1),
+			float(_tick_first.phys_steps) / frames, RenderingServer.viewport_get_measured_render_time_cpu(vp_rid)]
+		var keys := Prof.acc.keys()
+		keys.sort()
+		for k in keys:
+			scripts += " p_%s=%.2f" % [k, Prof.acc[k] / 1000.0 / maxi(_tick_first.phys_steps, 1)]
+		Prof.acc.clear()
+		_tick_first.proc_us = 0
+		_tick_first.phys_us = 0
+		_tick_first.phys_steps = 0
 	print("STATS t=%.0f fps=%d avg_ms=%.2f worst_ms=%.2f cpu_proc_ms=%.2f cpu_phys_ms=%.2f gpu_ms=%.2f mem_mb=%.1f vmem_mb=%.1f objects=%d draw_calls=%d prims=%d race_t=%.1f" % [
 		_elapsed, Engine.get_frames_per_second(), avg * 1000.0, worst * 1000.0,
 		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
@@ -594,7 +675,7 @@ func _print_stats(race: RaceManager) -> void:
 		Performance.get_monitor(Performance.OBJECT_COUNT),
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
-		race.race_time if race else 0.0])
+		race.race_time if race else 0.0] + scripts)
 
 
 func _save_shot(file_name: String) -> void:

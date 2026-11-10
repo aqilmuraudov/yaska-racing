@@ -28,6 +28,11 @@ var _log: FileAccess
 var _log_timer := 0.0
 var _gpu_on := false
 var _last_cap := -1
+## 0.17.4: seconds of uninterrupted racing. The window must hold racing frames
+## only: before, the countdown / first-frame shader hitches filled it and the
+## step-down fired 0.3 s into the race.
+var _racing_s := 0.0
+const SETTLE_TIME := 2.0
 
 
 func _ready() -> void:
@@ -66,7 +71,11 @@ func _in_race() -> bool:
 func _govern() -> void:
 	if fallback_active or not bool(Settings.get_value("graphics", "fps_fallback", true)):
 		return
-	if int(Settings.get_value("graphics", "fps_cap", 60)) != 60 or not _in_race():
+	if not _in_race():
+		_racing_s = 0.0
+		return
+	_racing_s += _times.back() if not _times.is_empty() else 0.0
+	if int(Settings.get_value("graphics", "fps_cap", 60)) != 60 or _racing_s < FALLBACK_WINDOW + SETTLE_TIME:
 		return
 	if _sum < FALLBACK_WINDOW * 0.95:
 		return
@@ -77,6 +86,7 @@ func _govern() -> void:
 			print("PerfMonitor: slow frames, auto quality now %s" % Settings.values.graphics.preset)
 			_times.clear()
 			_sum = 0.0
+			_racing_s = 0.0 # the preset switch hitches (textures, shadows, pipelines)
 			return
 		fallback_active = true
 		Engine.max_fps = 30

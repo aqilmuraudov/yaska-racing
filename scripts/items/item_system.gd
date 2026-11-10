@@ -313,6 +313,12 @@ func reset() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var _pt := Time.get_ticks_usec()
+	_phys_tick(delta)
+	Prof.add(&"items", _pt)
+
+
+func _phys_tick(delta: float) -> void:
 	_time += delta
 	var lifetime: float = float(config.items.trap.get("lifetime", 20.0)) if config.has("items") else 20.0
 	for t in _traps:

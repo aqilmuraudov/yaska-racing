@@ -46,6 +46,12 @@ func clear() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var _pt := Time.get_ticks_usec()
+	_phys_tick(delta)
+	Prof.add(&"skid", _pt)
+
+
+func _phys_tick(delta: float) -> void:
 	if _budget <= 0:
 		return
 	var total := 0
@@ -96,7 +102,18 @@ func _physics_process(delta: float) -> void:
 		if oldest.is_empty():
 			_strips.remove_at(0)
 		_dirty = true
-	if _dirty:
+	# 0.17.4: the mesh is rebuilt in _process, at most REBUILD_HZ times a
+	# second (each rebuild re-sends every point: ~1 ms per tick on a phone).
+
+
+const REBUILD_HZ := 30.0
+var _since_rebuild := 0.0
+
+
+func _process(delta: float) -> void:
+	_since_rebuild += delta
+	if _dirty and _since_rebuild >= 1.0 / REBUILD_HZ:
+		_since_rebuild = 0.0
 		_rebuild()
 		_dirty = false
 
