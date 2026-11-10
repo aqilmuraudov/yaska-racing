@@ -25,6 +25,11 @@ func after_each() -> void:
 		scr.queue_free()
 	await tree.process_frame
 	SafeFile.delete_all(PROFILE)
+	# 0.17.4: leave no test folder in the player's user data.
+	if DirAccess.dir_exists_absolute(GHOST_DIR):
+		for f in DirAccess.get_files_at(GHOST_DIR):
+			DirAccess.remove_absolute(GHOST_DIR.path_join(f))
+		DirAccess.remove_absolute(GHOST_DIR)
 	SaveManager.save_path = _orig
 	SaveManager.load_profile()
 	Game.race_config = Game.default_race_config()
