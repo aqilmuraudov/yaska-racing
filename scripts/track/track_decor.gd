@@ -20,7 +20,7 @@ var lod_distance := LOD_DISTANCE
 
 static func lod_for(decor_meters: float) -> float:
 	return clampf(decor_meters * 0.42, 60.0, 200.0)
-const NO_SHADOW_PROPS := ["bench", "bollard", "umbrella", "kiosk", "baluster", "chevron_left", "chevron_right", "tire_stack", "boat"]
+const NO_SHADOW_PROPS := ["kb_post", "kb_bush", "kb_rock", "bench", "bollard", "umbrella", "kiosk", "baluster", "chevron_left", "chevron_right", "tire_stack", "boat"]
 
 var _lod_nodes: Array = []
 var data: TrackData

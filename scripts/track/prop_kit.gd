@@ -289,6 +289,16 @@ const GLTF_PROPS := {
 	"maiden_tower": "res://assets/models/oldcity/oldcity_props",
 	"baluster": "res://assets/models/street/street_props",
 	"lamp": "res://assets/models/street/street_props",
+	# 0.18.0 Qarabağ forest (tools/blender/karabakh_flora.py)
+	"kb_beech": "res://assets/models/karabakh_flora/karabakh_flora",
+	"kb_oak": "res://assets/models/karabakh_flora/karabakh_flora",
+	"kb_hornbeam": "res://assets/models/karabakh_flora/karabakh_flora",
+	"kb_maple": "res://assets/models/karabakh_flora/karabakh_flora",
+	"kb_pine": "res://assets/models/karabakh_flora/karabakh_flora",
+	"kb_bush": "res://assets/models/karabakh_flora/karabakh_flora",
+	"kb_rock": "res://assets/models/karabakh_flora/karabakh_flora",
+	"kb_post": "res://assets/models/karabakh_flora/karabakh_flora",
+	"kb_lamp": "res://assets/models/karabakh_flora/karabakh_flora",
 	"palm": "res://assets/models/flora/flora_props",
 	"palm_b": "res://assets/models/flora/flora_props",
 	"tree": "res://assets/models/flora/flora_props",
@@ -374,6 +384,7 @@ const GLTF_PROPS := {
 }
 ## Which TimeOfDay light drives each set's glow mask (orm alpha).
 const PROP_GLOW := {"res://assets/models/oldcity": "windows", "res://assets/models/street": "lamps",
+	"res://assets/models/karabakh_flora": "lamps", # 0.18.0 reflectors + LED heads
 	"res://assets/models/city": "windows", "res://assets/models/seafront": "windows",
 	"res://assets/models/skyline": "windows", "res://assets/models/landmarks": "windows",
 	"res://assets/models/downtown": "windows", "res://assets/models/plaza": "windows",

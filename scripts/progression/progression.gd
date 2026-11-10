@@ -33,7 +33,7 @@ const TITLES := [
 
 const TRACKS := TrackList.IDS ## 0.11.0: per-track trophies for every track
 ## 0.13.0: string prefix per track (was "not the first track = Göydələnlər").
-const TROPHY_PREFIX := {"seafront_sprint": "TROPHY_", "downtown_towers": "TROPHY_DT_", "old_city": "TROPHY_OC_"}
+const TROPHY_PREFIX := {"seafront_sprint": "TROPHY_", "downtown_towers": "TROPHY_DT_", "old_city": "TROPHY_OC_", "karabakh": "TROPHY_KB_"}
 
 ## Daily goals (optional): three per day, chosen from the date.
 const DAILY_POOL := [

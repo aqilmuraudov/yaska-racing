@@ -31,6 +31,7 @@ const C_SEABED := Color("6d8f86")
 const C_CITY_SIDEWALK := Color("b9b4ac") ## 0.11.0 downtown kerbside paving
 const C_CITY_PLAZA := Color("d6cfc2")
 const C_CITY_PARK := Color("6fb35a")
+const C_FOREST_VERGE := Color("6f8f4a") ## 0.18.0 Qarabağ: grassy gravel verge
 
 var data: TrackData
 var road_body: StaticBody3D
@@ -81,6 +82,7 @@ func _make_materials() -> void:
 	road.shader = ROAD_SHADER
 	TextureLibrary.bind(road, "asphalt_tex", "road")
 	TextureLibrary.bind(road, "cobble_tex", "cobbles")
+	road.set_shader_parameter("lane_count", float(data.lanes))
 	materials.road = road
 	var curb := ShaderMaterial.new()
 	curb.shader = CURB_SHADER
@@ -208,6 +210,8 @@ func _offroad_color(theme: int, p: Vector3, side: float, right: Vector3) -> Colo
 			return C_COBBLE_OFF
 		TrackData.THEME_DOWNTOWN:
 			return C_CITY_SIDEWALK
+		TrackData.THEME_FOREST:
+			return C_FOREST_VERGE
 	return C_GRASS
 
 
@@ -289,6 +293,9 @@ func _wall_style(theme: int, outward: Vector3) -> Dictionary:
 		TrackData.THEME_DOWNTOWN:
 			# City street barrier: light grey with a yellow cap and white stripe.
 			return {"h": 0.95, "body": Color("c4cad3"), "cap": Color("ffb21f"), "stripe": Color.WHITE}
+		TrackData.THEME_FOREST:
+			# Mountain road: galvanised guardrail grey with a white reflector line.
+			return {"h": 0.85, "body": Color("9aa3a8"), "cap": Color("c9d0d4"), "stripe": Color("f4f4ee"), "kind": "guardrail"}
 		TrackData.THEME_OLDCITY:
 			# Tints for the limestone shader (near white keeps the stone colour).
 			return {"h": 1.2, "body": Color(1.0, 0.97, 0.93), "cap": Color(1.0, 1.0, 1.0), "stripe": Color.TRANSPARENT, "kind": "oldcity"}
@@ -442,6 +449,9 @@ func _build_finish_line() -> void:
 # --- Terrain & water ----------------------------------------------------------
 
 func _build_terrain() -> void:
+	if data.raw.has("terrain_dir"):
+		_build_blender_terrain(String(data.raw.terrain_dir))
+		return
 	var bounds := AABB(data.main.points[0], Vector3.ZERO)
 	for p in data.main.points:
 		bounds = bounds.expand(p)
@@ -495,12 +505,99 @@ func _build_terrain() -> void:
 	# Safety floor far below: anything reaching it is recovered by RaceManager.
 
 
+## 0.18.0 Qarabağ: the terrain modelled and baked in Blender
+## (tools/blender/karabakh_terrain.py): near / far tiles (visibility ranges
+## from each tile's centre), the mountain ring, the river; its height grid
+## (heights.bin) answers terrain_height(). Visual only, like the procedural
+## terrain: the road, verges and barriers keep their spline-built collision.
+const TERRAIN_SHADER := preload("res://assets/materials/terrain_baked.gdshader")
+const TERRAIN_LOD := 240.0
+var _heights := PackedFloat32Array()
+var _hgrid := {} # x0, z0, cell, nx, nz
+
+
+func _build_blender_terrain(dir: String) -> void:
+	var meta = JSON.parse_string(FileAccess.get_file_as_string(dir + "/heights.json"))
+	if typeof(meta) == TYPE_DICTIONARY:
+		_hgrid = meta
+		_heights = FileAccess.get_file_as_bytes(dir + "/heights.bin").to_float32_array()
+	var scene := load(dir + "/terrain.glb") as PackedScene
+	if scene == null:
+		push_error("TrackBuilder: no Blender terrain in %s" % dir)
+		return
+	var inner := ShaderMaterial.new()
+	inner.shader = TERRAIN_SHADER
+	inner.set_shader_parameter("albedo_tex", load(dir + "/terrain_albedo.png"))
+	var outer := ShaderMaterial.new()
+	outer.shader = TERRAIN_SHADER
+	outer.set_shader_parameter("albedo_tex", load(dir + "/mountains_albedo.png"))
+	outer.set_shader_parameter("detail_strength", 0.0)
+	materials.terrain = inner
+	materials.mountains = outer
+	var root := Node3D.new()
+	root.name = "Terrain"
+	add_child(root)
+	var src := scene.instantiate()
+	for n in src.find_children("*", "MeshInstance3D", true, false):
+		var from := n as MeshInstance3D
+		var mi := MeshInstance3D.new()
+		mi.name = from.name
+		mi.mesh = from.mesh
+		mi.transform = from.global_transform if from.is_inside_tree() else _scene_xform(from, src)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var nm := String(from.name)
+		if nm == "River":
+			mi.material_override = materials.water
+		elif nm == "Mountains":
+			mi.material_override = outer
+		else:
+			mi.material_override = inner
+			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+			if nm.ends_with("_far"):
+				mi.visibility_range_begin = TERRAIN_LOD
+				mi.visibility_range_begin_margin = 20.0
+			else:
+				mi.visibility_range_end = TERRAIN_LOD
+				mi.visibility_range_end_margin = 20.0
+		root.add_child(mi)
+	src.free()
+
+
+static func _scene_xform(n: Node3D, top: Node) -> Transform3D:
+	var xf := n.transform
+	var p := n.get_parent()
+	while p != null and p != top:
+		if p is Node3D:
+			xf = (p as Node3D).transform * xf
+		p = p.get_parent()
+	return xf
+
+
+## Bilinear height from the Blender grid (ground, under the canopy).
+func _grid_height(wx: float, wz: float) -> float:
+	var cell := float(_hgrid.cell)
+	var nx := int(_hgrid.nx)
+	var nz := int(_hgrid.nz)
+	var fx := clampf((wx - float(_hgrid.x0)) / cell, 0.0, nx - 1.001)
+	var fz := clampf((wz - float(_hgrid.z0)) / cell, 0.0, nz - 1.001)
+	var ix := int(fx)
+	var iz := int(fz)
+	var tx := fx - ix
+	var tz := fz - iz
+	var i := iz * nx + ix
+	var a := lerpf(_heights[i], _heights[i + 1], tx)
+	var b := lerpf(_heights[i + nx], _heights[i + nx + 1], tx)
+	return lerpf(a, b, tz)
+
+
 ## 0.15.3: height of the grass terrain at a world point (same rule as the
 ## mesh, without the 6 m grid), for set pieces standing on it.
 var _terrain_hash := {}
 
 
 func terrain_height(wx: float, wz: float) -> float:
+	if not _heights.is_empty():
+		return _grid_height(wx, wz)
 	if _terrain_hash.is_empty():
 		return 0.0
 	return float(_terrain_sample(_terrain_hash, 24.0, wx, wz)[0])
@@ -570,6 +667,8 @@ func _terrain_sample(hash: Dictionary, hcell: float, wx: float, wz: float) -> Ar
 
 
 func _build_water() -> void:
+	if not data.has_sea:
+		return # 0.18.0 Qarabağ: mountains, no sea
 	var mesh := PlaneMesh.new()
 	mesh.size = Vector2(2600, 1400)
 	mesh.subdivide_width = 40

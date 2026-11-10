@@ -10,6 +10,7 @@ const THEME_BOULEVARD := 0
 const THEME_CONNECTOR := 1
 const THEME_OLDCITY := 2
 const THEME_DOWNTOWN := 3 ## 0.11.0 Göydələnlər şəhəri streets
+const THEME_FOREST := 4 ## 0.18.0 Qarabağ: two-lane mountain asphalt through the forest
 
 var id := ""
 var name_key := ""
@@ -27,6 +28,8 @@ var item_rows: Array[Dictionary] = [] # {s, count}
 var offroad_width := 4.0
 var sea_z := 1.0e9
 var sea_level := -1.6
+var has_sea := false ## 0.18.0: Qarabağ has no sea (no water plane, no seawall)
+var lanes := 3 ## road markings: lanes per carriageway ("lanes" in the JSON)
 var raw: Dictionary = {}
 
 
@@ -48,7 +51,9 @@ static func from_dict(d: Dictionary) -> TrackData:
 	td.ground = String(d.get("ground", ""))
 	td.default_laps = int(d.get("laps", 3))
 	td.offroad_width = float(d.get("offroad_width", 4.0))
+	td.lanes = int(d.get("lanes", 3))
 	if d.has("sea"):
+		td.has_sea = true
 		td.sea_z = float(d.sea.z)
 		td.sea_level = float(d.sea.level)
 	td.main = TrackPath.from_control_points(_control(d.control), true)

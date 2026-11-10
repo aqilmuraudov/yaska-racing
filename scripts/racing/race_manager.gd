@@ -198,6 +198,8 @@ func build_steps() -> Array:
 				decor = DowntownDecor.new()
 			"oldcity": # 0.13.0 İçərişəhər
 				decor = OldCityDecor.new()
+			"karabakh": # 0.18.0 Qarabağ
+				decor = KarabakhDecor.new()
 			_:
 				decor = TrackDecor.new()
 		decor.name = "Decor"
