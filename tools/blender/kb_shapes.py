@@ -48,6 +48,38 @@ def add_looks(look):
             inv.inputs[0].default_value = 1.0
             nt.links.new(br.outputs["Fac"], inv.inputs[1])
             height, strength, dist = inv.outputs[0], 0.8, 0.02
+        elif kind == "diamond":
+            # lozenge panels (LaCinema walls): a 45-degree turned square grid of fine joints
+            mp = nt.nodes.new("ShaderNodeMapping")
+            mp.inputs["Rotation"].default_value = (0.0, 0.0, 0.0)
+            nt.links.new(tc.outputs["Object"], mp.inputs["Vector"])
+            sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+            nt.links.new(mp.outputs["Vector"], sep.inputs["Vector"])
+            def addm(a_, b_, op="ADD"):
+                n_ = nt.nodes.new("ShaderNodeMath")
+                n_.operation = op
+                for i_, v_ in enumerate((a_, b_)):
+                    if isinstance(v_, float):
+                        n_.inputs[i_].default_value = v_
+                    else:
+                        nt.links.new(v_, n_.inputs[i_])
+                return n_.outputs[0]
+            hor = addm(sep.outputs["X"], sep.outputs["Y"])
+            hor2 = addm(sep.outputs["Z"], sep.outputs["Y"])
+            u_ = addm(addm(hor, hor2), 1.0 / 2.4, "MULTIPLY")
+            v_ = addm(addm(addm(sep.outputs["X"], sep.outputs["Z"]), sep.outputs["Y"], "SUBTRACT"), 1.0 / 2.4,
+                      "MULTIPLY")
+            fu = addm(addm(u_, 1.0, "FLOORED_MODULO"), 0.5, "SUBTRACT")
+            fv = addm(addm(v_, 1.0, "FLOORED_MODULO"), 0.5, "SUBTRACT")
+            edge = addm(addm(addm(fu, 0.0, "ABSOLUTE"), addm(fv, 0.0, "ABSOLUTE"), "MAXIMUM"), 0.47, "GREATER_THAN")
+            line = addm(edge, 0.12, "MULTIPLY")
+            k_ = addm(1.0, line, "SUBTRACT")
+            mul = nt.nodes.new("ShaderNodeVectorMath")
+            mul.operation = "SCALE"
+            mul.inputs[0].default_value = base
+            nt.links.new(k_, mul.inputs["Scale"])
+            colour = mul.outputs["Vector"]
+            height, strength, dist = k_, 0.4, 0.01
         elif kind in ("cobble", "cut", "paving", "tile"):
             scale = {"cobble": (2.4, 2.9, 2.4), "cut": (1.0, 2.2, 1.0), "paving": (1.0, 1.0, 1.0),
                      "tile": (2.0, 2.0, 2.0)}[kind]
@@ -293,7 +325,7 @@ def text3d(name, text, size, matrix, mat, g, hi, depth=0.12, font=None):
     cu.align_x = "CENTER"
     cu.align_y = "CENTER"
     cu.extrude = depth / 2
-    cu.resolution_u = K.L(hi, 1, 3)
+    cu.resolution_u = K.L(hi, 2, 3)
     tmp = bpy.data.objects.new(name + "_txt", cu)
     K.COLL.objects.link(tmp)
     deps = bpy.context.evaluated_depsgraph_get()

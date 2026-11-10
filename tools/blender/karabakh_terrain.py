@@ -262,6 +262,38 @@ def zone_mask(xs, zs):
 
 # --- Height ----------------------------------------------------------------------------
 
+def peak_frame(pk, xs, zs):
+    """u along the ridge (to the viewer's right, in radii), v towards the cliff face."""
+    fx, fz = pk["face"]
+    rx, rz = fz, -fx            # right of a viewer looking at the face
+    dx, dz = xs - pk["x"], zs - pk["z"]
+    return (dx * rx + dz * rz) / pk["r"], (dx * fx + dz * fz) / pk["r"]
+
+
+def peak_crest(pk, xs, zs):
+    """Hoçaz after the owner's photo: the summit at u = -0.25, a steep drop to the
+    left, a long ridge falling to the right; a near-vertical limestone face on
+    the town side (v > 0), a gentler wooded back."""
+    u, v = peak_frame(pk, xs, zs)
+    us = -0.25
+    left = np.clip(1.0 - (us - u) / 0.42, 0.0, 1.0) ** 1.3
+    right = np.clip(1.0 - (u - us) / 1.3, 0.0, 1.0) ** 1.15
+    along = np.where(u < us, left, right)
+    vv = v + 0.04 * fbm(xs, zs, 3, 1.0 / 40.0)          # a ragged foot of the cliff
+    front = np.clip(1.0 - np.maximum(vv, 0.0) / 0.3, 0.0, 1.0) ** 0.7
+    back = np.clip(1.0 - (np.maximum(-v, 0.0) / 0.75) ** 2, 0.0, 1.0)
+    across = np.where(vv > 0.0, front, back)
+    ledges = 1.0 + 0.05 * fbm(xs, zs, 4, 1.0 / 25.0) * smooth(0.0, 0.1, v)
+    return pk["h"] * along * across * ledges * (0.94 + 0.12 * ridge(xs * 1.4, zs * 1.4))
+
+
+def peak_mask(xs, zs):
+    m = np.zeros(xs.shape)
+    for pk in PEAKS:
+        m = np.maximum(m, smooth(10.0, 40.0, peak_crest(pk, xs, zs)))
+    return m
+
+
 def natural(xs, zs, droad, inside):
     """The landscape before the road is cut in. Returns (h, river distance
     past the bank [< 0 in the water], zone mask)."""
@@ -276,9 +308,7 @@ def natural(xs, zs, droad, inside):
     h = np.where(inside, h, h + mount)
     # Big peaks (Hoçaz): a rocky mass well above the ring, a ridged crest.
     for pk in PEAKS:
-        rr = np.hypot(xs - pk["x"], (zs - pk["z"]) * 1.25) / pk["r"]
-        crest = pk["h"] * (1.0 - smooth(0.0, 1.0, rr)) ** 1.6 * (0.82 + 0.3 * ridge(xs * 1.7, zs * 1.7))
-        h = np.maximum(h, h * smooth(0.6, 1.0, rr) + crest)
+        h = h + peak_crest(pk, xs, zs)
     # Towns and sights stand on open, nearly level ground at road height;
     # the Şuşa plateau is a full table.
     zm = zone_mask(xs, zs)
@@ -319,14 +349,19 @@ def height(xs, zs, with_canopy=False):
     # Level pads under the landmarks and terraces under the boulevard (after
     # the road cut: their edges stay >= 3 m behind the run-off).
     pad = np.zeros(xs.shape)
-    for lm in LANDMARKS:
+    mbest = np.zeros(xs.shape)
+    ybest = np.zeros(xs.shape)
+    for lm in LANDMARKS:     # the nearest pad wins (no neighbour pulls a pad off level)
         fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
         u = np.abs((xs - lm["x"]) * fz - (zs - lm["z"]) * fx) - lm["w"] / 2
         v = np.abs((xs - lm["x"]) * fx + (zs - lm["z"]) * fz) - lm["d"] / 2
         e = np.maximum(u, v)                     # < 0 inside the footprint
         m = 1.0 - smooth(1.0, 24.0, e)   # gentle banks round the pad
-        h = h * (1.0 - m) + lm["y"] * m
+        better = m > mbest
+        mbest = np.where(better, m, mbest)
+        ybest = np.where(better, lm["y"], ybest)
         pad = np.maximum(pad, 1.0 - smooth(0.0, 2.0, e))
+    h = h * (1.0 - mbest) + ybest * mbest
     for ln in LINES:
         pts = [q for q in ln["points"] if q[2] is not None]
         if len(pts) < 2:
@@ -343,6 +378,9 @@ def height(xs, zs, with_canopy=False):
         m = 1.0 - smooth(ln["width"] / 2, ln["width"] / 2 + 10.0, d)
         h = h * (1.0 - m) + ly * m
         pad = np.maximum(pad, 1.0 - smooth(ln["width"] / 2, ln["width"] / 2 + 2.0, d))
+    # the road rule again: pads / terraces never lift the ground over the verge
+    h = np.minimum(h, cut_max)
+    h = np.where(k < 0.0, yroad - 0.7, h)
     info = {"droad": droad, "yroad": yroad, "edge": edge, "inside": inside, "rdist": rdist, "zone": zm, "pad": pad}
     return h, info
 
@@ -822,7 +860,7 @@ def main():
         cx = np.mean([v.co.x for v in far.data.vertices])
         cz = -np.mean([v.co.y for v in far.data.vertices])
         big = any(math.hypot(cx - pk["x"], cz - pk["z"]) < pk["r"] for pk in PEAKS)
-        decimate(far, 0.2 if big else 0.06, "border")
+        decimate(far, 0.4 if big else 0.06, "border")
         fars.append(far)
         decimate(ob, 0.28, "road")
     for o in tiles:
@@ -836,7 +874,7 @@ def main():
     t0 = time.time()
     mhs, minfo = height(mxs, mzs)
     mcan, mcan_on = canopy(mxs, mzs, minfo)
-    rock = smooth(150.0, 185.0, mhs)  # bare tops
+    rock = smooth(150.0, 185.0, mhs) * (1.0 - peak_mask(mxs, mzs))  # bare tops (Hoçaz: green ridge, rock face only)
     mcan = mcan * (1.0 - rock)
     mcan_on = mcan_on * (1.0 - rock)
     print(f"HEIGHTS mountains {mnx}x{mnz} in {time.time() - t0:.0f}s, y {mhs.min():.1f}..{mhs.max():.1f}")

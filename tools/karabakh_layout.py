@@ -43,17 +43,17 @@ COMPASS = {"N": (0.0, -1.0), "S": (0.0, 1.0), "E": (1.0, 0.0), "W": (-1.0, 0.0)}
 # id, zone, road hint (x, z), side (compass), w (along road), d (deep), extra setback, along-road shift
 WANT = [
     # Xankəndi - Zəfər meydanı first (owner: "ən əsası")
-    ("kb_victory_square", "khankendi", (600, -528), "N", 70, 52, 0, 0),
+    ("kb_victory_square", "khankendi", (600, -528), "N", 70, 64, 0, 0),
     ("kb_university", "khankendi", (790, -490), "N", 46, 24, 2, 0),
     ("kb_stadium", "khankendi", (585, -528), "S", 100, 74, 14, 0),
     ("kb_our_mountains", "khankendi", (470, -500), "N", 16, 12, 22, 0),
     # Şuşa
-    ("kb_shusha_sign", "shusha", (395, -330), "E", 14, 6, -1.5, 0),
+    ("kb_shusha_sign", "shusha", (395, -330), "E", 14, 6, 0.5, 0),
     ("kb_mosque", "shusha", (150, -255), "N", 28, 32, 0, 0),
     ("kb_vagif", "shusha", (-30, -272), "S", 18, 18, 2, 0),
     # Laçın
-    ("kb_cinema", "lachin", (-700, -80), "E", 32, 24, 0, 0),
-    ("kb_hotel", "lachin", (-735, 175), "E", 44, 22, 8, 0),
+    ("kb_cinema", "lachin", (-700, -80), "E", 32, 28, 0, 0),
+    ("kb_hotel", "lachin", (-735, 175), "E", 80, 46, 8, 0),
     ("kb_garden_cafe", "lachin", (-772, 20), "W", 22, 16, 0, 0),
     ("kb_house_a", "lachin", (-655, -105), "N", 12, 11, 0, 0),
     ("kb_house_b", "lachin", (-765, -10), "E", 12, 11, 0, 0),
@@ -167,7 +167,10 @@ for lid, zone, hint, side, w, d, extra, shift in WANT:
         break
     assert ok, f"{lid} at {hint}: no room"
     # Model origin = footprint front centre? No: the footprint centre (models are built centred).
-    y = float(P[i][1]) - 0.4
+    # the pad sits 0.4 m under the lowest road point beside the footprint (the
+    # road may slope along a long front; the ground must stay under the verge)
+    near = np.hypot(P[:, 0] - c[0], P[:, 2] - c[1]) < math.hypot(w, d) / 2 + base + grow + 15.0
+    y = float(P[near, 1].min()) - 0.4
     placed.append({"id": lid, "x": round(float(c[0]), 2), "y": round(y, 2), "z": round(float(c[1]), 2),
                    "yaw": round(yaw, 4), "w": w, "d": d, "zone": zone,
                    "setback": round(float(base + grow - HW[i] - OW), 2)})
@@ -209,7 +212,15 @@ for ln in lines:
     assert g > CLEAR, ln["id"]
 
 # Hoçaz: the big mountain north-west of Laçın, beyond the Həkəri (the village lies ~9 km NW of the town).
-peaks = [{"id": "hocaz", "x": -1160.0, "z": -330.0, "h": 300.0, "r": 420.0}]
+# Owner's photo (2026-11-10): a pointed summit on the left, a tall grey limestone
+# cliff face under it, a long forested ridge falling away to the right. "face" =
+# the cliff side, turned towards the town (the road sees it from ~350 m).
+_lz = next(z for z in track["zones"] if z[0] == "lachin")
+_pk = (-1150.0, -300.0)
+_f = np.array([_lz[1] - _pk[0], _lz[2] - _pk[1]])
+_f /= np.linalg.norm(_f)
+peaks = [{"id": "hocaz", "x": _pk[0], "z": _pk[1], "h": 235.0, "r": 360.0,
+          "face": [round(float(_f[0]), 4), round(float(_f[1]), 4)]}]
 
 # Plots (circles) covering every footprint and line --------------------------------------------
 plots = []
@@ -221,7 +232,9 @@ for q in placed:
     cx, cz = q["x"] + fx * lane / 2, q["z"] + fz * lane / 2
     xs, zs = rect_points(cx, cz, q["yaw"], max(q["w"] - s, 0.1), max(q["d"] + lane - s, 0.1), s)
     for x, z in zip(xs, zs):
-        plots.append([round(x, 1), round(z, 1), round(s / math.sqrt(2) + 0.5, 1), q["zone"]])
+        r = min(s / math.sqrt(2) + 0.5, road_gap([x], [z]) - 0.6)   # never over the run-off
+        if r >= 2.0:
+            plots.append([round(x, 1), round(z, 1), round(r, 1), q["zone"]])
 for ln in lines:
     pts = ln["points"]
     for k in range(0, len(pts), 2 if ln["id"] == "shusha_wall" else 1):

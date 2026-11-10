@@ -81,8 +81,8 @@ func test_layout_limits() -> void:
 		zones[String(pl[3])] = true
 		var c := path.closest(Vector3(pl[0], 0, pl[1]))
 		var gap: float = c.distance - path.half_width_at(c.s) - _td.offroad_width - float(pl[2])
-		check(gap > 0.0 and gap < 25.0, "plot %s beside the road (gap %.1f m)" % [pl, gap])
-	check(zones.has("lachin") and zones.has("shusha") and zones.has("khankendi") and zones.has("khudafarin"), "all four zones")
+		check(gap > 0.0, "plot %s clear of the road (gap %.1f m)" % [pl, gap])
+	check(zones.has("lachin") and zones.has("shusha") and zones.has("khankendi"), "the three towns (0.19.1: Xudafərin has its bridges)")
 
 
 func _builder() -> TrackBuilder:

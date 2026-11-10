@@ -4,11 +4,11 @@
 Same pipeline as the other prop sets (kart_common.run). Frame: x along the
 road, y up, z towards the road (front), origin at the footprint centre on its
 pad (tools/karabakh_layout.py footprints w x d).
-  kb_victory_square  Zəfər meydanı (the owner: "ən əsası"), 70 x 52 m: granite
-                     square, fountain, flower beds, lamps, park trees, the
-                     government building with its colonnade at the back, the
-                     name stone at the front. An approximation: no current
-                     photos were found; no flag mast (not named by the owner).
+  kb_victory_square  Zəfər meydanı with the Victory Arch (the owner: "ən əsası";
+                     after the owner's photo), 70 x 64 m: the 30 m white arch
+                     at the top of a broad stair, cypress rows, red flowers,
+                     arm lamps, a low white building beyond. No flag mast
+                     (not named by the owner).
   kb_university      Qarabağ Universiteti, 46 x 24 m: four-storey teaching
                      building, glazed entrance hall, the name in letters.
   kb_stadium         Xankəndi stadium, 100 x 74 m: pitch, running track,
@@ -53,17 +53,23 @@ PALETTE = {
     "tuff": ("A85A40", 0.95, 0.0),
     "tuff_dark": ("74382A", 0.95, 0.0),
     "letters": ("D9B45A", 0.35, 0.8),
+    "arch_white": ("F4F3EF", 0.5, 0.0),
+    "stair": ("4E5156", 0.35, 0.0),
+    "cypress": ("2F4A24", 0.9, 0.0),
 }
 PAINT_MAT = "glass"
 STONE = []
 LOOK = {"granite": "paving", "granite_dark": "cut", "cream": "cut", "cream_shade": "cut", "white": "plain",
         "concrete": "plain", "grass": "grass", "tuff": "rock", "tuff_dark": "rock", "track_red": "plain",
-        "leaf": "grass", "roof": "plain"}
+        "leaf": "grass", "roof": "plain", "arch_white": "plain", "stair": "tile",
+        "cypress": "grass"}
 GROUPS = ["kb_victory_square", "kb_university", "kb_stadium", "kb_our_mountains"]
 UV_SCALE = {"kb_victory_square": 1.0, "kb_university": 1.0, "kb_stadium": 0.8, "kb_our_mountains": 1.2}
 FAR_RATIO = {g: 0.35 for g in GROUPS}
 F = S.FOUND
 _looked = False
+# side profiles drawn as (z, y), extruded along x
+SWAP_XZ = Matrix(((0, 0, 1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (0, 0, 0, 1)))
 
 
 def lamp(g, tag, hi, x, z, h=5.0):
@@ -90,73 +96,111 @@ def windows_row(g, tag, hi, x0, x1, y, z, w=1.6, h=2.0, pitch=3.2, skip=None):
 
 # --- Zəfər meydanı ---------------------------------------------------------------------------
 
+def cypress(g, tag, hi, x, z, y0=0.0, h=5.5):
+    S.cylinder(f"{g}_cyt{x:.0f}_{z:.0f}_{tag}", 0.15, y0, y0 + 0.6, (x, z), "trunk", g, hi, seg=(4, 6))
+    S.cylinder(f"{g}_cyc{x:.0f}_{z:.0f}_{tag}", 0.75, y0 + 0.5, y0 + h * 0.75, (x, z), "cypress", g, hi, seg=(6, 10),
+               r_top=0.6)
+    S.cone(f"{g}_cyp{x:.0f}_{z:.0f}_{tag}", 0.6, y0 + h * 0.75, y0 + h, (x, z), "cypress", g, hi, seg=(6, 10))
+
+
+def arm_lamp(g, tag, hi, x, z, y0, side):
+    """Black pole with a curved arm and a flat round head (as on the square)."""
+    S.cylinder(f"{g}_alp{x:.0f}_{z:.0f}_{tag}", 0.1, y0, y0 + 5.2, (x, z), "frame", g, hi, seg=(5, 8))
+    S.box(f"{g}_ala{x:.0f}_{z:.0f}_{tag}", (1.3, 0.1, 0.1), (x + side * 0.6, y0 + 5.15, z), "frame", g, hi, bevel=0.0)
+    S.cylinder(f"{g}_alh{x:.0f}_{z:.0f}_{tag}", 0.38, y0 + 4.9, y0 + 5.1, (x + side * 1.2, z), "lamp_head", g, hi,
+               seg=(6, 12))
+
+
 def build_square(hi):
+    """Zəfər meydanı after the owner's photo (2026-11-10): the Victory Arch -
+    a huge white portal (legs with a sloping inner face, a deep lintel) at the
+    top of a broad stair (two dark granite flights, a white middle strip, white
+    cheek walls), cypress rows, red flower beds and black arm lamps on the
+    lawns beside it, wet-looking light granite paving, a low white building
+    beyond the arch. Front (+z) to the road."""
     tag = "H" if hi else "L"
     g = "kb_victory_square"
-    W, D = 70.0, 52.0
-    # the square: granite slabs on a plinth, one low step all round
+    W, D = 70.0, 64.0
+    TOP = 4.0                       # the upper terrace
+    zs0, zs1 = 6.0, 20.0            # the stair (bottom at zs1, top at zs0)
     S.slab(f"{g}_plinth_{tag}", -W / 2, W / 2, -F, 0.15, -D / 2, D / 2, "granite_dark", g, hi, bevel=0.0)
-    S.slab(f"{g}_paving_{tag}", -W / 2 + 1.0, W / 2 - 1.0, 0.15, 0.3, -D / 2 + 1.0, D / 2 - 1.0, "granite", g, hi,
-           bevel=0.0)
-    # the government building at the back (Soviet-classical, restored): 60 x 14 x 16 m
-    bz0, bz1 = -D / 2 + 0.5, -D / 2 + 14.5
-    S.slab(f"{g}_b_base_{tag}", -30, 30, 0.3, 2.2, bz0, bz1, "cream_shade", g, hi)
-    S.slab(f"{g}_b_body_{tag}", -29.5, 29.5, 2.2, 15.0, bz0, bz1 - 0.4, "cream", g, hi)
-    S.slab(f"{g}_b_cornice_{tag}", -30.2, 30.2, 15.0, 15.7, bz0 - 0.3, bz1 + 0.1, "white", g, hi)
-    S.slab(f"{g}_b_attic_{tag}", -29.5, 29.5, 15.7, 17.0, bz0, bz1 - 0.6, "cream_shade", g, hi)
-    S.slab(f"{g}_b_roof_{tag}", -29.0, 29.0, 17.0, 17.3, bz0 + 0.5, bz1 - 1.0, "roof", g, hi, bevel=0.0)
-    for k, y in enumerate((3.4, 6.8, 10.2)):
-        windows_row(g, tag, hi, -29.0, 29.0, y + 1.2, bz1 - 0.34, skip=(-10.5, 10.5))
-        S.slab(f"{g}_b_band{k}_{tag}", -29.6, 29.6, y - 0.25, y - 0.05, bz1 - 0.45, bz1 - 0.25, "white", g, hi,
-               bevel=0.0)
-    # central risalit with the colonnade (8 columns), steps, attic with the name
-    S.slab(f"{g}_r_body_{tag}", -11, 11, 2.2, 15.0, bz1 - 0.4, bz1 + 1.6, "cream", g, hi)
-    S.slab(f"{g}_r_podium_{tag}", -12, 12, 0.3, 2.2, bz1, bz1 + 6.0, "cream_shade", g, hi)
-    for k in range(6):   # steps down to the square
-        S.slab(f"{g}_r_step{k}_{tag}", -9.0 - k * 0.3, 9.0 + k * 0.3, 0.3, 2.2 - k * 0.32, bz1 + 6.0,
-               bz1 + 6.0 + (k + 1) * 0.45, "granite_dark", g, hi, bevel=0.0)
-    for k in range(8):
-        x = -9.1 + k * 2.6
-        S.cylinder(f"{g}_col{k}_{tag}", 0.55, 2.2, 13.6, (x, bz1 + 4.6), "white", g, hi, seg=(8, 16), r_top=0.47)
-        S.box(f"{g}_cap{k}_{tag}", (1.4, 0.4, 1.4), (x, 13.8, bz1 + 4.6), "white", g, hi)
-        S.box(f"{g}_bas{k}_{tag}", (1.4, 0.35, 1.4), (x, 2.38, bz1 + 4.6), "white", g, hi)
-    S.slab(f"{g}_r_ent_{tag}", -12, 12, 14.0, 15.7, bz1 + 1.6, bz1 + 5.6, "white", g, hi)
-    S.slab(f"{g}_r_attic_{tag}", -12, 12, 15.7, 18.6, bz1 + 1.4, bz1 + 5.4, "cream_shade", g, hi)
-    for k, y in enumerate((5.2, 8.6, 12.0)):
-        windows_row(g, tag, hi, -10.0, 10.0, y, bz1 + 1.66, w=1.3, h=2.2, pitch=2.6)
-    S.box(f"{g}_door_{tag}", (3.0, 4.0, 0.12), (0.0, 4.2, bz1 + 1.66), "frame", g, hi, bevel=0.0)
-    # the fountain: a round basin, a ring of jets and a tall centre jet (water as clear forms)
-    fz = 2.0
-    S.cylinder(f"{g}_basin_{tag}", 9.0, 0.3, 0.95, (0, fz), "granite_dark", g, hi, seg=(16, 40))
-    S.cylinder(f"{g}_water_{tag}", 8.4, 0.95, 1.0, (0, fz), "water", g, hi, seg=(16, 40))
-    S.cylinder(f"{g}_bowl_{tag}", 2.2, 1.0, 2.0, (0, fz), "white", g, hi, seg=(10, 24), r_top=2.8)
-    S.cone(f"{g}_jet_{tag}", 0.9, 2.0, 7.0, (0, fz), "water", g, hi, seg=(8, 16))
-    for k in range(10):
-        a = 2 * math.pi * k / 10
-        S.cone(f"{g}_jr{k}_{tag}", 0.35, 1.0, 3.0, (math.cos(a) * 6.0, fz + math.sin(a) * 6.0), "water", g, hi,
-               seg=(5, 8))
-    # flower beds left and right of the fountain, hedges
+    # front plaza
+    S.slab(f"{g}_plaza_{tag}", -W / 2 + 1, W / 2 - 1, 0.15, 0.3, zs1, D / 2 - 1, "granite", g, hi, bevel=0.0)
+    # upper terrace (a solid block under it), arch court paving
+    S.slab(f"{g}_terrace_{tag}", -W / 2 + 1, W / 2 - 1, 0.15, TOP, -D / 2 + 1, zs0, "granite_dark", g, hi, bevel=0.0)
+    S.slab(f"{g}_court_{tag}", -15, 15, TOP, TOP + 0.1, -D / 2 + 9, zs0, "granite", g, hi, bevel=0.0)
+    # the stair: two dark flights, the white middle strip, white cheek walls
+    steps = K.L(hi, 8, 16)
+    for k in range(steps):
+        z0 = zs1 - (zs1 - zs0) * (k + 1) / steps
+        y = 0.3 + (TOP - 0.3) * (k + 1) / steps
+        for sx in (-1, 1):
+            S.slab(f"{g}_st{sx}{k}_{tag}", min(sx * 3.0, sx * 12.0), max(sx * 3.0, sx * 12.0), 0.15, y, z0,
+                   z0 + (zs1 - zs0) / steps, "stair", g, hi, bevel=0.0)
+    ramp = [(zs1, 0.3), (zs0, TOP), (zs0, 0.15), (zs1, 0.15)]
+    S.extrude(f"{g}_strip_{tag}", [(z, y) for z, y in ramp], -3.0, 3.0, "white", g, hi,
+              matrix=SWAP_XZ)
     for sx in (-1, 1):
-        cx = sx * 22.0
-        S.slab(f"{g}_bed{sx}_{tag}", cx - 9, cx + 9, 0.3, 0.6, -6, 10, "granite_dark", g, hi, bevel=0.0)
-        S.slab(f"{g}_lawn{sx}_{tag}", cx - 8.6, cx + 8.6, 0.6, 0.7, -5.6, 9.6, "grass", g, hi, bevel=0.0)
-        for r_, mat, top in ((5.0, "flower_red", 0.85), (3.2, "flower_yellow", 1.0)):
-            S.cylinder(f"{g}_fl{sx}{r_:.0f}_{tag}", r_, 0.7, top, (cx, 2.0), mat, g, hi, seg=(10, 24))
-        S.slab(f"{g}_hedge{sx}_{tag}", cx - 8.6, cx + 8.6, 0.7, 1.5, 9.0, 9.6, "leaf", g, hi)
-    # avenues of park trees along the sides, lamps along the front and the sides
-    rnd = random.Random(5)
+        cheek = [(zs1 + 1.0, 0.3), (zs1 + 1.0, 1.2), (zs0, TOP + 0.9), (zs0 - 0.01, 0.15), (zs1 + 1.0, 0.15)]
+        S.extrude(f"{g}_cheek{sx}_{tag}", [(z, y) for z, y in cheek], sx * 12.0 - 0.6, sx * 12.0 + 0.6, "white", g, hi,
+                  matrix=SWAP_XZ)
+    # the Victory Arch: 26 m wide, 30 m high, 7 m deep
+    az0, az1 = -9.5, -2.5
+    y0 = TOP + 0.1
+    yl, yt = y0 + 21.0, y0 + 30.0
     for sx in (-1, 1):
+        leg = [(sx * 13.0, y0), (sx * 7.6, y0), (sx * 5.6, yl), (sx * 5.6, yt), (sx * 13.0, yt)]
+        if sx < 0:
+            leg = list(reversed(leg))
+        S.extrude(f"{g}_leg{sx}_{tag}", leg, az0, az1, "arch_white", g, hi)
+    S.slab(f"{g}_lintel_{tag}", -5.65, 5.65, yl, yt, az0, az1, "arch_white", g, hi, bevel=0.0)
+    S.slab(f"{g}_lintel_under_{tag}", -5.6, 5.6, yl - 0.02, yl, az0 + 0.05, az1 - 0.05, "white", g, hi, bevel=0.0)
+    for sx in (-1, 1):       # the two roof lights on top
+        S.box(f"{g}_rl{sx}_{tag}", (2.2, 0.3, 1.2), (sx * 8.5, yt + 0.15, (az0 + az1) / 2), "lamp_head", g, hi)
+    # lawns beside the stair and the terrace: red flower rows, cypresses, lamps
+    for sx in (-1, 1):
+        x0, x1 = sx * 13.0, sx * 34.0
+        lo, hi_x = min(x0, x1), max(x0, x1)
+        S.slab(f"{g}_lawn_low{sx}_{tag}", lo, hi_x, 0.15, 0.45, zs1, D / 2 - 6.0, "grass", g, hi, bevel=0.0)
+        slope = [(D / 2 - 6.0, 0.45), (zs0, TOP + 0.3), (zs0 - 0.01, 0.15), (D / 2 - 6.0, 0.15)]
+        S.extrude(f"{g}_lawn_slope{sx}_{tag}", [(z, y) for z, y in slope], lo, hi_x, "grass", g, hi,
+                  matrix=SWAP_XZ)
+        S.slab(f"{g}_lawn_top{sx}_{tag}", lo, hi_x, TOP, TOP + 0.3, -D / 2 + 9, zs0, "grass", g, hi, bevel=0.0)
+        for k in range(3):   # rows of round red shrubs along the stair
+            xr = sx * (14.6 + k * 2.2)
+            nb = 9
+            for j in range(nb):
+                zc = D / 2 - 7.0 - j * (D / 2 - 7.0 - zs0 - 0.8) / (nb - 1)
+                t = min(max((D / 2 - 6.0 - zc) / (D / 2 - 6.0 - zs0), 0.0), 1.0)
+                yb = 0.45 + (TOP + 0.3 - 0.45) * t
+                S.cylinder(f"{g}_fl{sx}{k}{j}_{tag}", 0.6, yb, yb + 0.55, (xr, zc), "flower_red", g, hi, seg=(6, 10))
+                S.dome(f"{g}_flt{sx}{k}{j}_{tag}", 0.6, yb + 0.55, (xr, zc), "flower_red", g, hi, rise=0.6,
+                       seg=(6, 10), rings=(2, 4))
+        for k in range(7):   # cypress rows
+            zc = D / 2 - 8.0 - k * 3.6
+            t = min(max((D / 2 - 6.0 - zc) / (D / 2 - 6.0 - zs0), 0.0), 1.0)
+            yb = 0.45 + (TOP + 0.3 - 0.45) * t
+            for xr in (sx * 22.5, sx * 25.0):
+                cypress(g, tag, hi, xr, zc, yb, 5.5 + (k % 2) * 0.6)
         for k in range(5):
-            park_tree(g, tag, hi, sx * 32.5, -8.0 + k * 7.5, 2.4, 3.2, rnd.random())
-    for x in (-26, -14, 14, 26):
-        lamp(g, tag, hi, x, 23.0)
-    for sx in (-1, 1):
-        for z in (-10.0, 6.0):
-            lamp(g, tag, hi, sx * 13.0, z)
-    # the name stone at the front, letters facing the road
-    S.slab(f"{g}_stone_{tag}", -12.0, 12.0, 0.3, 2.8, 21.0, 23.0, "granite_dark", g, hi)
-    S.text3d(f"{g}_name_{tag}", "ZƏFƏR MEYDANI", 2.3, Matrix.Translation((0, 1.6, 23.06)), "letters", g, hi,
-             depth=0.12)
+            zc = -D / 2 + 11.0 + k * 4.0
+            cypress(g, tag, hi, sx * 22.5, zc, TOP + 0.3, 6.0)
+            cypress(g, tag, hi, sx * 25.0, zc, TOP + 0.3, 6.4)
+        for k in range(5):   # arm lamps along the stair cheeks
+            zc = zs1 + 4.0 - k * 4.2
+            t = min(max((zs1 - zc) / (zs1 - zs0), 0.0), 1.0)
+            arm_lamp(g, tag, hi, sx * 13.4, zc, 0.3 + (TOP - 0.3) * t + 0.9, -sx)
+    # the low white building beyond the arch
+    bz0, bz1 = -D / 2 + 1.0, -D / 2 + 8.0
+    S.slab(f"{g}_bld_{tag}", -24, 24, TOP, TOP + 8.0, bz0, bz1, "white", g, hi)
+    S.slab(f"{g}_bld_roof_{tag}", -24.5, 24.5, TOP + 8.0, TOP + 8.6, bz0 - 0.3, bz1 + 0.5, "roof", g, hi)
+    windows_row(g, tag, hi, -23.0, 23.0, TOP + 2.2, bz1 + 0.06, w=1.4, h=2.0, pitch=2.6, skip=(-3.0, 3.0))
+    windows_row(g, tag, hi, -23.0, 23.0, TOP + 5.6, bz1 + 0.06, w=1.4, h=2.0, pitch=2.6)
+    S.box(f"{g}_bdoor_{tag}", (4.0, 3.0, 0.12), (0.0, TOP + 1.5, bz1 + 0.06), "glass", g, hi, bevel=0.0)
+    # the name stone at the front corner of the plaza
+    S.slab(f"{g}_stone_{tag}", -33.0, -15.0, 0.3, 2.6, D / 2 - 3.0, D / 2 - 1.4, "granite_dark", g, hi)
+    S.text3d(f"{g}_name_{tag}", "ZƏFƏR MEYDANI", 1.9, Matrix.Translation((-24.0, 1.5, D / 2 - 1.36)), "letters", g,
+             hi, depth=0.12)
 
 
 # --- Qarabağ Universiteti ------------------------------------------------------------------
