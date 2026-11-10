@@ -54,7 +54,6 @@ WANT = [
     # Laçın
     ("kb_cinema", "lachin", (-700, -80), "E", 32, 28, 0, 0),
     ("kb_hotel", "lachin", (-735, 175), "E", 80, 46, 8, 0),
-    ("kb_garden_cafe", "lachin", (-772, 20), "W", 22, 16, 0, 0),
     ("kb_house_a", "lachin", (-655, -105), "N", 12, 11, 0, 0),
     ("kb_house_b", "lachin", (-765, -10), "E", 12, 11, 0, 0),
     ("kb_house_c", "lachin", (-768, 75), "E", 12, 11, 0, 0),
@@ -230,12 +229,39 @@ _f /= np.linalg.norm(_f)
 peaks = [{"id": "hocaz", "x": _pk[0], "z": _pk[1], "h": 235.0, "r": 360.0,
           "face": [round(float(_f[0]), 4), round(float(_f[1]), 4)]}]
 
+# The garden café stands on the boulevard's land edge, its terrace facing the
+# river (owner: "bulvar sahilində"), on the boulevard's terrace height.
+CAFE_W, CAFE_D = 22.0, 16.0
+bp = np.array([[q[0], q[1]] for q in blvd])
+k = int(np.argmin(np.hypot(bp[:, 0] + 835.0, bp[:, 1] - 15.0)))
+t = bp[min(k + 1, len(bp) - 1)] - bp[max(k - 1, 0)]
+t /= np.linalg.norm(t)
+n_land = np.array([-t[1], t[0]])
+if n_land[0] < 0:
+    n_land = -n_land
+c = bp[k] + n_land * (9.0 / 2 + CAFE_D / 2 + 0.5)
+f = -n_land
+yaw = math.atan2(f[0], f[1])
+xs, zs = rect_points(c[0], c[1], yaw, CAFE_W, CAFE_D)
+assert river_gap(xs, zs) > 6.0 and road_gap(xs, zs) > CLEAR, "café"
+placed.append({"id": "kb_garden_cafe", "x": round(float(c[0]), 2), "y": round(float(blvd[k][2]), 2),
+               "z": round(float(c[1]), 2), "yaw": round(yaw, 4), "w": CAFE_W, "d": CAFE_D, "zone": "lachin",
+               "setback": round(road_gap(xs, zs), 2)})
+print(f"kb_garden_cafe on the boulevard ({c[0]:.1f}, {c[1]:.1f}) y {blvd[k][2]:.1f}, "
+      f"river bank {river_gap(xs, zs):.1f} m")
+for q in placed[:-1]:
+    fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
+    for x, z in zip(xs, zs):
+        u = (x - q["x"]) * fz - (z - q["z"]) * fx
+        v = (x - q["x"]) * fx + (z - q["z"]) * fz
+        assert not (abs(u) < q["w"] / 2 and abs(v) < q["d"] / 2), "café overlaps " + q["id"]
+
 # Plots (circles) covering every footprint and line --------------------------------------------
 plots = []
 for q in placed:
     # the footprint and a view lane in front of it, open to 2.5 m behind the run-off
     s = 8.0
-    lane = max(q["setback"] - 2.5 - 2.0, 0.0)
+    lane = 0.0 if q["id"] == "kb_garden_cafe" else max(q["setback"] - 2.5 - 2.0, 0.0)
     fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
     cx, cz = q["x"] + fx * lane / 2, q["z"] + fz * lane / 2
     xs, zs = rect_points(cx, cz, q["yaw"], max(q["w"] - s, 0.1), max(q["d"] + lane - s, 0.1), s)

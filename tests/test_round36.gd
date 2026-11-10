@@ -122,6 +122,8 @@ func test_pads_level_and_open() -> void:
 		# the pad lies at road height, a little under it
 		var c := _td.main.closest(Vector3(float(lm.x), 0, float(lm.z)))
 		var ry := _td.main.position_at(c.s).y
+		if String(lm.id) == "kb_garden_cafe":
+			continue # on the boulevard terrace by the river (checked below with the line modules)
 		check(float(lm.y) < ry and float(lm.y) > ry - 6.0, "%s pad %.1f m under the road" % [lm.id, ry - float(lm.y)])
 	# the wall modules reach the ground (foundation 4 m under their origin)
 	var wall := 0
@@ -133,6 +135,20 @@ func test_pads_level_and_open() -> void:
 		else:
 			check(absf(g - float(t[2])) < 0.4, "boulevard on its terrace (%.2f vs %.2f)" % [t[2], g])
 	check(wall > 40, "the fortress wall runs %d modules" % wall)
+	# the café stands on the boulevard: next to its modules, at their height
+	for lm: Dictionary in _td.raw.landmarks:
+		if String(lm.id) != "kb_garden_cafe":
+			continue
+		var best := INF
+		var by := 0.0
+		for t: Array in _lines():
+			if String(t[0]) == "kb_blvd_seg":
+				var d := Vector2(float(t[1]) - float(lm.x), float(t[3]) - float(lm.z)).length()
+				if d < best:
+					best = d
+					by = float(t[2])
+		check(best < 20.0, "the café is on the boulevard (%.1f m)" % best)
+		check(absf(by - float(lm.y)) < 1.0, "at the boulevard's height")
 	# no tree on a footprint or the boulevard
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(String(_td.raw.terrain_dir) + "/trees.json"))
 	var inside := 0
@@ -213,7 +229,9 @@ func test_race_scene_places_the_landmarks() -> void:
 		check(decor.landmarks.has(id), "%s in the scene" % id)
 	check(decor.landmarks.has("shusha_flag"), "the flag on the Şuşa sign")
 	if decor.landmarks.has("shusha_flag"):
-		check((decor.landmarks.shusha_flag as Node).get_parent() == decor.landmarks.kb_shusha_sign, "flag on its mast")
+		var flag := decor.landmarks.shusha_flag as MeshInstance3D
+		check(flag.get_parent() == decor.landmarks.kb_shusha_sign, "flag on its mast")
+		check(flag.mesh.surface_get_material(0) == LandmarkKit.flag_material(), "the waving Azerbaijani flag material")
 	var counts := {}
 	for c in decor.get_children():
 		if c is MultiMeshInstance3D and c.has_meta("instance_xforms"):

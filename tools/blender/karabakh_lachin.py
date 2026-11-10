@@ -169,9 +169,7 @@ def build_cinema(hi):
     S.slab(f"{g}_roof_{tag}", hx0 + 0.5, hx1 - 0.5, 14.5, 14.8, hz0 + 0.5, pz, "marble_grey", g, hi, bevel=0.0)
     S.box(f"{g}_bigdoor_{tag}", (3.2, 4.6, 0.12), ((hx0 + hx1) / 2, 3.5, hz1 + 0.06), "wood", g, hi, bevel=0.0)
     S.box(f"{g}_bigdoorglass_{tag}", (2.6, 4.0, 0.04), ((hx0 + hx1) / 2, 3.5, hz1 + 0.13), "glass", g, hi, bevel=0.0)
-    # the name, small, on the frieze over the portico
-    S.text3d(f"{g}_name_{tag}", "LaCinema", 0.75, Matrix.Translation(((hx0 + hx1) / 2, 13.25, pz + 0.83)), "gold", g,
-             hi, depth=0.06)
+    # no lettering: the owner's photo shows a plain frieze
     # the side wing (one storey, pilasters, a deep cornice, its own steps)
     wx0, wx1 = hx1, 14.5
     wz0, wz1 = hz0 + 2.0, hz1 - 1.0

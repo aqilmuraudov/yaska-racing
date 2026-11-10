@@ -363,6 +363,15 @@ def height(xs, zs, with_canopy=False):
         pad = np.maximum(pad, 1.0 - smooth(0.0, 2.0, e))
     h = h * (1.0 - mbest) + ybest * mbest
     for ln in LINES:
+        if ln["points"][0][2] is None:      # a wall on the ground: protect its corridor from decimation only
+            pts = ln["points"]
+            d = np.full(xs.shape, 1e9)
+            for a, b in zip(pts[:-1], pts[1:]):
+                vx, vz = b[0] - a[0], b[1] - a[1]
+                t2 = np.clip(((xs - a[0]) * vx + (zs - a[1]) * vz) / (vx * vx + vz * vz), 0.0, 1.0)
+                d = np.minimum(d, np.hypot(xs - (a[0] + t2 * vx), zs - (a[1] + t2 * vz)))
+            pad = np.maximum(pad, 1.0 - smooth(ln["width"] / 2 + 2.0, ln["width"] / 2 + 6.0, d))
+            continue
         pts = [q for q in ln["points"] if q[2] is not None]
         if len(pts) < 2:
             continue
@@ -384,6 +393,55 @@ def height(xs, zs, with_canopy=False):
     info = {"droad": droad, "yroad": yroad, "edge": edge, "inside": inside, "rdist": rdist, "zone": zm, "pad": pad}
     return h, info
 
+
+
+def check_far_tiles(fars, hs):
+    """The far LOD (from 240 m) must still carry every landmark pad and line
+    module: ray-cast down onto the decimated far tiles and compare with the
+    full-resolution ground. Fails the build if a model would float / sink."""
+    from mathutils.bvhtree import BVHTree
+    trees = []
+    for o in fars:
+        me = o.data
+        vs = [o.matrix_world @ v.co for v in me.vertices]
+        trees.append((BVHTree.FromPolygons(vs, [p.vertices for p in me.polygons]),
+                      min(v.x for v in vs), max(v.x for v in vs), min(v.y for v in vs), max(v.y for v in vs)))
+
+    def far_h(x, z):
+        for bvh, x0, x1, y0, y1 in trees:
+            if x0 <= x <= x1 and y0 <= -z <= y1:
+                hit = bvh.ray_cast(Vector((x, -z, 2000.0)), Vector((0, 0, -1)))
+                if hit[0] is not None:
+                    return hit[0].z
+        return None
+
+    def ground(x, z):
+        fx = np.clip((x - X0) / CELL, 0, hs.shape[1] - 1.001)
+        fz = np.clip((z - Z0) / CELL, 0, hs.shape[0] - 1.001)
+        ix, iz = int(fx), int(fz)
+        tx, tz = fx - ix, fz - iz
+        return float((hs[iz, ix] * (1 - tx) + hs[iz, ix + 1] * tx) * (1 - tz) +
+                     (hs[iz + 1, ix] * (1 - tx) + hs[iz + 1, ix + 1] * tx) * tz)
+    pts = []
+    for lm in LANDMARKS:
+        fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
+        for u in np.linspace(-lm["w"] / 2 + 1.5, lm["w"] / 2 - 1.5, 6):
+            for v in np.linspace(-lm["d"] / 2 + 1.5, lm["d"] / 2 - 1.5, 5):
+                pts.append((lm["id"], lm["x"] + fz * u + fx * v, lm["z"] - fx * u + fz * v))
+    lp = os.path.join(OUT, "lines.json")
+    if os.path.exists(lp):
+        for t in json.load(open(lp, encoding="utf-8"))["instances"]:
+            pts.append((t[0], t[1], t[3]))
+    worst = (0.0, "")
+    for name, x, z in pts:
+        h = far_h(x, z)
+        if h is None:
+            continue
+        d = abs(h - ground(x, z))
+        if d > worst[0]:
+            worst = (d, f"{name} at ({x:.0f}, {z:.0f})")
+    print(f"FAR LOD under the landmarks: worst {worst[0]:.2f} m ({worst[1]}), {len(pts)} points")
+    assert worst[0] < 0.5, "far terrain tiles leave a landmark floating / sunk"
 
 
 def write_lines(hs):
@@ -483,7 +541,7 @@ def decimate(ob, ratio, protect=None):
     m.ratio = ratio
     if protect:
         m.vertex_group = protect
-        m.vertex_group_factor = 4.0
+        m.vertex_group_factor = 4.0 if protect == "road" else 20.0   # far tiles: pads / wall runs stay exact
         m.invert_vertex_group = True
     bpy.context.view_layer.objects.active = ob
     deps = bpy.context.evaluated_depsgraph_get()
@@ -798,7 +856,7 @@ def main():
     plots = np.zeros_like(xs)
     for pl in PLOTS:
         plots = np.maximum(plots, 1.0 - smooth(pl[2] - 4.0, pl[2] + 6.0, np.sqrt((xs - pl[0]) ** 2 + (zs - pl[1]) ** 2)))
-    open_f = (1.0 - plots) * (1.0 - wet) * (1.0 - zm) * (1.0 - dry)
+    open_f = (1.0 - plots) * (1.0 - wet) * (1.0 - zm) * (1.0 - dry) * (1.0 - info["pad"])
     can = can * open_f
     can_on = can_on * open_f
     forest = forest * (1.0 - plots) * (1.0 - wet) * (1.0 - 0.85 * zm) * (1.0 - dry)
@@ -836,7 +894,7 @@ def main():
                 border = gx in (j0, j1 - 1) or gz in (i0, i1 - 1)
                 if k[gz, gx] < 30.0 or border or info["pad"][gz, gx] > 0.0:
                     vg.add([v.index], 1.0, "REPLACE")
-                if border:
+                if border or info["pad"][gz, gx] > 0.0:   # far tiles keep pads / wall runs too
                     vgb.add([v.index], 1.0, "REPLACE")
             tiles.append(ob)
             tj += 1
@@ -863,6 +921,7 @@ def main():
         decimate(far, 0.4 if big else 0.06, "border")
         fars.append(far)
         decimate(ob, 0.28, "road")
+    check_far_tiles(fars, hs)
     for o in tiles:
         print(f"TILE {o.name}: {tri_count(o)} tris")
     print(f"TILES {len(tiles)}: {full} -> near {sum(tri_count(o) for o in tiles)} / far {sum(tri_count(o) for o in fars)} tris")
