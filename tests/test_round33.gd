@@ -3,10 +3,18 @@ extends TestCase
 ## the learned "auto" quality cap is forgotten after an update, PerfMonitor
 ## only judges racing frames, and the CPU savings in the track queries give
 ## exactly the old answers.
+## Production pass (same build): profile keys that never survived a reload,
+## "Yenidən" racing the already-paid goals, Kids controls stuck off after the
+## Öyrən tour, cup / daily money missing from the lifetime total, HavHav as a
+## free second kart, and the garage opening before the starter kart.
 
 const TEST_SETTINGS := "user://test_settings_r33.json"
+const TEST_PROFILE := "user://test_profile_r33.json"
 var _orig_settings_path := ""
 var _orig_settings := {}
+var _orig_profile_path := ""
+var _orig_data := {}
+var _orig_config := {}
 
 
 func before_each() -> void:
@@ -14,6 +22,12 @@ func before_each() -> void:
 	_orig_settings = Settings.values.duplicate(true)
 	Settings.save_path = TEST_SETTINGS
 	SafeFile.delete_all(TEST_SETTINGS)
+	_orig_profile_path = SaveManager.save_path
+	_orig_data = SaveManager.data.duplicate(true)
+	_orig_config = Game.race_config.duplicate(true)
+	SaveManager.save_path = TEST_PROFILE
+	SafeFile.delete_all(TEST_PROFILE)
+	SaveManager.load_profile()
 
 
 func after_each() -> void:
@@ -21,6 +35,10 @@ func after_each() -> void:
 	Settings.save_path = _orig_settings_path
 	Settings.values = _orig_settings
 	Settings.apply_graphics()
+	SafeFile.delete_all(TEST_PROFILE)
+	SaveManager.save_path = _orig_profile_path
+	SaveManager.data = _orig_data
+	Game.race_config = _orig_config
 
 
 func test_auto_cap_forgotten_after_update() -> void:
@@ -134,3 +152,116 @@ func test_skid_marks_rebuild_per_frame() -> void:
 	check(SkidMarks.REBUILD_HZ <= 30.0, "rebuild capped")
 	check(marks.has_method("_process"), "rebuild moved to the frame")
 	marks.free()
+
+
+# --- Production pass ------------------------------------------------------------
+
+func test_profile_keys_survive_reload() -> void:
+	var data := SaveManager.data
+	data.stars = 20
+	Stickers.mark_seen(data, 20)
+	check_eq(int(data.get(Stickers.SEEN_KEY, 0)), 3, "three stickers seen")
+	check(CityCards.mark_played(data, "old_city"), "city marked played")
+	SaveManager.set_tutorial_flag("basics_done", true)
+	SaveManager.save_profile()
+	SaveManager.load_profile()
+	data = SaveManager.data
+	check_eq(int(data.get(Stickers.SEEN_KEY, -1)), 3, "stickers_seen kept")
+	check_eq(Stickers.new_count(data, 20), 0, "no 'Yeni!' stickers after a restart")
+	check("old_city" in data.get(CityCards.PLAYED_KEY, []), "played_tracks kept")
+	check(not CityCards.is_new(data, "old_city"), "no 'Yeni!' city badge after a restart")
+	check(SaveManager.get_tutorial_flag("basics_done"), "HUD hints stay done")
+	# Every key the game writes into the profile has a default (else
+	# _merge_into drops it on load).
+	var defaults := SaveManager.default_profile()
+	for key in [Stickers.SEEN_KEY, CityCards.PLAYED_KEY, "race_goals", "login", "cup_progress", "cup_history", "daily_challenge", "track_stats"]:
+		check(defaults.has(key), "default for %s" % key)
+	for flag in ["drift_done", "lesson_done", "basics_done"]:
+		check((defaults.tutorial as Dictionary).has(flag), "tutorial default %s" % flag)
+
+
+func test_restart_races_the_next_goals() -> void:
+	var src := FileAccess.get_file_as_string("res://scripts/racing/race_manager.gd")
+	var body := src.substr(src.find("func restart() -> void:"), 1200)
+	check(body.contains("_load_goals()"), "restart() reloads the goals")
+	var rm := RaceManager.new()
+	rm.config = {"mode": "quick", "event_instance_id": "r33-goals"}
+	SaveManager.data.race_goals = RaceGoals.generate(1)
+	rm._load_goals()
+	var first: Array = rm.goals.duplicate(true)
+	var res := {"event_instance_id": "r33-goals"}
+	rm._settle_goals(res)
+	rm._load_goals()
+	check_eq(rm.goals, SaveManager.data.race_goals, "the race uses the saved (next) goals")
+	check_eq(rm.goals, res.next_goals, "the goals the results screen showed")
+	check(rm.goals != first, "not the goals already paid")
+	rm.free()
+
+
+func test_reset_series_clears_kids_override() -> void:
+	Game.race_config.kids_auto = false # left by the Öyrən tour
+	Game.reset_series()
+	check(not Game.race_config.has("kids_auto"), "Kids controls follow the setting again")
+	check("kids_auto" in Game.SERIES_KEYS, "listed with the per-mode keys")
+
+
+func _cup_rows(cup: Dictionary, player_place: int) -> Array:
+	var ids: Array = Array(cup.roster).duplicate()
+	ids.insert(player_place - 1, String(cup.kart_id))
+	var rows: Array = []
+	for i in ids.size():
+		rows.append({"place": i + 1, "kart": String(ids[i]), "is_player": ids[i] == cup.kart_id, "finished": true,
+			"time": 100.0 + i, "best_lap": 45.0, "name": String(ids[i])})
+	return rows
+
+
+func test_cup_prize_counts_towards_lifetime_money() -> void:
+	var data := SaveManager.data
+	data.starter_chosen = true
+	var cup := BakuCup.start(data, "havhav", 4242)
+	BakuCup.record_race(data, 0, _cup_rows(cup, 1))
+	BakuCup.record_race(data, 1, _cup_rows(BakuCup.current(data), 1))
+	cup = BakuCup.current(data)
+	var rm := RaceManager.new()
+	rm.config = {"mode": "quick", "series": "cup", "cup_race": 2, "kart_id": "havhav", "laps": 2, "track_id": "seafront_sprint"}
+	var rows := _cup_rows(cup, 1)
+	var res := {"rows": rows, "player": rows[0], "laps": 2, "track_id": "seafront_sprint", "mode": "quick",
+		"event_instance_id": BakuCup.event_id(cup, 2)}
+	var life0 := int(data.lifetime.coins)
+	var money0 := SaveManager.get_money()
+	rm._apply_rewards(res)
+	check(bool(res.cup.complete), "cup complete")
+	check_eq(int(res.cup.prize), BakuCup.PRIZE[0], "winner's prize paid")
+	var earned := SaveManager.get_money() - money0
+	check_eq(earned, int(res.reward) + int(res.bonus_coins), "balance = race pay + prize + bonuses")
+	check_eq(int(SaveManager.data.lifetime.coins) - life0, earned, "lifetime total grows by the same money")
+	rm.free()
+
+
+func test_havhav_is_not_a_free_second_kart() -> void:
+	SaveManager.choose_starter("yaska")
+	check(not SaveManager.is_kart_owned("havhav"), "HavHav not owned with another starter")
+	SaveManager.data.currency = 0
+	check_eq(SaveManager.buy_kart("havhav"), "funds", "HavHav costs money")
+	check_eq(load("res://scripts/ui/garage_screen.gd").next_locked_kart(), "havhav", "offered first (cheapest)")
+	SaveManager.data.currency = KartShop.price("havhav")
+	check_eq(SaveManager.buy_kart("havhav"), "ok", "bought")
+	check_eq(SaveManager.get_money(), 0, "full price paid")
+
+
+func test_garage_waits_for_the_starter_kart() -> void:
+	check(SaveManager.needs_starter(), "fresh profile has no starter yet")
+	var was: bool = Game._changing
+	var back0 = Game.garage_back
+	var pick0 := Game.starter_pick
+	Game._changing = true # block the real scene change
+	Game.garage_back = Game.State.KART_SELECT
+	Game.open_garage("havhav", Game.State.MAIN_MENU)
+	check(Game.starter_pick, "starter pick opened instead")
+	check_eq(Game.garage_back, Game.State.KART_SELECT, "garage not opened")
+	SaveManager.choose_starter("posi")
+	Game.open_garage("posi", Game.State.MAIN_MENU)
+	check_eq(Game.garage_back, Game.State.MAIN_MENU, "garage opens once a kart is owned")
+	Game._changing = was
+	Game.garage_back = back0
+	Game.starter_pick = pick0

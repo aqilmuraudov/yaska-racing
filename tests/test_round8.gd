@@ -39,7 +39,9 @@ func test_new_profile_owns_only_standard() -> void:
 	check_eq(SaveManager.get_selected_kart(), RacerRoster.DEFAULT_ID, "unowned selection falls back")
 	for id in RacerRoster.IDS:
 		check(KartShop.PRICES.has(id), "price for %s" % id)
-	check_eq(KartShop.price(RacerRoster.DEFAULT_ID), 0, "standard is free")
+	# 0.17.4: the starter is the player's free pick; HavHav is bought like the rest.
+	check(KartShop.price(RacerRoster.DEFAULT_ID) > 0, "HavHav has a price")
+	check(KartShop.price(RacerRoster.DEFAULT_ID) < KartShop.price(KartShop.ORDER[0]), "HavHav is the cheapest")
 	check_eq(KartShop.ORDER[-1], "yaska", "Yaska is the last, best buy")
 
 

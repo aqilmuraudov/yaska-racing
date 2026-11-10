@@ -87,10 +87,10 @@ immersive, landscape sensor, vibrate permission) and **Windows** (x86_64,
 embedded PCK).
 
 ```bash
-"$G" --headless --path . --export-debug   "Android" builds/android/BakuTurbo-debug.apk
-"$G" --headless --path . --export-release "Windows" builds/windows/BakuTurbo.exe
+"$G" --headless --path . --export-debug   "Android" builds/android/YaskaRacing-debug.apk
+"$G" --headless --path . --export-release "Windows" builds/windows/YaskaRacing.exe
 # Install on a device (USB debugging enabled):
-C:/Tools/AndroidSdk/platform-tools/adb.exe install -r builds/android/BakuTurbo-debug.apk
+C:/Tools/AndroidSdk/platform-tools/adb.exe install -r builds/android/YaskaRacing-debug.apk
 ```
 
 A release-signed Android build needs a release keystore (not created; do

@@ -476,7 +476,10 @@ func restart() -> void:
 	finish_counter = 0
 	_results = {}
 	earn = Economy.Tally.new()
-	goals_ticked = {}
+	# 0.17.4: the finished race paid its goals and drew new ones (the results
+	# screen shows them as "next"); "Yenidən" must race those, not pay the old
+	# ones a second time.
+	_load_goals()
 	_best_place_seen = 99
 	near_misses = 0
 	_near_prev = {}
@@ -507,12 +510,6 @@ func restart() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var _pt := Time.get_ticks_usec()
-	_phys_tick(delta)
-	Prof.add(&"race", _pt)
-
-
-func _phys_tick(delta: float) -> void:
 	state_time += delta
 	match state:
 		RaceState.INTRO:
@@ -532,18 +529,13 @@ func _phys_tick(delta: float) -> void:
 				replay.step(delta) # emits finished at the end -> results
 				return
 			race_time += delta
-			var _t := Time.get_ticks_usec()
 			_tick_racers(delta)
-			Prof.add(&"r_racers", _t); _t = Time.get_ticks_usec()
 			if replay:
 				replay.record(race_time)
-			Prof.add(&"r_replay", _t); _t = Time.get_ticks_usec()
 			_resolve_contacts()
 			_update_ranking()
-			Prof.add(&"r_contacts_rank", _t); _t = Time.get_ticks_usec()
 			_tick_goals()
 			_tick_near_miss(delta)
-			Prof.add(&"r_goals_near", _t)
 			if state == RaceState.RACING and nitro:
 				nitro.tick(delta)
 				if Input.is_action_just_pressed(InputActions.NITRO) and player.player_input and (player.player_input.enabled or kids_mode()):
@@ -616,9 +608,7 @@ func _tick_racers(delta: float) -> void:
 		var ww_vel := k.velocity
 		if k.is_touching_wall() and Vector2(k.velocity.x, k.velocity.z).length() < WALL_PIN_SPEED:
 			ww_vel = Vector3.ZERO
-		var _t := Time.get_ticks_usec()
 		var events := r.tracker.update(r.prev_pos, pos, race_time, ww_vel, delta)
-		Prof.add(&"r_tracker", _t)
 		r.prev_pos = pos
 		var rt := track.route_tangent(pos, {"s": r.tracker.s, "on_shortcut": r.tracker.on_shortcut})
 		k.route_forward = Vector3(rt.x, 0.0, rt.z).normalized()
@@ -852,7 +842,13 @@ func _apply_rewards(res: Dictionary) -> void:
 		_settle_goals(res)
 		granted += int(res.get("goals_pay", 0))
 		SaveManager.save_profile()
-	granted += apply_series(res, SaveManager.data, SaveManager.grant_reward)
+	var series_pay := apply_series(res, SaveManager.data, SaveManager.grant_reward)
+	# 0.17.4: the cup prize and the daily challenge are money earned too: they
+	# count towards the lifetime total that unlocks kart parts, like race pay,
+	# goals and the login bonus (grant_reward only moves the balance).
+	if series_pay > 0 and typeof(SaveManager.data.get("lifetime")) == TYPE_DICTIONARY:
+		SaveManager.data.lifetime.coins = int(SaveManager.data.lifetime.get("coins", 0)) + series_pay
+	granted += series_pay
 	SaveManager.save_profile()
 	res.reward = granted
 	res.already_rewarded = granted == 0 and amount > 0

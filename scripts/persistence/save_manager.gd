@@ -42,7 +42,13 @@ static func default_profile() -> Dictionary:
 		# 0.14.3: every tutorial flag must have a default here - _merge_into only
 		# keeps known keys, so "lesson_done" was dropped on each load (owner: the
 		# lesson opened on every start since 0.13.0).
-		"tutorial": {"drift_done": false, "lesson_done": false},
+		"tutorial": {"drift_done": false, "lesson_done": false, "basics_done": false},
+		# 0.17.4: written by Stickers / CityCards since 0.13.0 / 0.11.1 but had
+		# no default, so _merge_into dropped them on every load: the album's
+		# "Yeni!" count and the cities' "Yeni!" badges came back after each
+		# restart, and the race HUD hints (basics_done) were shown again.
+		"stickers_seen": 0,
+		"played_tracks": [],
 		"cup_progress": {}, ## BakuCup state (0.10.0), {} when no cup runs
 		"cup_history": {}, ## {"played", "won", "best"} finished cups
 		"daily_challenge": {}, ## {"done": "YYYY-MM-DD", "count"}
@@ -57,10 +63,19 @@ func load_profile() -> void:
 	if result.source != "none":
 		_merge_into(data, _migrate(result.data))
 		Progression.seed_from_old(data) # v1 saves: lifetime counters from totals
+	else:
+		_mark_new_profile_seeded()
 	if result.source == "backup":
 		push_warning("SaveManager: primary profile unusable, restored from backup")
 		save_profile()
 	profile_changed.emit()
+
+
+## 0.17.4: a brand-new profile has nothing to seed. Left unseeded, the first
+## race seeded lifetime.coins from the balance that already held that race's
+## pay, so the pay was counted twice towards the kart parts.
+func _mark_new_profile_seeded() -> void:
+	data.lifetime.seeded = true
 
 
 func save_profile() -> bool:
@@ -71,6 +86,7 @@ func save_profile() -> bool:
 func reset_profile() -> void:
 	SafeFile.delete_all(save_path)
 	data = default_profile()
+	_mark_new_profile_seeded()
 	save_profile()
 	profile_changed.emit()
 

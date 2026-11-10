@@ -117,7 +117,12 @@ static func describe_descriptor(desc: Array, prefer_pad_style: String = "xbox") 
 		return "—"
 	match String(desc[0]):
 		"key":
-			return OS.get_keycode_string(DisplayServer.keyboard_get_keycode_from_physical(int(desc[1])))
+			# Layout-aware name on desktop; elsewhere (headless, phones with a
+			# keyboard) the display server may not support the lookup and logs
+			# an error - the physical (US layout) name is good enough there.
+			if OS.has_feature("pc") and DisplayServer.get_name() != "headless":
+				return OS.get_keycode_string(DisplayServer.keyboard_get_keycode_from_physical(int(desc[1])))
+			return OS.get_keycode_string(int(desc[1]))
 		"joy_button":
 			return joy_button_name(int(desc[1]), prefer_pad_style)
 		"joy_axis":

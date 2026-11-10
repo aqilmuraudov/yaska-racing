@@ -183,7 +183,10 @@ func test_main_menu_order_fit_and_garage() -> void:
 	var was: bool = Game._changing
 	var back0 = Game.garage_back
 	Game._changing = true
+	var starter0 = SaveManager.data.get("starter_chosen", true)
+	SaveManager.data.starter_chosen = true # 0.17.4: the garage needs a starter kart
 	mm2.open_garage()
+	SaveManager.data.starter_chosen = starter0
 	Game._changing = was
 	check_eq(Game.garage_back, Game.State.MAIN_MENU, "garage returns to the main menu")
 	check_eq(String(Game.race_config.kart_id), SaveManager.get_selected_kart(), "selected racer opened")

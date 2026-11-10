@@ -82,12 +82,6 @@ func wants_start_boost() -> bool:
 
 
 func _physics_process(delta: float) -> void:
-	var _pt := Time.get_ticks_usec()
-	_phys_tick(delta)
-	Prof.add(&"ai", _pt)
-
-
-func _phys_tick(delta: float) -> void:
 	if kart == null or tracker == null:
 		return
 	var inp := kart.input
@@ -111,9 +105,7 @@ func _phys_tick(delta: float) -> void:
 	var curv_ahead := path.curvature_at(route_s + 14.0 + speed * 0.5, 10.0)
 	var inside := clampf(curv_ahead * 18.0, -0.35, 0.35) * float(profile.corner_factor)
 	var lane := clampf(_lane_target + inside, -0.6, 0.6)
-	var _t0 := Time.get_ticks_usec()
 	lane += _avoidance(pos, path, hw) # racers and hazards
-	Prof.add(&"a_avoid", _t0)
 	lane = clampf(lane, -0.7, 0.7)
 	if _near_ramp():
 		lane = 0.0
@@ -147,9 +139,7 @@ func _phys_tick(delta: float) -> void:
 		_mistake_steer = rng.randf_range(-0.6, 0.6)
 
 	# --- Speed target --------------------------------------------------------
-	var _t := Time.get_ticks_usec()
 	var v_target := _speed_target(path, speed)
-	Prof.add(&"a_speed", _t)
 	var throttle := 1.0
 	var brake := 0.0
 	if speed > v_target + 1.5:
@@ -216,9 +206,7 @@ func _phys_tick(delta: float) -> void:
 	inp.drift_held = drift_held
 	inp.drift_pressed = drift_pressed
 	inp.boost_pressed = boost_pressed
-	var _t1 := Time.get_ticks_usec()
 	inp.item_pressed = _item_decision(delta, path, speed)
-	Prof.add(&"a_item", _t1)
 	inp.look_back = false
 	inp.recover_held = recover
 	if catchup_enabled and not autopilot:

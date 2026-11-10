@@ -1,62 +1,56 @@
-# BAKU TURBO
+# Yaska Racing
 
-Original arcade kart racer set in a colourful, stylised Baku. Godot 4.4.1,
-GDScript, Android-first (landscape) with Windows builds for development.
+A 3D kart racer for young children, set in a colourful "mini Baku".
+Godot 4.4.1, GDScript, Jolt physics, Android-first (landscape, Mobile
+renderer) with Windows builds for development. Formerly called BAKU TURBO.
 
-**Status (0.6.0): child-friendly polish — one continuous splash, staged
-loading, menus that fit every ratio, closer camera, Easy Drift, real nitro
-feel, graphical speedometer, one item button, collectible stars and paints,
-steady-30 fallback; implemented and verified on desktop. Not yet tested on
-the target phone** — see
-[docs/STATUS.md](docs/STATUS.md).
+Package: `az.bakuturbo.game` (kept from the first builds so updates install
+over the old app). Currency: manat / qəpik (₼). No ads, no purchases, no
+personal data, no internet (Google Play Families).
 
-## What's in the vertical slice
+Current state, version history and known issues: [docs/STATUS.md](docs/STATUS.md).
 
-- **Baku Seafront Sprint** (1.5 km): Boulevard straight by the Caspian with
-  palms, balustrades and an observation wheel; climb through a twin-tower
-  gate into the limestone Old City (enclosed wooden balconies, carpets,
-  bunting, a keep inspired by the old tower); a risky cobbled alley shortcut;
-  a ramp and boost pad on the descent back to the shore.
-- **6 animal racers, each with its own kart**: Posi (panda, Bamboo Sprint),
-  Bicok (fox, Amber Dash), Ləlöyün (rabbit, Hop Rocket), Məstan (cat, Velvet
-  Slide), HavHav (dog, Buddy Rally), Çəpiş (lamb, Cloud Booster). Ratings
-  (top speed, acceleration, handling, drift, boost) drive real handling.
-- **Driving**: responsive arcade handling, hop-drift with a 3-tier timed
-  boost chain, start boost, pads, landing boost, wall sliding, kart bumps,
-  recovery, wrong-way detection.
-- **5 AI rivals** (easy/medium/hard) using the same physics, racing lines,
-  drifting, boosting, item use, shortcut decisions, stuck recovery.
-- **Items**: Turbo Canister, Shield, Road Trap (pooled, ownership rules,
-  immunity).
-- **Modes**: Quick Race, Time Trial (versioned ghosts), Drift School tutorial.
-- **UI**: main menu, mode/kart/track setup, loading, HUD (position, lap,
-  timer, minimap, item, drift meter, countdown, messages, speedometer),
-  pause, results with records and once-only rewards, full settings with
-  Low/Medium/High/Custom graphics, audio, controls & remapping, gameplay,
-  accessibility. Azerbaijani (default) and English.
-- **Input**: keyboard, controller and multi-touch through one action map.
-- **Audio**: original synthesized SFX, engine/drift loops and music.
+## In the game
+
+- **Three Baku cities**: Dəniz sahili (the Boulevard: Flame Towers, Heydar
+  Aliyev Center, Government House, Crescent, Carpet Museum, Crystal Hall,
+  Flag Square, TV tower, Baku Eye, Port Baku), Göydələnlər (Philharmonic,
+  City Hall, Ismailiyya, Fountain Square, Nizami street) and İçərişəhər
+  (Maiden Tower, Shirvanshahs' Palace, Juma Mosque, Sınıqqala, caravanserai,
+  Qoşa Qala gate). Day, sunset and night.
+- **Seven racers, each with its own kart** (Blender models): Yaska, Posi,
+  Biçok, Ləlöyün, Məstan, HavHav, Çəpiş. One starter kart; the others are
+  bought with the manat earned in races.
+- **Modes**: quick race, Rekord (time trial with ghost), Bakı Kuboku
+  (three-race cup), the daily challenge and the guided "Öyrən" tour.
+- **Child-friendly driving**: auto-gas, Easy Drift (release to boost), big
+  touch buttons, optional Kids controls (the kart drives itself), tilt.
+- **Garage**: upgrades, paints, parts, the nitro add-on; sticker album,
+  trophies, daily login strip, race goals.
+- **Azerbaijani** (default) and English; the player's racer speaks
+  Azerbaijani lines.
 
 ## Quick start
 
 ```bash
-"C:/Tools/Godot/Godot_v4.4.1-stable_win64.exe" --path . -e     # open editor
-"C:/Tools/Godot/Godot_v4.4.1-stable_win64_console.exe" --headless -s tests/run_tests.gd   # tests
+G="C:/Tools/Godot/Godot_v4.4.1-stable_win64_console.exe"
+"$G" --path . -e                                   # editor
+GODOT="$G" python tools/run_tests.py               # strict test suite (headless)
+"$G" --headless --path . --export-debug "Android" builds/android/YaskaRacing-debug.apk
 ```
 
-Builds: `builds/android/BakuTurbo-debug.apk`, `builds/windows/BakuTurbo.exe`
-(see [docs/BUILD.md](docs/BUILD.md)).
+Full build, test and debug-runner reference: [docs/BUILD.md](docs/BUILD.md).
 
-Controls: WASD/arrows drive, **Space** hop/drift, **Shift** drift boost,
-**E** item, **Q** look back, hold **R** recover, **Esc** pause.
+Controls (desktop): WASD/arrows drive, **Space** hop/drift, **Shift** drift
+boost, **E** item, **Q** look back, hold **R** recover, **Esc** pause.
 Full table: [docs/INPUT.md](docs/INPUT.md).
 
 ## Documentation
 
-- [docs/PLAN.md](docs/PLAN.md) — assessment, decisions, milestone roadmap
+- [docs/STATUS.md](docs/STATUS.md) — version history, verification evidence, known issues
+- [docs/TUNING.md](docs/TUNING.md) — handling, boost rules, AI, items, economy, presets
+- [docs/BUILD.md](docs/BUILD.md) — versions, build, run, test, debug flags
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — systems and data flow
-- [docs/TUNING.md](docs/TUNING.md) — handling, boost rules, AI, items, presets
 - [docs/INPUT.md](docs/INPUT.md) — input mappings
 - [docs/ASSETS.md](docs/ASSETS.md) — asset inventory, sources, licences
-- [docs/BUILD.md](docs/BUILD.md) — versions, build, run, test, debug flags
-- [docs/STATUS.md](docs/STATUS.md) — completed / pending / blocked, test evidence, known issues
+- [docs/store/](docs/store/) — Play Store drafts (privacy policy, data safety, listing)

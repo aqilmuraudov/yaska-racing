@@ -12,6 +12,11 @@ The splash fades to BG at every edge, so letterboxing on any screen ratio is
 invisible when project.godot's boot_splash/bg_color equals BG.
 
 Run from the project root:  python tools/gen_splash.py
+
+WARNING (0.17.4): the shipped splash and launcher icons are the owner's
+Yaska Racing artwork (Yaska's face + "Yaska Racing" logo), not this script's
+output. Running it overwrites them with the old procedural kart mark - keep
+it only as a reference for the edge-colour rule above.
 """
 import math
 import os
@@ -98,7 +103,7 @@ def splash():
 
     # Title: yellow with an ink outline, like the in-game Title style
     title_font = heading_font(int(150 * SS))
-    outlined_text(img, (cx, H * 0.66), "BAKU TURBO", title_font, (255, 210, 63, 255), (12, 37, 89, 255), int(9 * SS))
+    outlined_text(img, (cx, H * 0.66), "YASKA RACING", title_font, (255, 210, 63, 255), (12, 37, 89, 255), int(9 * SS))
     sub_font = heading_font(int(46 * SS))
     outlined_text(img, (cx, H * 0.78), "KART  •  BAKI", sub_font, (255, 255, 255, 255), (12, 37, 89, 255), int(5 * SS))
 

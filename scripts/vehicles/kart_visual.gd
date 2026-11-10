@@ -171,12 +171,6 @@ func _on_landed(airtime: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var _pt := Time.get_ticks_usec()
-	_phys_tick(delta)
-	Prof.add(&"visual", _pt)
-
-
-func _phys_tick(delta: float) -> void:
 	if kart == null:
 		return
 	var speed_ratio := clampf(kart.speed / kart.stats.top_speed, -1.0, 1.5)
@@ -245,12 +239,9 @@ func _phys_tick(delta: float) -> void:
 		# Front wheels counter-steer: they point along the travel direction
 		# while the body slides, plus a little of the player's input.
 		steer_vis = kart.drift_slip * 0.7 + steer * deg_to_rad(6.0)
-	var _t := Time.get_ticks_usec()
 	model.update_wheels(_wheel_angle, -steer_vis, _susp)
 	model.update_driver(steer, kart.state, _victory, delta, kart.boost.is_active(), not kart.grounded, -_roll * 0.6)
-	Prof.add(&"v_model", _t); _t = Time.get_ticks_usec()
 	effects.update(delta)
-	Prof.add(&"v_effects", _t)
 
 	# Recovery fade (scale pop) and protection blink.
 	var vis := true

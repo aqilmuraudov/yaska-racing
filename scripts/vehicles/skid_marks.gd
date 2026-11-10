@@ -46,12 +46,6 @@ func clear() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var _pt := Time.get_ticks_usec()
-	_phys_tick(delta)
-	Prof.add(&"skid", _pt)
-
-
-func _phys_tick(delta: float) -> void:
 	if _budget <= 0:
 		return
 	var total := 0

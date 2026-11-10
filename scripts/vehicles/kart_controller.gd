@@ -193,12 +193,6 @@ func reset_for_race(xform: Transform3D) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var _pt := Time.get_ticks_usec()
-	_phys_tick(delta)
-	Prof.add(&"kart", _pt)
-
-
-func _phys_tick(delta: float) -> void:
 	_tick_timers(delta)
 	if state == State.RECOVER:
 		_tick_recover(delta)
@@ -622,9 +616,7 @@ func _integrate(delta: float, on_floor: bool) -> void:
 	var pre := horizontal
 	velocity = horizontal + Vector3.UP * vertical
 	rotation = Vector3(0.0, yaw, 0.0)
-	var _ms := Time.get_ticks_usec()
 	move_and_slide()
-	Prof.add(&"k_slide", _ms)
 	_after_slide(pre, delta)
 
 

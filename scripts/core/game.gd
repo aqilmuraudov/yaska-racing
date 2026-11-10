@@ -20,7 +20,9 @@ const SCENES := {
 	State.CITY_SELECT: "res://scenes/menus/city_select.tscn", # 0.11.1 "Şəhəri seç"
 }
 ## race_config keys that belong to one mode only (cleared on mode change).
-const SERIES_KEYS := ["series", "cup_race", "roster", "grid_order", "fixed_event_id", "daily", "lesson"]
+## 0.17.4: "kids_auto" too - the Öyrən tour forces it off for itself, and the
+## leftover key kept Kids controls off in every later race of the session.
+const SERIES_KEYS := ["series", "cup_race", "roster", "grid_order", "fixed_event_id", "daily", "lesson", "kids_auto"]
 const RACE_SCENE := "res://scenes/race/race.tscn"
 
 var state: State = State.BOOT
@@ -107,6 +109,12 @@ func goto(new_state: State) -> void:
 
 ## Opens the tuning garage for a racer (0.8.3: also from the main menu).
 func open_garage(racer_id: String, back: State) -> void:
+	# 0.17.4: before the first kart is picked the garage would sell upgrades /
+	# karts on top of the placeholder HavHav, and choose_starter() then
+	# replaces the owned list - the money was gone. Pick the starter first.
+	if SaveManager.needs_starter():
+		play_pressed()
+		return
 	race_config.kart_id = racer_id
 	race_config.paint = SaveManager.get_paint(racer_id)
 	garage_back = back

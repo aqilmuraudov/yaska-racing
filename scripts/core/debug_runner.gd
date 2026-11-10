@@ -105,7 +105,7 @@ func _ready() -> void:
 	_quit_after = float(args.get("quit-after", "-1"))
 	_stats = args.has("stats")
 	if args.has("uncapped"):
-		# TEMP 0.17.4 phone profiling: no frame cap / vsync, so the GPU and
+		# 0.17.4 phone profiling: no frame cap / vsync, so the GPU and
 		# CPU clocks stay up and the ms numbers show the real cost.
 		Engine.max_fps = 0
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -541,7 +541,7 @@ func _process(delta: float) -> void:
 		if args.has("perf-top"):
 			print(PerfReport.top(race, 30))
 	if args.has("env-off") and race != null and race.environment and race.environment.env and not _env_off_done:
-		# TEMP 0.17.4 phone A/B: --env-off=fog,glow,adjust,sky,tonemap,sun,particles
+		# 0.17.4 phone A/B: --env-off=fog,glow,adjust,sky,tonemap,sun,particles
 		_env_off_done = true
 		var e: Environment = race.environment.env
 		for k in String(args["env-off"]).split("+"):
@@ -657,11 +657,6 @@ func _print_stats(race: RaceManager) -> void:
 		scripts = " script_proc_ms=%.2f script_phys_ms=%.2f phys_steps=%.2f render_cpu_ms=%.2f" % [
 			_tick_first.proc_us / 1000.0 / frames, _tick_first.phys_us / 1000.0 / maxi(_tick_first.phys_steps, 1),
 			float(_tick_first.phys_steps) / frames, RenderingServer.viewport_get_measured_render_time_cpu(vp_rid)]
-		var keys := Prof.acc.keys()
-		keys.sort()
-		for k in keys:
-			scripts += " p_%s=%.2f" % [k, Prof.acc[k] / 1000.0 / maxi(_tick_first.phys_steps, 1)]
-		Prof.acc.clear()
 		_tick_first.proc_us = 0
 		_tick_first.phys_us = 0
 		_tick_first.phys_steps = 0

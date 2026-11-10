@@ -152,12 +152,6 @@ func _on_lap(r, _lap: int, lap_time: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var _pt := Time.get_ticks_usec()
-	_phys_tick(delta)
-	Prof.add(&"ghost", _pt)
-
-
-func _phys_tick(delta: float) -> void:
 	if race == null or race.state != RaceManager.RaceState.RACING:
 		return
 	# Lap 1 is timed from GO, so recording and playback also start at GO.

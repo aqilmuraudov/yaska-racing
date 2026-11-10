@@ -326,7 +326,7 @@ func toggle_part(id: String) -> void:
 
 ## Next kart in shop order the player does not own yet ("" = all owned).
 static func next_locked_kart() -> String:
-	for id in KartShop.ORDER:
+	for id in KartShop.shop_order():
 		if RacerRoster.is_valid(id) and not SaveManager.is_kart_owned(id):
 			return id
 	return ""

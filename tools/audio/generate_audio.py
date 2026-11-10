@@ -1,4 +1,4 @@
-"""Procedural audio for BAKU TURBO (original, no samples).
+"""Procedural audio for Yaska Racing (original, no samples).
 
 Generates every sound effect, the engine/drift loops and two music loops
 into assets/audio. Loops carry a RIFF 'smpl' chunk so Godot's WAV importer

@@ -42,6 +42,10 @@ def attribute(lines):
 
 
 def main() -> int:
+    # Test names and check marks (✓ ✗) are UTF-8; a redirected stdout on
+    # Windows defaults to the ANSI code page and crashed on the first ✗.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     args = sys.argv[1:]
     godot = os.environ.get("GODOT", "godot")
     if args[:1] == ["--godot"]:
