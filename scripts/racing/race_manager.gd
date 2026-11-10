@@ -121,6 +121,8 @@ func _ready() -> void:
 	if not config.has("kids_auto"):
 		config.kids_auto = bool(Settings.get_value("controls", "kids_auto", false))
 	config.kids_used = bool(config.kids_auto)
+	if String(config.get("mode", "")) != "tutorial": # 0.19.0: long tracks run fewer laps
+		config.laps = TrackList.clamp_laps(String(config.get("track_id", "")), int(config.get("laps", 2)))
 	if Game.debug_race:
 		auto_pause_on_focus_loss = false # unattended debug/soak runs
 	if staged_build:

@@ -10,7 +10,19 @@ const DESC_KEYS := {"seafront_sprint": "TRACK_SEAFRONT_DESC", "downtown_towers":
 ## scales the daily "time" goal.
 ## 0.11.1: short city names for the big city cards.
 const CITY_KEYS := {"seafront_sprint": "CITY_SEAFRONT", "downtown_towers": "TRACK_DOWNTOWN", "old_city": "TRACK_OLDCITY", "karabakh": "TRACK_KARABAKH"}
-const LAP_SCALE := {"seafront_sprint": 1.0, "downtown_towers": 0.7, "old_city": 0.5, "karabakh": 1.15} # 0.13.0 autopilot lap ~26 s; 0.18.0 karabakh (re-measured below)
+const LAP_SCALE := {"seafront_sprint": 1.0, "downtown_towers": 0.7, "old_city": 0.5, "karabakh": 3.4} # 0.13.0 autopilot lap ~26 s; 0.19.0 karabakh: one 4.9 km lap, autopilot 175 s vs 51 s
+
+## 0.19.0: the most laps a race runs on a track (Qarabağ is one 4.9 km
+## lap: ~3 minutes). Every mode goes through clamp_laps().
+const MAX_LAPS := {"karabakh": 1}
+
+
+static func max_laps(id: String) -> int:
+	return int(MAX_LAPS.get(id, 5))
+
+
+static func clamp_laps(id: String, laps: int) -> int:
+	return clampi(laps, 1, max_laps(id))
 
 
 static func is_valid(id: String) -> bool:

@@ -77,7 +77,7 @@ func build() -> void:
 		diff_sel = OptionSelector.new().setup(tr("OPT_DIFFICULTY"), [tr("DIFF_EASY"), tr("DIFF_MEDIUM"), tr("DIFF_HARD")], DIFFS.find(String(Settings.get_value("gameplay", "difficulty", "medium"))))
 		ov.add_child(diff_sel)
 	laps_sel = OptionSelector.new().setup(tr("OPT_LAPS"), ["1", "2", "3", "4", "5"], clampi(int(cfg.get("laps", 3)), 1, 5) - 1)
-	laps_sel.value_changed.connect(func(_i): _update_records())
+	laps_sel.value_changed.connect(func(_i): _clamp_laps(); _update_records())
 	ov.add_child(laps_sel)
 	if mode == "quick":
 		var ai_opts := []
@@ -122,7 +122,15 @@ func set_track(id: String) -> void:
 	_show_track()
 
 
+## 0.19.0: long tracks allow fewer laps (TrackList.MAX_LAPS).
+func _clamp_laps() -> void:
+	var most := TrackList.max_laps(track_id)
+	if laps_sel and laps_sel.index + 1 > most:
+		laps_sel.set_index(most - 1)
+
+
 func _show_track() -> void:
+	_clamp_laps()
 	var td := TrackData.load_from_file(TrackList.path(track_id))
 	track_name.text = tr(TrackList.name_key(track_id))
 	track_desc.text = tr(TrackList.desc_key(track_id))

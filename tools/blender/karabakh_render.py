@@ -27,8 +27,9 @@ def arg(name, default):
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 WORK = os.path.join(ROOT, "tools", "blender", "out")
-OUT = os.path.join(ROOT, arg("--out", "docs/screenshots/0.18.0"))
+OUT = os.path.join(ROOT, arg("--out", "docs/screenshots/0.19.0"))
 SAMPLES = int(arg("--samples", "48"))
+ONLY = arg("--only", "")
 KB = os.path.join(ROOT, "assets", "models", "karabakh")
 FL = os.path.join(ROOT, "assets", "models", "karabakh_flora")
 ROAD = json.load(open(os.path.join(WORK, "karabakh_road.json"), encoding="utf-8"))
@@ -58,17 +59,18 @@ def image_mat(name, path, rough=0.95):
     return m
 
 
-def flora_mat():
+def flora_mat(folder=None):
+    folder = folder or FL
     m = bpy.data.materials.new("flora")
     m.use_nodes = True
     nt = m.node_tree
     bsdf = nt.nodes["Principled BSDF"]
     a = nt.nodes.new("ShaderNodeTexImage")
-    a.image = bpy.data.images.load(os.path.join(FL, "albedo.png"))
+    a.image = bpy.data.images.load(os.path.join(folder, "albedo.png"))
     a.image.alpha_mode = "NONE"  # alpha is the (empty) stone mask, not coverage
     nt.links.new(a.outputs["Color"], bsdf.inputs["Base Color"])
     n = nt.nodes.new("ShaderNodeTexImage")
-    n.image = bpy.data.images.load(os.path.join(FL, "normal.png"))
+    n.image = bpy.data.images.load(os.path.join(folder, "normal.png"))
     n.image.colorspace_settings.name = "Non-Color"
     nm = nt.nodes.new("ShaderNodeNormalMap")
     nt.links.new(n.outputs["Color"], nm.inputs["Color"])
@@ -256,6 +258,27 @@ def place_trees(coll):
             coll.objects.link(ob)
 
 
+def place_bridges(coll):
+    """The Xudafərin bridges: module instances from bridges.json."""
+    folder = os.path.join(ROOT, "assets", "models", "karabakh_bridges")
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=os.path.join(folder, "karabakh_bridges.glb"))
+    mat = flora_mat(folder)
+    proto = {}
+    for o in set(bpy.data.objects) - before:
+        if o.type == "MESH":
+            o.data.materials.clear()
+            o.data.materials.append(mat)
+            proto[o.name] = o
+            o.hide_render = True
+            o.hide_viewport = True
+    for t in json.load(open(os.path.join(KB, "bridges.json"), encoding="utf-8"))["instances"]:
+        ob = bpy.data.objects.new(t[0], proto[t[0]].data)
+        ob.location = B(t[1], t[2], t[3])
+        ob.rotation_euler = (0.0, 0.0, t[4])
+        coll.objects.link(ob)
+
+
 def sky(sc):
     w = bpy.data.worlds.new("Sky")
     sc.world = w
@@ -293,6 +316,13 @@ def road_cam(s_m, back=7.0, up=2.6, ahead=18.0, lat=0.0):
     return B(*eye), B(*look)
 
 
+def s_at(x, z):
+    """Metres along the road at the sample nearest to (x, z)."""
+    pts = ROAD["points"]
+    i = min(range(len(pts)), key=lambda k: (pts[k][0] - x) ** 2 + (pts[k][2] - z) ** 2)
+    return i * ROAD["length"] / len(pts)
+
+
 def shoot(sc, cam, eye, look, name, res=(1280, 720), lens=24):
     cam.location = eye
     cam.rotation_euler = (look - eye).to_track_quat("-Z", "Y").to_euler()
@@ -317,10 +347,12 @@ def main():
         if o.name.endswith("_far") or o.name.startswith("Bake"):
             bpy.data.objects.remove(o)
             continue
+        o.visible_shadow = False  # as in the game: the terrain casts no shadows
         o.data.materials.clear()
-        o.data.materials.append(water if o.name == "River" else outer if o.name == "Mountains" else inner)
+        o.data.materials.append(water if o.name.startswith("River") else outer if o.name == "Mountains" else inner)
     build_road(coll)
     place_trees(coll)
+    place_bridges(coll)
     sky(sc)
     sc.render.engine = "CYCLES"
     try:
@@ -339,20 +371,37 @@ def main():
     sc.render.image_settings.file_format = "JPEG"
     sc.render.image_settings.quality = 88
     cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam"))
-    cam.data.clip_end = 4000
+    cam.data.clip_end = 6000
     sc.collection.objects.link(cam)
     sc.camera = cam
     os.makedirs(OUT, exist_ok=True)
-    L = ROAD["length"]
-    views = [("kb_1_lachin_start.jpg", 30.0), ("kb_2_climb.jpg", 330.0), ("kb_3_shusha_plateau.jpg", 640.0),
-             ("kb_4_descent_gorge.jpg", 840.0), ("kb_5_khankendi_valley.jpg", 1050.0), ("kb_6_river_road.jpg", 1380.0)]
-    for name, s in views:
-        eye, look = road_cam(s)
+    views = [("kb_1_khankendi_start.jpg", (700, -516)), ("kb_2_climb.jpg", (400, -320)),
+             ("kb_3_shusha_plateau.jpg", (140, -260)), ("kb_4_descent_west.jpg", (-330, -170)),
+             ("kb_5_lachin.jpg", (-700, -90)), ("kb_6_hakari_valley.jpg", (-690, 380)),
+             ("kb_7_araz_khudafarin.jpg", (-140, 625)), ("kb_8_east_hills.jpg", (680, 60)),
+             ("kb_11_bridge15_road.jpg", (20, 640)), ("kb_12_bridge11_road.jpg", (-230, 636))]
+    if ONLY:
+        views = [v for v in views if any(k in v[0] for k in ONLY.split(","))]
+    for name, at in views:
+        eye, look = road_cam(s_at(*at))
         shoot(sc, cam, eye, look, name)
-    # Overview from the south-west, high.
-    shoot(sc, cam, B(-650, 260, 620), B(60, 0, 20), "kb_0_overview.jpg", lens=28)
+    # Overviews: the whole map, the Araz bank, Şuşa over the Daşaltı gorge, the bridges.
+    wide = [
+        ("kb_0_overview.jpg", B(0, 1100, 2100), B(0, 0, 60), 30),
+        ("kb_9_araz_from_river.jpg", B(-60, 55, 800), B(-60, 0, 560), 24),
+        ("kb_10_shusha_over_gorge.jpg", B(120, 95, 60), B(40, 30, -250), 24),
+        ("kb_13_bridge15_bank.jpg", B(20, 6, 668), B(80, 1, 705), 28),
+        ("kb_14_bridge11_bank.jpg", B(-110, 8, 672), B(-170, 0, 703), 28),
+        ("kb_15_both_bridges.jpg", B(-45, 80, 520), B(-45, 0, 700), 17),
+    ]
+    for name, eye, look, lens in wide:
+        if not ONLY or any(k in name for k in ONLY.split(",")):
+            shoot(sc, cam, eye, look, name, lens=lens)
+    if ONLY:
+        print("DONE")
+        return
     # City card.
-    eye, look = road_cam(1380.0, back=14.0, up=6.5, ahead=70.0)
+    eye, look = road_cam(s_at(140, -260), back=14.0, up=6.5, ahead=70.0)
     shoot(sc, cam, eye, look, "karabakh_card.jpg", res=(640, 400), lens=22)
     import shutil
     shutil.copy(os.path.join(OUT, "karabakh_card.jpg"), os.path.join(ROOT, "assets", "ui", "cities", "karabakh.jpg"))

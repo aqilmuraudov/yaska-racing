@@ -59,7 +59,7 @@ func test_track_list() -> void:
 		var td := TrackData.load_from_file(TrackList.path(id))
 		check(td != null and td.main != null, "%s loads" % id)
 		check_eq(td.id, id, "id matches file")
-		check(TrackList.lap_scale(id) > 0.4 and TrackList.lap_scale(id) <= 1.3, "lap scale sane")
+		check(TrackList.lap_scale(id) > 0.4 and TrackList.lap_scale(id) <= (4.0 if id == "karabakh" else 1.3), "lap scale sane")
 
 
 func test_downtown_data() -> void:
@@ -236,7 +236,7 @@ func test_cup_and_daily_tracks() -> void:
 		days[ch.track] = true
 		check_eq(ch.track, DailyChallenge.generate(date, ["havhav", "posi"]).track, "same track all day")
 		if ch.type == "time":
-			check(ch.n < 60 * 3, "time goal fits a 2-lap race")
+			check(ch.n < (200 if ch.track == "karabakh" else 60 * 3), "time goal fits a 2-lap race (Qarabağ: one 4.9 km lap)")
 		var cfg := DailyChallenge.apply_config(Game.default_race_config(), ch, "havhav")
 		check_eq(cfg.track_id, ch.track, "daily race uses its track")
 	check_eq(days.size(), TrackList.IDS.size(), "daily rotates every track")

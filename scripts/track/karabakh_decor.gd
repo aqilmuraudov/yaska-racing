@@ -27,7 +27,7 @@ func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
 		_build_gantry,
 		_place_kb_forest,
 		_place_corner_signs,
-		func(): pass,
+		_place_kb_bridges,
 		func(): pass,
 		func(): pass,
 		_place_kb_sky,
@@ -114,6 +114,19 @@ func _place_kb_forest() -> void:
 		if not _free_of_reserved(p):
 			continue
 		add_instance(String(t[0]), Transform3D(Basis(Vector3.UP, float(t[4])).scaled(Vector3.ONE * float(t[5])), p))
+
+
+## 0.19.0: the Xudafərin bridges over the Araz (the 15-span bridge and the
+## broken 11-span one), modelled and laid out in Blender
+## (tools/blender/karabakh_bridges.py -> bridges.json: module, x, y, z, yaw).
+## Scenery beside the road: no collision, the guardrail keeps the karts off.
+func _place_kb_bridges() -> void:
+	var dir := String(data.raw.get("terrain_dir", ""))
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(dir + "/bridges.json")) if dir != "" else null
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for t: Array in parsed.instances:
+		add_instance(String(t[0]), Transform3D(Basis(Vector3.UP, float(t[4])), Vector3(float(t[1]), float(t[2]), float(t[3]))))
 
 
 ## Soft clouds only (the other maps' backdrop carries Baku's skyline).

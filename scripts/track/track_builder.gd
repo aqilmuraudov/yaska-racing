@@ -546,7 +546,7 @@ func _build_blender_terrain(dir: String) -> void:
 		mi.transform = from.global_transform if from.is_inside_tree() else _scene_xform(from, src)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var nm := String(from.name)
-		if nm == "River":
+		if nm.begins_with("River"): # 0.19.0: River_<id> (Araz, Həkəri)
 			mi.material_override = materials.water
 		elif nm == "Mountains":
 			mi.material_override = outer

@@ -39,6 +39,7 @@ static func generate(date: String, owned: Array = []) -> Dictionary:
 	var pick := rng.randi_range(0, 1 << 20)
 	# 0.11.0: the day's track (drawn after the older picks so they stay the same).
 	ch.track = String(TrackList.IDS[rng.randi_range(0, TrackList.IDS.size() - 1)])
+	ch.laps = TrackList.clamp_laps(ch.track, LAPS) # 0.19.0
 	var scale := TrackList.lap_scale(ch.track)
 	match type:
 		"win_kart":
@@ -49,7 +50,7 @@ static func generate(date: String, owned: Array = []) -> Dictionary:
 		"stars":
 			ch.n = int(round(float(STAR_GOALS[pick % STAR_GOALS.size()]) * (1.0 if scale >= 1.0 else 0.85)))
 		"time":
-			ch.n = int(round(float(TIME_PER_LAP[pick % TIME_PER_LAP.size()]) * scale * LAPS))
+			ch.n = int(round(float(TIME_PER_LAP[pick % TIME_PER_LAP.size()]) * scale * int(ch.laps)))
 	return ch
 
 

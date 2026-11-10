@@ -1,5 +1,6 @@
 extends TestCase
-## Round 34 (0.18.0): the Qarabağ map - a two-lane mountain road through the
+## Round 34 (0.18.0, limits updated for the 0.19.0 big map - see round 35):
+## the Qarabağ map - a two-lane mountain road through the
 ## summer forest (Laçın, the Şuşa plateau, the way down to Xankəndi), terrain
 ## and forest modelled in Blender (tools/blender/karabakh_*.py).
 
@@ -38,15 +39,15 @@ func test_track_is_registered() -> void:
 			kb += 1
 			check(String(t.name).begins_with("TROPHY_KB_"), "own trophy texts")
 	check_eq(kb, 7, "seven Qarabağ trophies")
-	check_near(TrackList.lap_scale("karabakh"), 1.15, 0.2, "lap scale ~ autopilot 59 s vs 51 s")
+	check_near(TrackList.lap_scale("karabakh"), 3.4, 0.4, "lap scale ~ autopilot 175 s vs 51 s")
 
 
 func test_layout_limits() -> void:
 	check(_td != null, "loads")
 	check_eq(_td.lanes, 2, "two-lane mountain road")
 	check(not _td.has_sea, "no sea")
-	check(_td.main.length > 1600.0 and _td.main.length < 1850.0, "lap length %.0f m" % _td.main.length)
-	check_eq(_td.checkpoint_count(), 7, "finish + 6 checkpoints")
+	check(_td.main.length > 4700.0 and _td.main.length < 5100.0, "lap length %.0f m" % _td.main.length)
+	check_eq(_td.checkpoint_count(), 13, "finish + 12 checkpoints")
 	var path := _td.main
 	var n := path.sample_count()
 	var max_grade := 0.0
@@ -74,14 +75,14 @@ func test_layout_limits() -> void:
 			var d := Vector2(path.points[i].x - path.points[j].x, path.points[i].z - path.points[j].z).length()
 			min_sep = minf(min_sep, d)
 	check(min_sep > 60.0, "distant legs %.0f m apart" % min_sep)
-	check(_td.raw.get("landmark_plots", []).size() >= 6, "landmark plots reserved (Laçın, Şuşa, Xankəndi)")
+	check(_td.raw.get("landmark_plots", []).size() >= 14, "landmark plots reserved (Laçın, Şuşa, Xankəndi, Xudafərin)")
 	var zones := {}
 	for pl: Array in _td.raw.landmark_plots:
 		zones[String(pl[3])] = true
 		var c := path.closest(Vector3(pl[0], 0, pl[1]))
 		var gap: float = c.distance - path.half_width_at(c.s) - _td.offroad_width - float(pl[2])
 		check(gap > 0.0 and gap < 25.0, "plot %s beside the road (gap %.1f m)" % [pl, gap])
-	check(zones.has("lachin") and zones.has("shusha") and zones.has("khankendi"), "all three zones")
+	check(zones.has("lachin") and zones.has("shusha") and zones.has("khankendi") and zones.has("khudafarin"), "all four zones")
 
 
 func _builder() -> TrackBuilder:
@@ -133,8 +134,11 @@ func test_terrain_stays_under_the_road() -> void:
 				else:
 					tiles += 1
 					check(c.visibility_range_end > 0.0, "%s: near LOD ends" % nm)
-		check(tiles >= 40 and tiles == fars, "near / far tiles (%d / %d)" % [tiles, fars])
-		check(root.get_node_or_null("Mountains") != null and root.get_node_or_null("River") != null, "mountains and river")
+		check(tiles >= 200 and tiles == fars, "near / far tiles (%d / %d)" % [tiles, fars])
+		check(root.get_node_or_null("Mountains") != null, "mountains")
+		for rv in ["River_araz", "River_hakari"]:
+			var w := root.get_node_or_null(rv) as MeshInstance3D
+			check(w != null and w.material_override == b.materials.water, "%s is water" % rv)
 	b.free()
 
 
@@ -142,7 +146,7 @@ func test_forest_from_blender() -> void:
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(String(_td.raw.terrain_dir) + "/trees.json"))
 	check(typeof(parsed) == TYPE_DICTIONARY, "trees.json")
 	var trees: Array = parsed.trees
-	check(trees.size() > 2500 and trees.size() < 6000, "forest size %d (phone budget)" % trees.size())
+	check(trees.size() > 6000 and trees.size() < 11000, "forest size %d (phone budget: chunks cull, far LOD at 109 m)" % trees.size())
 	var kinds := {}
 	var too_close := 0
 	var in_plot := 0
@@ -205,8 +209,8 @@ func test_race_scene_builds_qarabag() -> void:
 				trees += (c.get_meta("instance_xforms") as Array).size()
 			if prop == "kb_lamp":
 				lamps += (c.get_meta("instance_xforms") as Array).size()
-	check(trees > 2000, "forest placed (%d trees)" % trees)
-	check(lamps > 25, "LED lamps along the road (%d)" % lamps)
+	check(trees > 6000, "forest placed (%d trees)" % trees)
+	check(lamps > 90, "LED lamps along the road (%d)" % lamps)
 	var heads: Array = race.decor.instance_transforms("lamp")
 	check_eq(heads.size(), lamps, "night light pools under every lamp head")
 	for h: Transform3D in heads:

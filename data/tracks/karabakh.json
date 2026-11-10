@@ -1,227 +1,363 @@
 {
-	"_doc": "Qarabağ (0.18.0): two-lane mountain asphalt through summer forest. control: [x, y, z, full_width, theme 4 = forest]. North = -z. West: Laçın, the start straight in the river valley (y 0). North-east: the climb (max grade 7.5 %) to the Şuşa plateau (y 28). East / south: the descent towards Xankəndi and the forest valley road back west. 1.73 km, tightest bend r 13 m (the Laçın turn), distant legs >= 73 m apart. No sea. landmark_plots: [x, z, radius, zone] kept free of forest for the landmarks the owner will name (Blender terrain and KarabakhDecor read them).",
+	"_doc": "Qarabağ (0.19.0, the big map): 4.9 km of two-lane mountain asphalt through summer forest. control: [x, y, z, full_width, theme 4 = forest]. North = -z, east = +x. Xankəndi (north-east, y 12): start straight heading west; the climb (max grade 7.9 %) to the Şuşa plateau (centre-north, y 44); the descent west to Laçın on the Həkəri (y 20); south down the Həkəri valley to the Araz (y 2); east along the Araz bank past the Xudafərin bridges; north through forest hills back to Xankəndi. Tightest bend r 18 m, distant legs >= 95 m apart. No sea. zones: [id, x, z, radius] town / sight areas (open ground, no closed forest); landmark_plots: [x, z, radius, zone] kept free for the Blender landmarks; rivers: polylines [x, z] with a width (Blender terrain + water ribbons).",
 	"id": "karabakh",
 	"name_key": "TRACK_KARABAKH",
 	"desc_key": "TRACK_KARABAKH_DESC",
 	"decor": "karabakh",
 	"ground": "blender",
-	"version": 1,
-	"laps": 2,
+	"version": 2,
+	"laps": 1,
 	"lanes": 2,
 	"offroad_width": 3.0,
 	"control": [
 		[
-			-276.0,
-			0,
-			110,
+			760,
+			12,
+			-500,
 			16,
 			4
 		],
 		[
-			-193.2,
-			0,
-			115,
+			640,
+			12,
+			-530,
 			16,
 			4
 		],
 		[
-			-110.4,
-			1,
-			110,
+			520,
+			13,
+			-520,
 			16,
 			4
 		],
 		[
-			-41.4,
-			3.5,
-			85,
+			420,
+			17,
+			-470,
 			15,
 			4
 		],
 		[
-			4.6,
-			7,
-			38,
-			15,
-			4
-		],
-		[
-			-11.0,
-			10.5,
-			-12,
-			15,
-			4
-		],
-		[
-			32.2,
-			14,
-			-52,
-			15,
-			4
-		],
-		[
-			92.0,
-			18.5,
-			-72,
-			15,
-			4
-		],
-		[
-			147.2,
+			350,
 			23,
-			-108,
+			-400,
 			15,
 			4
 		],
 		[
-			211.6,
-			26.5,
-			-128,
-			16,
-			4
-		],
-		[
-			280.6,
-			28,
-			-120,
-			16,
-			4
-		],
-		[
-			326.6,
-			27,
-			-75,
+			400,
+			29,
+			-320,
 			15,
 			4
 		],
 		[
-			342.2,
-			24,
-			-20,
-			15,
-			4
-		],
-		[
-			326.6,
-			20,
+			340,
 			35,
+			-250,
 			15,
 			4
 		],
 		[
-			289.8,
-			15.5,
-			85,
+			240,
+			40,
+			-230,
 			15,
 			4
 		],
 		[
-			234.6,
-			11,
-			128,
+			140,
+			43,
+			-260,
+			16,
+			4
+		],
+		[
+			40,
+			44,
+			-290,
+			16,
+			4
+		],
+		[
+			-60,
+			44,
+			-260,
+			16,
+			4
+		],
+		[
+			-140,
+			42,
+			-200,
 			15,
 			4
 		],
 		[
-			161.0,
-			7.5,
-			158,
+			-230,
+			38,
+			-150,
 			15,
 			4
 		],
 		[
-			73.6,
+			-330,
+			33,
+			-170,
+			15,
+			4
+		],
+		[
+			-430,
+			28,
+			-130,
+			15,
+			4
+		],
+		[
+			-530,
+			24,
+			-150,
+			15,
+			4
+		],
+		[
+			-640,
+			21,
+			-110,
+			15,
+			4
+		],
+		[
+			-740,
+			20,
+			-40,
+			16,
+			4
+		],
+		[
+			-770,
+			19,
+			60,
+			16,
+			4
+		],
+		[
+			-730,
+			16,
+			170,
+			15,
+			4
+		],
+		[
+			-660,
+			12,
+			270,
+			15,
+			4
+		],
+		[
+			-690,
+			8,
+			380,
+			15,
+			4
+		],
+		[
+			-640,
 			5,
-			165,
+			490,
 			15,
 			4
 		],
 		[
-			-9.2,
+			-540,
 			3,
-			182,
+			580,
 			15,
 			4
 		],
 		[
-			-101.2,
-			1.5,
-			192,
+			-420,
+			2,
+			630,
+			16,
+			4
+		],
+		[
+			-280,
+			2,
+			640,
+			16,
+			4
+		],
+		[
+			-140,
+			2,
+			625,
+			16,
+			4
+		],
+		[
+			0,
+			2,
+			640,
+			16,
+			4
+		],
+		[
+			150,
+			2,
+			630,
+			16,
+			4
+		],
+		[
+			300,
+			3,
+			640,
+			16,
+			4
+		],
+		[
+			450,
+			4,
+			610,
 			15,
 			4
 		],
 		[
-			-193.2,
-			0.5,
-			194,
-			16,
+			590,
+			5,
+			540,
+			15,
 			4
 		],
 		[
-			-276.0,
-			0,
-			192,
-			16,
+			680,
+			7,
+			430,
+			15,
 			4
 		],
 		[
-			-338.6,
-			0,
-			172,
-			16,
+			650,
+			9,
+			310,
+			15,
 			4
 		],
 		[
-			-358.8,
-			0,
-			135,
-			16,
+			720,
+			10,
+			190,
+			15,
 			4
 		],
 		[
-			-331.2,
-			0,
-			112,
+			680,
+			11,
+			60,
+			15,
+			4
+		],
+		[
+			740,
+			12,
+			-70,
+			15,
+			4
+		],
+		[
+			700,
+			13,
+			-200,
+			15,
+			4
+		],
+		[
+			770,
+			13,
+			-320,
+			15,
+			4
+		],
+		[
+			820,
+			12,
+			-420,
+			15,
+			4
+		],
+		[
+			810,
+			12,
+			-480,
 			16,
 			4
 		]
 	],
 	"finish_at": [
-		-230.0,
-		112.0
+		700.0,
+		-516.0
 	],
 	"checkpoints_at": [
 		[
-			-40.0,
-			85.0
+			420,
+			-470
 		],
 		[
-			32.0,
-			-52.0
+			340,
+			-250
 		],
 		[
-			211.0,
-			-128.0
+			40,
+			-290
 		],
 		[
-			342.0,
-			-20.0
+			-230,
+			-150
 		],
 		[
-			235.0,
-			128.0
+			-640,
+			-110
 		],
 		[
-			-100.0,
-			192.0
+			-770,
+			60
+		],
+		[
+			-690,
+			380
+		],
+		[
+			-420,
+			630
+		],
+		[
+			0,
+			640
+		],
+		[
+			450,
+			610
+		],
+		[
+			650,
+			310
+		],
+		[
+			740,
+			-70
 		]
 	],
 	"shortcuts": [],
 	"boost_pads": [
 		{
 			"at": [
-				-150.0,
-				112.0
+				560,
+				-526
 			],
 			"lateral": 0.0,
 			"length": 7,
@@ -229,8 +365,8 @@
 		},
 		{
 			"at": [
-				245.0,
-				-126.0
+				90,
+				-275
 			],
 			"lateral": -2.0,
 			"length": 7,
@@ -238,10 +374,28 @@
 		},
 		{
 			"at": [
-				30.0,
-				170.0
+				-585,
+				-130
 			],
 			"lateral": 2.0,
+			"length": 7,
+			"width": 4.5
+		},
+		{
+			"at": [
+				-210,
+				633
+			],
+			"lateral": 0.0,
+			"length": 7,
+			"width": 5
+		},
+		{
+			"at": [
+				700,
+				125
+			],
+			"lateral": -2.0,
 			"length": 7,
 			"width": 4.5
 		}
@@ -250,76 +404,223 @@
 	"item_rows": [
 		{
 			"at": [
-				-120.0,
-				111.0
+				600,
+				-530
 			],
 			"count": 5
 		},
 		{
 			"at": [
-				147.0,
-				-108.0
+				240,
+				-230
 			],
 			"count": 4
 		},
 		{
 			"at": [
-				326.0,
-				35.0
+				-140,
+				-200
 			],
 			"count": 4
 		},
 		{
 			"at": [
-				-9.0,
-				182.0
+				-740,
+				-40
+			],
+			"count": 4
+		},
+		{
+			"at": [
+				-660,
+				270
+			],
+			"count": 4
+		},
+		{
+			"at": [
+				-280,
+				640
+			],
+			"count": 5
+		},
+		{
+			"at": [
+				300,
+				640
+			],
+			"count": 4
+		},
+		{
+			"at": [
+				680,
+				430
+			],
+			"count": 4
+		},
+		{
+			"at": [
+				700,
+				-200
 			],
 			"count": 4
 		}
 	],
-	"landmark_plots": [
+	"terrain_dir": "res://assets/models/karabakh",
+	"zones": [
 		[
-			-206.5,
-			80.6,
-			20.0,
-			"lachin"
+			"khankendi",
+			640,
+			-530,
+			150
 		],
 		[
-			-232.5,
-			226.6,
-			18.0,
-			"lachin"
+			"shusha",
+			40,
+			-290,
+			190
 		],
 		[
-			231.5,
-			-166.9,
-			24.0,
-			"shusha"
+			"lachin",
+			-750,
+			0,
+			150
 		],
 		[
-			341.5,
-			-112.1,
-			20.0,
-			"shusha"
-		],
-		[
-			267.6,
-			-93.0,
-			16.0,
-			"shusha"
-		],
-		[
-			219.7,
-			95.6,
-			22.0,
-			"khankendi"
-		],
-		[
-			149.1,
-			128.3,
-			18.0,
-			"khankendi"
+			"khudafarin",
+			0,
+			650,
+			210
 		]
 	],
-	"terrain_dir": "res://assets/models/karabakh"
+	"rivers": [
+		{
+			"id": "araz",
+			"width": 64,
+			"level": -2.6,
+			"points": [
+				[
+					-2300,
+					760
+				],
+				[
+					-1500,
+					735
+				],
+				[
+					-900,
+					720
+				],
+				[
+					-500,
+					712
+				],
+				[
+					-150,
+					700
+				],
+				[
+					150,
+					706
+				],
+				[
+					500,
+					700
+				],
+				[
+					900,
+					690
+				],
+				[
+					1500,
+					715
+				],
+				[
+					2300,
+					740
+				]
+			]
+		},
+		{
+			"id": "hakari",
+			"width": 22,
+			"level": null,
+			"drop": [
+				26.0,
+				-2.4
+			],
+			"points": [
+				[
+					-1250,
+					-1150
+				],
+				[
+					-1050,
+					-750
+				],
+				[
+					-900,
+					-420
+				],
+				[
+					-850,
+					-250
+				],
+				[
+					-835,
+					-100
+				],
+				[
+					-850,
+					40
+				],
+				[
+					-815,
+					170
+				],
+				[
+					-755,
+					280
+				],
+				[
+					-775,
+					390
+				],
+				[
+					-730,
+					500
+				],
+				[
+					-650,
+					600
+				],
+				[
+					-610,
+					712
+				]
+			]
+		}
+	],
+	"bridges": [
+		{"kind": "khudafarin15", "x": 80},
+		{"kind": "khudafarin11", "x": -170}
+	],
+	"landmark_plots": [
+		[749.7, -467.6, 20, "khankendi"],
+		[741.1, -539.7, 18, "khankendi"],
+		[679.6, -490.7, 18, "khankendi"],
+		[664.7, -557.1, 16, "khankendi"],
+		[184.1, -206.0, 22, "shusha"],
+		[147.7, -293.2, 20, "shusha"],
+		[66.1, -253.2, 18, "shusha"],
+		[6.2, -318.4, 18, "shusha"],
+		[-31.6, -240.4, 16, "shusha"],
+		[-113.8, -259.0, 16, "shusha"],
+		[-641.9, -71.2, 20, "lachin"],
+		[-718.5, -102.0, 18, "lachin"],
+		[-715.2, -23.1, 16, "lachin"],
+		[-790.1, -5.8, 16, "lachin"],
+		[-184.3, 596.1, 18, "khudafarin"],
+		[-0.6, 610.0, 16, "khudafarin"]
+	]
 }
