@@ -135,7 +135,7 @@ func _on_lap(r, _lap: int, lap_time: float) -> void:
 		return
 	# Autopilot (debug/demo) and Kids controls laps are not the player's
 	# driving and are never saved as a record ghost.
-	if (race.kids_mode() or bool(race.config.get("debug_autopilot", false))) and not DebugRunner.parse_args().has("keep-ghost"):
+	if (race.kids_used() or bool(race.config.get("debug_autopilot", false))) and not DebugRunner.parse_args().has("keep-ghost"):
 		last_lap_delta = (lap_time - float(best_lap_ms()) / 1000.0) if best_lap_ms() > 0 else NAN
 		_recording.clear()
 		_play_time = 0.0

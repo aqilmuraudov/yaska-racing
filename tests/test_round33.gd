@@ -282,3 +282,62 @@ func test_tour_awards_the_school_trophy() -> void:
 	check(TutorialDirector.award(cfg).is_empty(), "debug runs never touch the profile")
 	var src := FileAccess.get_file_as_string("res://scripts/racing/tutorial_director.gd")
 	check(src.substr(src.find("func _finish()"), 300).contains("award(race.config)"), "the last card awards it")
+
+
+## Owner (2026-11-10): switching Kids controls in Settings during a race only
+## took effect in the next race - on and off.
+func test_kids_setting_applies_in_the_running_race() -> void:
+	Settings.values.controls.kids_auto = false
+	var cfg := Game.default_race_config()
+	cfg.laps = 1
+	cfg.erase("kids_auto")
+	Game.race_config = cfg
+	var race: RaceManager = load("res://scenes/race/race.tscn").instantiate()
+	tree.root.add_child(race)
+	await tree.process_frame
+	await tree.process_frame
+	var pl := race.player
+	check(not race.kids_mode() and pl.player_input.enabled, "starts with manual driving")
+	race.set_paused(true) # Settings are reached from the pause menu
+	Settings.set_value("controls", "kids_auto", true)
+	check(race.kids_mode(), "Kids controls on at once")
+	check(not pl.player_input.enabled and pl.ai.is_physics_processing(), "the kart drives itself")
+	check_near(pl.kart.speed_scale, RaceManager.KIDS_PLAYER_SPEED, 0.001, "kids speed")
+	check(race.hud.kids_badge.visible, "Avto badge shown")
+	check(not race.hud.touch.get_button("steer_left").visible, "steer buttons hidden")
+	Settings.set_value("controls", "kids_auto", false)
+	check(not race.kids_mode(), "Kids controls off at once")
+	check(pl.player_input.enabled and not pl.ai.is_physics_processing(), "manual driving back")
+	check_near(pl.kart.speed_scale, 1.0, 0.001, "normal speed")
+	check(not race.hud.kids_badge.visible, "badge hidden")
+	check(race.hud.touch.get_button("steer_left").visible, "steer buttons back")
+	check(race.kids_used(), "the race remembers it was partly auto-driven")
+	race.set_paused(false)
+	race.queue_free()
+	await tree.process_frame
+	# Rekord: a partly auto-driven run keeps no record.
+	var rm := RaceManager.new()
+	rm.config = {"mode": "time_trial", "kids_auto": false, "kids_used": true}
+	var res := {"player": {"finished": true, "time": 80.0, "best_lap": 40.0, "kart": "havhav", "place": 1},
+		"track_id": "r33_tt", "laps": 2, "mode": "time_trial", "event_instance_id": "r33-tt"}
+	rm._apply_rewards(res)
+	check(bool(res.records_skipped), "no record after Kids controls")
+	check(SaveManager.get_record("r33_tt").is_empty(), "nothing stored")
+	rm.free()
+
+
+func test_tour_ignores_the_kids_setting() -> void:
+	var cfg := Game.default_race_config()
+	cfg.mode = "tutorial"
+	cfg.laps = 1
+	cfg.ai_count = 0
+	cfg.kids_auto = false
+	Game.race_config = cfg
+	var race: RaceManager = load("res://scenes/race/race.tscn").instantiate()
+	tree.root.add_child(race)
+	await tree.process_frame
+	await tree.process_frame
+	Settings.set_value("controls", "kids_auto", true)
+	check(not race.kids_mode(), "the tour keeps every button")
+	race.queue_free()
+	await tree.process_frame

@@ -423,6 +423,7 @@ func setup(p_race: RaceManager) -> void:
 	pk.wall_hit.connect(func(st): if st >= 0.6: caption(tr("CAP_WALL")))
 	race.items.item_used.connect(func(k, it): if k == pk and it == &"trap": caption(tr("CAP_TRAP_DROP")))
 	Settings.changed.connect(_on_settings_changed)
+	Settings.changed.connect(_on_kids_setting)
 	Settings.changed.connect(func(section, key):
 		if section == "gameplay" and key == "language":
 			wrong_way_label.text = tr("HUD_WRONG_WAY")
@@ -435,6 +436,8 @@ func setup(p_race: RaceManager) -> void:
 func _exit_tree() -> void:
 	if Settings.changed.is_connected(_on_settings_changed):
 		Settings.changed.disconnect(_on_settings_changed)
+	if Settings.changed.is_connected(_on_kids_setting):
+		Settings.changed.disconnect(_on_kids_setting)
 
 
 func _label(text: String, variation: StringName) -> Label:
@@ -783,14 +786,34 @@ func _on_kids_badge_input(e: InputEvent) -> void:
 
 ## Hold reached: Kids controls off for this race and in Settings.
 func turn_off_kids_mode() -> void:
-	_kids_hold = -1.0
-	race.set_kids_mode(false)
-	Settings.set_value("controls", "kids_auto", false)
-	kids_badge.visible = false
-	kids_badge.modulate = Color.WHITE
-	touch.kids = false
-	touch._layout()
+	apply_kids_mode(false)
+	if bool(Settings.get_value("controls", "kids_auto", false)):
+		Settings.set_value("controls", "kids_auto", false) # -> apply_kids_mode again: no-op
 	AudioManager.play_ui("ui_confirm")
+
+
+## 0.17.4: Kids controls on / off in the running race (badge hold or the
+## Settings switch in the pause menu): auto-driving, buttons, badge, hints.
+func apply_kids_mode(on: bool) -> void:
+	_kids_hold = -1.0
+	race.set_kids_mode(on)
+	kids_badge.visible = on
+	kids_badge.modulate = Color.WHITE
+	if on:
+		_hints_on = false
+	if touch:
+		touch.kids = on
+		touch._layout()
+
+
+func _on_kids_setting(section: String, key: String) -> void:
+	if section != "controls" or key != "kids_auto" or race == null:
+		return
+	if race.config.mode == "tutorial":
+		return # the Öyrən tour always shows every button
+	var on := bool(Settings.get_value("controls", "kids_auto", false))
+	if on != race.kids_mode():
+		apply_kids_mode(on)
 
 
 func _process(delta: float) -> void:

@@ -120,6 +120,7 @@ func _ready() -> void:
 		config = Game.default_race_config()
 	if not config.has("kids_auto"):
 		config.kids_auto = bool(Settings.get_value("controls", "kids_auto", false))
+	config.kids_used = bool(config.kids_auto)
 	if Game.debug_race:
 		auto_pause_on_focus_loss = false # unattended debug/soak runs
 	if staged_build:
@@ -480,6 +481,7 @@ func restart() -> void:
 	# screen shows them as "next"); "Yenidən" must race those, not pay the old
 	# ones a second time.
 	_load_goals()
+	config.kids_used = kids_mode()
 	_best_place_seen = 99
 	near_misses = 0
 	_near_prev = {}
@@ -807,7 +809,7 @@ func _apply_rewards(res: Dictionary) -> void:
 		return
 	var improved := {"lap": false, "race": false}
 	# Kids controls in Rekord: the kart drove itself, so no record is kept.
-	res.records_skipped = kids_mode() and res.mode == "time_trial"
+	res.records_skipped = kids_used() and res.mode == "time_trial"
 	if p.finished and not res.records_skipped:
 		improved = SaveManager.submit_times(res.track_id, int(round(p.time * 1000.0)), int(round(p.best_lap * 1000.0)), p.kart, res.laps)
 	if res.mode == "tutorial":
@@ -1021,14 +1023,28 @@ func kids_mode() -> bool:
 
 ## 0.14.3: switch Kids controls mid-race (hold the "Avto" badge). Owner report:
 ## the setting was on and the race showed no buttons at all, with no way back.
+## 0.17.4 (owner): also switched from Settings during a race (pause →
+## Settings), on and off, at once - before, the race kept the value it was
+## started with until the next race.
 func set_kids_mode(on: bool) -> void:
 	config.kids_auto = on
+	if on:
+		config.kids_used = true
 	var r = player
+	if r == null:
+		return
+	if r.tracker.finished or state == RaceState.FINISHING or state == RaceState.RESULTS:
+		return # after the line the kart is on autopilot anyway
 	if r.player_input:
 		r.player_input.release_all()
 		r.player_input.enabled = not auto_drive()
 	r.ai.set_physics_process(auto_drive())
 	r.kart.speed_scale = KIDS_PLAYER_SPEED if on else 1.0
+
+
+## True when Kids controls drove any part of this race (no Rekord record / ghost).
+func kids_used() -> bool:
+	return kids_mode() or bool(config.get("kids_used", false))
 
 
 ## The player's kart drives itself (Kids controls or debug autopilot).
