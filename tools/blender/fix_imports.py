@@ -20,6 +20,9 @@ def setp(f, kv):
 
 c = {"compress/mode": "2", "mipmaps/generate": "true", "detect_3d/compress_to": "0"}
 setp("albedo.png", c)
-setp("normal.png", dict(c, **{"compress/normal_map": "1"}))
-setp("orm.png", dict(c, **{"process/fix_alpha_border": "false", "compress/channel_pack": "1"}))
+# 0.19.1 (APK size): normal / ORM detail beyond 1024² is not visible on a phone;
+# the colour atlas keeps its full size.
+setp("normal.png", dict(c, **{"compress/normal_map": "1", "process/size_limit": "1024"}))
+setp("orm.png", dict(c, **{"process/fix_alpha_border": "false", "compress/channel_pack": "1",
+                           "process/size_limit": "1024"}))
 print("ok", d)
