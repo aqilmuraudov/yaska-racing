@@ -52,7 +52,8 @@ CONFIG = {
     },
     "karabakh_lachin": {
         "zone": "lachin",
-        "landmarks": [("kb_cinema", (133, 70), "E", 32, 28), ("kb_hotel", (115, 215), "E", 80, 46)],
+        "landmarks": [("kb_cinema", (133, 70), "E", 32, 28), ("kb_hotel", (115, 215), "E", 80, 46),
+                      ("kb_flag_square", (128, -175), "E", 40, 34)],    # 0.20.1 Bayraq meydanı (owner)
         # 0.20.1 (owner's aerial photos): a dense hillside town - streets along the contours inside the
         # loop and beyond the east leg, cross streets from the road, roundabouts, houses on both sides
         "town": {"rings_in": [40.0, 80.0], "rings_out": [48.0], "cross": [(118, -120), (-140, -90), (122, 150),
@@ -309,6 +310,75 @@ if "sign" in CFG:
     print(f"{sid:20s} ({c[0]:7.1f}, {c[1]:7.1f}) {after + extra:.0f} m after the start")
 
 
+# 0.20.1 name boards (owner: the names of the known sights in big capitals) ----------------------
+# A board per sight (tools/blender/karabakh_names.py), beside the road just before its sight on
+# the same side, 1.5 m behind the run-off, turned 30° to the oncoming karts (as the town signs).
+NAME_OF = {"kb_cinema": "kb_name_cinema", "kb_hotel": "kb_name_hotel", "kb_flag_square": "kb_name_flag",
+           "kb_mosque": "kb_name_mosque", "kb_vagif": "kb_name_vagif", "kb_bulbul": "kb_name_bulbul",
+           "kb_victory_square": "kb_name_victory", "kb_university": "kb_name_university",
+           "kb_stadium": "kb_name_stadium", "kb_our_mountains": "kb_name_mountains"}
+_sz = json.load(open(os.path.join(ROOT, "assets", "models", "karabakh_names", "sizes.json"), encoding="utf-8"))["sizes"]
+name_boards = []
+targets = []     # (board id, the sight's centre (x, z), its half length along the road, zone)
+for q in placed:
+    if q["id"] in NAME_OF:
+        targets.append((NAME_OF[q["id"]], (q["x"], q["z"]), q["w"] / 2, q["zone"]))
+for ln in lines:
+    if ln["id"] == "shusha_wall":     # Şuşa qalası: at the gate (middle of the run)
+        for k in (len(ln["points"]) // 2, 0, len(ln["points"]) - 1):   # the gate, else an end of the wall
+            q = ln["points"][k]
+            targets.append(("kb_name_fortress", (q[0], q[1]), 10.0, ln["zone"]))
+for br in track.get("bridges", []):
+    if br["kind"] == "khudafarin15":  # Xudafərin körpüləri: by the 15-span bridge
+        j = int(np.argmin(np.abs(P[:, 0] - br["x"]) + (np.abs(P[:, 2] - 640.0) > 150) * 1e6))
+        targets.append(("kb_name_bridges", (br["x"], float(P[j][2]) + 20.0), 30.0, "khudafarin"))
+step_m = road["length"] / N
+for bid, (tx, tz), half, zone in targets:
+    if any(q["id"] == bid for q in name_boards):
+        continue
+    bw, bd = _sz[bid][0], _sz[bid][1]
+    i0 = nearest(tx, tz)
+    side0 = np.array([tx - P[i0][0], tz - P[i0][2]])
+    done = False
+    # the sight's own side first; the far side when there is no room (Şuşa qalası: the wall itself)
+    # before the sight (read on the way to it) or just after it, nearest first; the far side last
+    cands = [(sg, bk) for sg in (1.0, -1.0) for bk in np.arange(half + 4.0, half + 90.0, 3.0)]
+    cands += [(sg, -bk) for sg in (1.0, -1.0) for bk in np.arange(half + 4.0, half + 40.0, 3.0)]
+    cands.sort(key=lambda q: (q[0] < 0, abs(q[1]) + (12.0 if q[1] < 0 else 0.0)))
+    for side, back in [(sg * side0, bk) for sg, bk in cands]:
+        i = (i0 - int(back / step_m)) % N
+        t = tangent(i)
+        n = np.array([-t[1], t[0]])
+        if n @ side < 0:
+            n = -n
+        f = -t * math.cos(math.radians(30)) - n * math.sin(math.radians(30))
+        yaw = math.atan2(f[0], f[1])
+        for off in np.arange(HW[i] + OW + 1.5 + bw / 4, HW[i] + OW + 14.0, 1.0):
+            c = np.array([P[i][0], P[i][2]]) + n * off
+            xs, zs = rect_points(c[0], c[1], yaw, bw, bd, 2.0)
+            if road_gap(xs, zs) < 1.5 or clashes(xs, zs, 2.0):
+                continue
+            # never in front of a town sign / another board (one name read at a time)
+            def _hides(o):
+                dd = math.hypot(c[0] - o["x"], c[1] - o["z"])
+                same = n @ (np.array([o["x"], o["z"]]) - np.array([P[i][0], P[i][2]])) > 0
+                return dd < 20.0 or (same and dd < 60.0)
+            if any(_hides(o) for o in placed if o["id"].startswith(("kb_sign", "kb_name"))):
+                continue
+            done = True
+            break
+        if done:
+            break
+    if not done:
+        print(f"{bid}: no room beside the road, skipped")
+        continue
+    q = {"id": bid, "x": round(float(c[0]), 2), "y": round(pad_y(c, 30.0), 2), "z": round(float(c[1]), 2),
+         "yaw": round(yaw, 4), "w": bw, "d": bd, "zone": zone, "setback": round(road_gap(xs, zs), 2)}
+    name_boards.append(q)
+    placed.append(q)
+    print(f"{bid:20s} ({c[0]:7.1f}, {c[1]:7.1f}) {back:.0f} m before its sight ({'its' if side @ side0 > 0 else 'far'}"
+          f" side), {road_gap(xs, zs):.1f} m off the run-off")
+
 # 0.20.1 town fill (Laçın, after the owner's aerial photos) -------------------------------------
 # Decorative streets (painted into the terrain, not driven), roundabouts and a few hundred houses
 # on both sides of every street and of the race road. Heights are resolved by the Blender terrain
@@ -346,7 +416,8 @@ if "town" in CFG:
         x, z = float(q[0]), float(q[1])
         for lm in placed:
             fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
-            lane = 0.0 if lm["id"] == "kb_garden_cafe" or lm["id"].startswith("kb_house") else                 (30.0 if lm["id"].startswith("kb_sign") else lm["setback"])
+            lane = 0.0 if lm["id"] == "kb_garden_cafe" or lm["id"].startswith("kb_house") else \
+                (30.0 if lm["id"].startswith(("kb_sign", "kb_name")) else lm["setback"])
             u = (x - lm["x"]) * fz - (z - lm["z"]) * fx
             v = (x - lm["x"]) * fx + (z - lm["z"]) * fz
             if abs(u) < lm["w"] / 2 + margin and -lm["d"] / 2 - margin < v < lm["d"] / 2 + lane + margin:
@@ -475,6 +546,14 @@ if "town" in CFG:
                 v = (x - h["x"]) * fx + (z - h["z"]) * fz
                 if abs(u) < h["w"] / 2 + 1.2 and abs(v) < h["d"] / 2 + 1.2:
                     return False
+            # and the other way round (turned houses: its corner inside ours)
+            mx, mz = math.sin(yaw), math.cos(yaw)
+            hx, hz = rect_points(h["x"], h["z"], h["yaw"], h["w"], h["d"], 3.0)
+            for x, z in zip(hx, hz):
+                u = (x - c[0]) * mz - (z - c[1]) * mx
+                v = (x - c[0]) * mx + (z - c[1]) * mz
+                if abs(u) < w / 2 + 1.2 and abs(v) < d / 2 + 1.2:
+                    return False
         return True
 
     def line_houses(pts, gap_of, front, block_p):
@@ -522,8 +601,11 @@ if "town" in CFG:
 if TOWN_ONLY:       # write the "town" key only, the rest of the file untouched
     def dump(obj):
         return json.dumps(obj, ensure_ascii=False)
-    k = text.find('\n\t"town": {')
+    k = text.find('\n\t"name_boards": [')
+    if k < 0:
+        k = text.find('\n\t"town": {')
     base = text[:k].rstrip().rstrip(",") if k >= 0 else text.rstrip()[:-1].rstrip()
+    base += ',\n\t"name_boards": [\n' + ",\n".join("\t\t" + dump(q) for q in name_boards) + "\n\t]"
     tl = ['\t"town": {', '\t\t"streets": [']
     tl.append(",\n".join("\t\t\t" + dump(st) for st in town["streets"]))
     tl.append('\t\t],\n\t\t"rounds": ' + dump(town["rounds"]) + ',\n\t\t"houses": [')
@@ -544,7 +626,7 @@ for ln in lines:
 plots = []
 for q in placed:
     s = 8.0
-    lane = 30.0 if q["id"].startswith("kb_sign") else (0.0 if q["id"] == "kb_garden_cafe" else
+    lane = 30.0 if q["id"].startswith(("kb_sign", "kb_name")) else (0.0 if q["id"] == "kb_garden_cafe" else
                                                         max(q["setback"] - 4.5, 0.0))
     fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
     cx, cz = q["x"] + fx * lane / 2, q["z"] + fz * lane / 2
@@ -563,15 +645,18 @@ def dump(obj):
     return json.dumps(obj, ensure_ascii=False)
 
 
-track["landmarks"] = placed
+track["landmarks"] = [q for q in placed if not q["id"].startswith("kb_name")]
+track["name_boards"] = name_boards
 track["lines"] = lines
 track["peaks"] = CFG["peaks"]
 track["landmark_plots"] = plots
 track.pop("town", None)
-body = json.dumps({k: v for k, v in track.items() if k not in ("landmarks", "lines", "peaks", "landmark_plots")},
+body = json.dumps({k: v for k, v in track.items() if k not in ("landmarks", "lines", "peaks", "landmark_plots",
+                                                                   "name_boards")},
                   ensure_ascii=False, indent="\t")
 tail = ",\n".join('\t"%s": [\n%s\n\t]' % (k, ",\n".join("\t\t" + dump(v) for v in track[k]))
-                  if track[k] else '\t"%s": []' % k for k in ("landmarks", "lines", "peaks", "landmark_plots"))
+                  if track[k] else '\t"%s": []' % k for k in ("landmarks", "name_boards", "lines", "peaks",
+                                                                 "landmark_plots"))
 out = body[:body.rstrip().rfind("}")].rstrip() + ",\n" + tail + "\n}\n"
 if town is not None:      # compact: one street / house per line
     tl = ['\t"town": {', '\t\t"streets": [']

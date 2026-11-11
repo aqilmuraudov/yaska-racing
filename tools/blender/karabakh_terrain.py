@@ -66,7 +66,11 @@ TERRAIN = TRACK.get("terrain", {})   # short maps: their own extents and landsca
 PTS = np.array(ROAD["points"], dtype=np.float64)  # (n, 3) x, y, z
 HW = np.array(ROAD["half_widths"], dtype=np.float64)
 OW = float(ROAD["offroad_width"])
-PLOTS = TRACK.get("landmark_plots", [])
+PLOTS = list(TRACK.get("landmark_plots", []))
+for _nb in TRACK.get("name_boards", []):     # 0.20.1: 30 m in front of a name board kept free of trees
+    _fx, _fz = math.sin(_nb["yaw"]), math.cos(_nb["yaw"])
+    for _k in range(0, 31, 6):
+        PLOTS.append([_nb["x"] + _fx * _k, _nb["z"] + _fz * _k, _nb["w"] / 2 + 2.0, _nb["zone"]])
 
 # Inner (detailed) region and the mountain ring, in Godot x / z.
 CELL = 3.0
@@ -92,7 +96,7 @@ if "inner" in TERRAIN:
 ZONES = TRACK.get("zones", [])          # [id, x, z, radius]
 # 0.19.1 landmarks (tools/karabakh_layout.py): level pads under the footprints,
 # terraces under boulevard runs, big peaks (Hoçaz).
-LANDMARKS = TRACK.get("landmarks", [])
+LANDMARKS = TRACK.get("landmarks", []) + TRACK.get("name_boards", [])   # 0.20.1 the sights' name boards
 LINES = TRACK.get("lines", [])
 PEAKS = TRACK.get("peaks", [])
 # 0.20.1 town fill (tools/karabakh_maps_layout.py "town"): decorative streets painted into the
@@ -468,12 +472,13 @@ def height(xs, zs, with_canopy=False):
             v = np.abs((fx_[win] - lm["x"]) * fx + (fz_[win] - lm["z"]) * fz) - lm["d"] / 2
             e = np.maximum(u, v)
             m = 1.0 - smooth(1.5, 8.0, e)     # level 1.5 m round the plot (a 3 m cell never straddles the bank)
+            m = m + 0.01 * (e < 0.0)          # inside its own plot a house's pad always wins over a neighbour's rim
             better = m > mb[win]
             mb[win] = np.where(better, m, mb[win])
             yb[win] = np.where(better, lm["y"], yb[win])
             pf[win] = np.maximum(pf[win], 1.0 - smooth(0.0, 2.0, e))
             cf[win] = np.maximum(cf[win], 1.0 - smooth(4.0, 10.0, e))
-        mbest, ybest, pad = mb.reshape(xs.shape), yb.reshape(xs.shape), pf.reshape(xs.shape)
+        mbest, ybest, pad = np.minimum(mb, 1.0).reshape(xs.shape), yb.reshape(xs.shape), pf.reshape(xs.shape)
         clear = cf.reshape(xs.shape)
     h = h * (1.0 - mbest) + ybest * mbest
     # the road rule again: pads / terraces never lift the ground over the verge
@@ -526,6 +531,15 @@ def resolve_town():
             y = float(PTS[near, 1].min()) - 0.4
         else:
             y = street_y(hh["x"], hh["z"], hh["front"]) + 0.15
+            # the road rule (cut slope from the verge, height()) must not shave the pad's corner
+            # where a street house backs onto the race road: the pad drops to what the cut allows
+            fx, fz = math.sin(hh["yaw"]), math.cos(hh["yaw"])
+            cx = np.array([[hh["x"] + fz * u * (hh["w"] / 2 + 1.5) + fx * v * (hh["d"] / 2 + 1.5)
+                            for u in (-1, 0, 1) for v in (-1, 0, 1)]])
+            cz = np.array([[hh["z"] - fx * u * (hh["w"] / 2 + 1.5) + fz * v * (hh["d"] / 2 + 1.5)
+                            for u in (-1, 0, 1) for v in (-1, 0, 1)]])
+            dr, yr, ed = road_query(cx, cz)
+            y = min(y, float(np.min(yr - 0.5 + np.maximum(dr - (ed + 1.2), 0.0) * 0.9)) - 0.05)
         TOWN_PADS.append(dict(hh, y=round(y, 2)))
     TOWN_ON = True
     print(f"TOWN {len(STREETS)} streets, {len(TOWN_ROUNDS)} roundabouts, "
@@ -1074,6 +1088,16 @@ def main():
     print(f"ROAD - RIVER bank: {rmin:.0f} m at the closest")
 
     trees = scatter_forest(hfun)
+    if TOWN:   # 0.20.1: town banks are steep - stand every tree on the final 3 m grid (what Godot samples)
+        def grid_y(x, z):
+            fx = min(max((x - X0) / CELL, 0.0), nx - 1.001)
+            fz = min(max((z - Z0) / CELL, 0.0), nz - 1.001)
+            ix, iz = int(fx), int(fz)
+            tx, tz = fx - ix, fz - iz
+            return float((hs[iz, ix] * (1 - tx) + hs[iz, ix + 1] * tx) * (1 - tz) +
+                         (hs[iz + 1, ix] * (1 - tx) + hs[iz + 1, ix + 1] * tx) * tz)
+        for t in trees:
+            t[2] = round(grid_y(t[1], t[3]) - {"kb_bush": 0.15, "kb_rock": 0.4}.get(t[0], 0.25), 2)
     print(f"TREES {len(trees)}")
     json.dump({"doc": "kind, x, y, z, yaw, scale (Godot space); y = ground - sink", "trees": trees},
               open(os.path.join(OUT, "trees.json"), "w"))

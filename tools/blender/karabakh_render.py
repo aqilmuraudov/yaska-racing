@@ -262,7 +262,7 @@ def place_trees(coll):
 
 
 LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin", "karabakh_signs", "karabakh_shusha_town",
-                 "karabakh_lachin_town"]
+                 "karabakh_lachin_town", "karabakh_names"]
 
 
 def place_landmarks(coll):
@@ -283,7 +283,8 @@ def place_landmarks(coll):
                 proto[o.name] = o
                 o.hide_render = True
                 o.hide_viewport = True
-    items = [[lm["id"], lm["x"], lm["y"], lm["z"], lm["yaw"]] for lm in TRACK.get("landmarks", [])]
+    items = [[lm["id"], lm["x"], lm["y"], lm["z"], lm["yaw"]] for lm in TRACK.get("landmarks", []) +
+             TRACK.get("name_boards", [])]
     lp = os.path.join(KB, "lines.json")
     if os.path.exists(lp):
         items += json.load(open(lp, encoding="utf-8"))["instances"]
@@ -306,17 +307,20 @@ def place_landmarks(coll):
         n += 1
         if t[0].startswith("kb_sign_"):   # flat stand-in for the waving flag (Godot: LandmarkKit.flag_mesh)
             flag_stand_in(coll, ob)
+        elif t[0] == "kb_flag_square":    # Bayraq meydanı: 16 x 8 m on the 40 m mast
+            flag_stand_in(coll, ob, (0.0, 0.0, 39.6), 16.0 / 7.2)
     print("LANDMARKS placed", n)
 
 
-def flag_stand_in(coll, sign):
+def flag_stand_in(coll, sign, at=(-12.6, 0.0, 17.0), k=1.0):
     import mathutils
-    top = mathutils.Vector((-12.6, 0.0, 17.0))   # SIGN_MAST_TOP (Godot x, -z, y); flies along +x
-    for k, hx in enumerate(("00B5E2", "EF3340", "509E2F")):
+    top = mathutils.Vector(at)   # SIGN_MAST_TOP (Godot x, -z, y); flies along +x
+    for kk, hx in enumerate(("00B5E2", "EF3340", "509E2F")):
         me = bpy.data.meshes.new("flag")
-        y0 = -k * 1.2
-        me.from_pydata([(0, 0, y0), (7.2, 0, y0), (7.2, 0, y0 - 1.2), (0, 0, y0 - 1.2)], [], [(0, 1, 2, 3)])
-        me.materials.append(flat("flag%d" % k, hx, 0.7))
+        y0 = -kk * 1.2 * k
+        me.from_pydata([(0, 0, y0), (7.2 * k, 0, y0), (7.2 * k, 0, y0 - 1.2 * k), (0, 0, y0 - 1.2 * k)], [],
+                       [(0, 1, 2, 3)])
+        me.materials.append(flat("flag%d" % kk, hx, 0.7))
         ob = bpy.data.objects.new("Flag", me)
         ob.parent = sign
         ob.location = top
@@ -421,11 +425,17 @@ def short_map(sc, cam):
     if TRACK.get("town") and (not ONLY or "aerial" in ONLY):   # as the owner's aerial photos of the town
         shoot(sc, cam, B(cx + 260, 150, cz + 330), B(cx - 20, 25, cz - 40), f"{tag}_0_aerial_1.jpg", lens=26)
         shoot(sc, cam, B(cx - 60, 95, cz - 330), B(cx + 40, 25, cz + 10), f"{tag}_0_aerial_2.jpg", lens=24)
-    for lm in TRACK.get("landmarks", []):
+    for lm in TRACK.get("landmarks", []) + TRACK.get("name_boards", []):
+        if lm["id"].startswith(("kb_house", "kb_sh_house")):
+            continue
         name = f"{tag}_lm_{lm['id']}.jpg"
         if ONLY and not any(o in name for o in ONLY.split(",")):
             continue
         fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
+        if lm["id"] == "kb_flag_square":      # from the road before it: the square, the mast, the flag
+            eye, _look = road_cam((s_at(lm["x"], lm["z"]) - 45.0) % L, back=0.0, up=5.0)
+            shoot(sc, cam, eye, B(lm["x"], lm["y"] + 14.0, lm["z"]), name, lens=22)
+            continue
         d = max(lm["w"], lm["d"]) * 1.1 + 12.0
         eye = B(lm["x"] + fx * d + fz * d * 0.35, lm["y"] + 9.0, lm["z"] + fz * d - fx * d * 0.35)
         shoot(sc, cam, eye, B(lm["x"], lm["y"] + 6.0, lm["z"]), name, lens=26)
@@ -526,6 +536,12 @@ def main():
     for name, eye, look, lens in wide:
         if not ONLY or any(k in name for k in ONLY.split(",")):
             shoot(sc, cam, eye, look, name, lens=lens)
+    for nb in TRACK.get("name_boards", []):     # 0.20.1: each name board from the oncoming road
+        name = f"kb_nb_{nb['id'][8:]}.jpg"
+        if ONLY and not any(k in name for k in ONLY.split(",")):
+            continue
+        eye, _look = road_cam((s_at(nb["x"], nb["z"]) - 45.0) % ROAD["length"], back=0.0, up=4.0)
+        shoot(sc, cam, eye, B(nb["x"], nb["y"] + 5.0, nb["z"]), name, lens=26)
     if ONLY:
         print("DONE")
         return

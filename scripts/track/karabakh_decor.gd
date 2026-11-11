@@ -136,7 +136,8 @@ func _place_kb_bridges() -> void:
 ## node (LANDMARK_NEAR switch); the Laçın houses are instanced.
 ## A model not built yet is skipped (the pad stays an open meadow).
 func _place_kb_landmarks() -> void:
-	for lm: Dictionary in data.raw.get("landmarks", []):
+	# 0.20.1: + the name boards of the sights (owner: the names in big capitals)
+	for lm: Dictionary in data.raw.get("landmarks", []) + data.raw.get("name_boards", []):
 		var id := String(lm.id)
 		if not kb_model_ready(id):
 			continue
@@ -149,20 +150,25 @@ func _place_kb_landmarks() -> void:
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		if id.begins_with("kb_sign_"):
 			_add_flag(node, SIGN_MAST_TOP, "flag_" + String(lm.zone))
+		elif id == "kb_flag_square":     # Bayraq meydanı: the big flag on the 40 m mast
+			_add_flag(node, FLAG_SQUARE_TOP, "flag_square_" + String(lm.zone), FLAG_SQUARE_FLAG)
 
 
 ## 0.19.2 town entry signs (tools/blender/karabakh_signs.py): top of the flag
 ## mast at the sign's left end (model space).
 const SIGN_MAST_TOP := Vector3(-12.6, 17.0, 0.0)
 const SIGN_FLAG := Vector2(7.2, 3.6)
+## 0.20.1 Bayraq meydanı (tools/blender/karabakh_names.py): the mast top, the flag size.
+const FLAG_SQUARE_TOP := Vector3(0.0, 39.6, 0.0)
+const FLAG_SQUARE_FLAG := Vector2(16.0, 8.0)
 
 
 ## The Azerbaijani flag (waving shader, as on the seafront) on a mast top,
 ## flying to the right (+x) over the sign so the karts see its face.
-func _add_flag(parent: Node3D, top: Vector3, key: String) -> void:
+func _add_flag(parent: Node3D, top: Vector3, key: String, size: Vector2 = SIGN_FLAG) -> void:
 	var f := MeshInstance3D.new()
 	f.name = "Flag"
-	f.mesh = LandmarkKit.flag_mesh(SIGN_FLAG.x, SIGN_FLAG.y)
+	f.mesh = LandmarkKit.flag_mesh(size.x, size.y)
 	f.transform = Transform3D(Basis(Vector3.UP, PI * 0.5), top)
 	f.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	f.extra_cull_margin = 4.0

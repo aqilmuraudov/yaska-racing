@@ -8,6 +8,7 @@ plinth / foundation reaching FOUND m below the pad so it never floats.
 """
 
 import math
+import os
 
 import bmesh
 import bpy
@@ -312,20 +313,25 @@ def rock(name, radii, center, seed, mat, g, hi, sub=2):
     return K.finish(bm, name, mat, g, hi, smooth=False)
 
 
+# 0.20.1: a static Bold instance of the game font with the overlapping contours removed
+# (fontTools instancer); the variable font's overlaps came out as holes in X, A, R ...
+SIGN_FONT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "Baloo2-Bold-static.ttf")
+
+
 def text3d(name, text, size, matrix, mat, g, hi, depth=0.12, font=None):
     """Extruded letters (low and high: big signs must read from the road).
     Local frame before `matrix`: centred, facing +z, `size` = cap height-ish."""
     cu = bpy.data.curves.new(name, "FONT")
     cu.body = text
     try:
-        cu.font = bpy.data.fonts.load(font or K.FONT_PATH, check_existing=True)
+        cu.font = bpy.data.fonts.load(font or SIGN_FONT, check_existing=True)
     except Exception:
         pass
     cu.size = size
     cu.align_x = "CENTER"
     cu.align_y = "CENTER"
     cu.extrude = depth / 2
-    cu.resolution_u = K.L(hi, 2, 3)
+    cu.resolution_u = 3        # 0.20.1: low = high (the bake rays missed the letters where they differed)
     tmp = bpy.data.objects.new(name + "_txt", cu)
     K.COLL.objects.link(tmp)
     deps = bpy.context.evaluated_depsgraph_get()
@@ -337,7 +343,10 @@ def text3d(name, text, size, matrix, mat, g, hi, depth=0.12, font=None):
     bmesh.ops.triangulate(bm, faces=bm.faces[:])
     # curve text lies in XY facing +Z: that is already our frame (x across, y up, z front)
     K.xform(bm, matrix)
-    return K.finish(bm, name, mat, g, hi, smooth=False)
+    # 0.20.1: Blender's own winding is right; recalc_face_normals flipped faces inside the
+    # concave glyphs (dark triangles in the baked letters)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+    return K.finish(bm, name, mat, g, hi, smooth=False, keep=True)
 
 
 def tree_ball(name, center, r, mat, g, hi, seed=0.0):

@@ -53,6 +53,7 @@ WANT = [
     # Laçın: the Həkəri runs on the west / north side (boulevard, café), the town on the east / south side
     ("kb_cinema", "lachin", (-700, -80), "E", 32, 28, 0, 0),
     ("kb_hotel", "lachin", (-735, 175), "E", 80, 46, 0, 0),
+    ("kb_flag_square", "lachin", (-655, -105), "N", 40, 34, 0, 0),   # 0.20.1 Bayraq meydanı (owner)
     ("kb_house_a", "lachin", (-640, -110), "S", 12, 11, 0, 0),
     ("kb_house_b", "lachin", (-620, -120), "S", 12, 11, 0, 0),
     ("kb_house_c", "lachin", (-600, -128), "S", 12, 11, 0, 0),
@@ -145,7 +146,7 @@ for lid, zone, hint, side, w, d, extra, shift in WANT:
     clear = 1.0 if lid in SMALL_SETBACK else CLEAR
     base = HW[i] + OW + clear + extra
     ok = False
-    for grow in np.arange(0.0, 60.0, 1.0):
+    for grow in np.arange(0.0, 8.0 if lid.startswith("kb_house") else 60.0, 1.0):   # a house stays by the road
         off = base + grow + d / 2
         c = np.array([P[i][0], P[i][2]]) + n * off + t * shift
         yaw = math.atan2(-n[0], -n[1])          # front (local +z) faces the road
