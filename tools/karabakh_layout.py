@@ -48,7 +48,7 @@ WANT = [
     ("kb_stadium", "khankendi", (585, -528), "S", 100, 74, 0, 0),
     ("kb_our_mountains", "khankendi", (470, -500), "N", 16, 12, 0, 0),
     # Şuşa
-    ("kb_mosque", "shusha", (150, -255), "N", 28, 32, 0, 0),
+    ("kb_mosque", "shusha", (75, -262), "N", 28, 32, 0, 0),     # 0.20.1: west of the fortress
     ("kb_vagif", "shusha", (-30, -272), "S", 18, 18, 0, 0),
     # Laçın: the Həkəri runs on the west / north side (boulevard, café), the town on the east / south side
     ("kb_cinema", "lachin", (-700, -80), "E", 32, 28, 0, 0),
@@ -134,6 +134,29 @@ def rect_points(cx, cz, yaw, w, d, step=3.0):
 
 
 placed = []
+# 0.20.1 (owner): Şuşa qalası is a small fortress the road runs through, gate to gate (was a
+# 300 m wall beside the plateau road): on the straightest stretch of the plateau road, between the
+# town sign (east, the karts come from there) and the mosque (moved west for it).
+import kb_fortress
+_cands = [i for i in range(N) if 110.0 <= P[i][0] <= 210.0 and -330.0 <= P[i][2] <= -180.0]
+
+
+def _fort_ok(xs, zs):
+    for q in placed:
+        fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
+        for x, z in zip(xs, zs):
+            u = (x - q["x"]) * fz - (z - q["z"]) * fx
+            v = (x - q["x"]) * fx + (z - q["z"]) * fz
+            if abs(u) < q["w"] / 2 + 4 and abs(v) < q["d"] / 2 + 4:
+                return False
+    return river_gap(xs, zs) > 6.0
+
+
+_fort = kb_fortress.place(P, HW, OW, _cands, _fort_ok, "shusha")
+assert _fort is not None, "no straight stretch for Şuşa qalası"
+placed.append(_fort)
+print(f"kb_sh_fortress       shusha     ({_fort['x']:7.1f}, {_fort['z']:7.1f}) the road through its gates")
+
 for lid, zone, hint, side, w, d, extra, shift in WANT:
     i = nearest(*hint)
     a, b = P[(i - 2) % N], P[(i + 2) % N]
@@ -189,21 +212,6 @@ for lid, zone, hint, side, w, d, extra, shift in WANT:
 
 # Lines ----------------------------------------------------------------------------------------
 lines = []
-# Şuşa fortress walls beside the plateau road, on its south (Daşaltı gorge) side,
-# 14 m from the road centre: seen all along the plateau (0.19.2).
-sec = [i for i in range(N) if 40.0 <= P[i][0] <= 345.0 and -330.0 <= P[i][2] <= -180.0]
-wall = []
-for i in sec[::2]:
-    t = P[(i + 3) % N][[0, 2]] - P[i - 3][[0, 2]]
-    t = t / np.linalg.norm(t)
-    sn = np.array([-t[1], t[0]])
-    if sn[1] < 0:
-        sn = -sn                       # the south side
-    q = np.array([P[i][0], P[i][2]]) + sn * (HW[i] + OW + 3.6 + 3.0)
-    wall.append([round(float(q[0]), 2), round(float(q[1]), 2), None])
-wall.sort(key=lambda q: q[0])          # west -> east: module +z = south (the gorge, outer side)
-lines.append({"id": "shusha_wall", "zone": "shusha", "module": "kb_wall_seg", "tower": "kb_wall_tower",
-              "gate": "kb_wall_gate", "step": 8.0, "tower_every": 6, "gate_at": 0.55, "width": 6.0, "points": wall})
 # Həkəri boulevard: a terrace on the east bank in Laçın (the road side).
 hk = next(r for r in RIVERS if r["id"] == "hakari")
 blvd = []
@@ -240,7 +248,8 @@ _pk = (-1150.0, -300.0)
 _f = np.array([_lz[1] - _pk[0], _lz[2] - _pk[1]])
 _f /= np.linalg.norm(_f)
 peaks = [{"id": "hocaz", "x": _pk[0], "z": _pk[1], "h": 235.0, "r": 360.0,
-          "face": [round(float(_f[0]), 4), round(float(_f[1]), 4)]}]
+          "face": [round(float(_f[0]), 4), round(float(_f[1]), 4)],
+          "label": {"text": "HOÇAZ", "at": 0.5, "scale": 1.6}}]   # 0.20.1 (owner): the name on the mountain
 
 # The garden café stands on the boulevard's land edge, its terrace facing the
 # river (owner: "bulvar sahilində"), on the boulevard's terrace height.

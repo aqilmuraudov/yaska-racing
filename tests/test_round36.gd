@@ -11,7 +11,7 @@ var _orig_config := {}
 
 const EXPECTED := ["kb_victory_square", "kb_university", "kb_stadium", "kb_our_mountains", "kb_sign_shusha", "kb_sign_khankendi", "kb_sign_lachin",
 	"kb_mosque", "kb_vagif", "kb_cinema", "kb_hotel", "kb_garden_cafe", "kb_house_a", "kb_house_b", "kb_house_c"]
-const LINE_MODULES := ["kb_wall_seg", "kb_wall_tower", "kb_wall_gate", "kb_blvd_seg"]
+const LINE_MODULES := ["kb_blvd_seg"]
 
 
 func before_each() -> void:
@@ -66,7 +66,9 @@ func test_every_named_landmark_is_laid_out() -> void:
 	var line_ids := {}
 	for ln: Dictionary in _td.raw.get("lines", []):
 		line_ids[String(ln.id)] = true
-	check(line_ids.has("shusha_wall") and line_ids.has("hakari_boulevard"), "the fortress wall and the boulevard")
+	# 0.20.1 (owner): Şuşa qalası is a small fortress on the road (round 43), not a wall line
+	check(line_ids.has("hakari_boulevard") and not line_ids.has("shusha_wall"), "the boulevard, no long wall")
+	check(ids.has("kb_sh_fortress"), "Şuşa qalası on the road")
 	var peaks: Array = _td.raw.get("peaks", [])
 	check(peaks.size() == 1 and String(peaks[0].id) == "hocaz", "Hoçaz")
 
@@ -75,6 +77,8 @@ func test_footprints_clear_of_road_rivers_and_each_other() -> void:
 	var path := _td.main
 	var lms: Array = _td.raw.landmarks
 	for lm: Dictionary in lms:
+		if lm.get("spans_road", false):
+			continue # Şuşa qalası: the road runs through its gates (round 43)
 		var worst := INF
 		var wet := INF
 		for p: Vector2 in _footprint(lm):
@@ -113,6 +117,8 @@ func _river_gap(p: Vector2, rv: Dictionary) -> float:
 func test_pads_level_and_open() -> void:
 	var b := _builder()
 	for lm: Dictionary in _td.raw.landmarks:
+		if lm.get("spans_road", false):
+			continue # its pad is cut by the road (round 43)
 		var worst := 0.0
 		for p: Vector2 in _footprint(lm, 1.5):
 			worst = maxf(worst, absf(b.terrain_height(p.x, p.y) - float(lm.y)))
@@ -129,13 +135,15 @@ func test_pads_level_and_open() -> void:
 	var wall := 0
 	for t: Array in _lines():
 		var g := b.terrain_height(float(t[1]), float(t[3]))
+		if String(t[0]).begins_with("kb_hl_"):
+			continue # the name on Hoçaz (round 43)
 		if String(t[0]).begins_with("kb_wall"):
 			wall += 1
 			check(float(t[2]) <= g + 0.05 and float(t[2]) > g - 3.5, "%s on the ground (%.2f vs %.2f)" % [t[0], t[2], g])
 		else:
 			# the module's stone base reaches 2.6 m down: the ground may lie up to 2.4 m under it, 0.4 m over it
 			check(g - float(t[2]) < 0.4 and float(t[2]) - g < 2.4, "boulevard on its terrace (%.2f vs %.2f)" % [t[2], g])
-	check(wall > 40, "the fortress wall runs %d modules" % wall)
+	check_eq(wall, 0, "no wall modules (the fortress replaced them)")
 	# the café stands on the boulevard: next to its modules, at their height
 	for lm: Dictionary in _td.raw.landmarks:
 		if String(lm.id) != "kb_garden_cafe":
@@ -239,9 +247,7 @@ func test_race_scene_places_the_landmarks() -> void:
 		if c is MultiMeshInstance3D and c.has_meta("instance_xforms"):
 			var prop := String(c.get_meta("prop"))
 			counts[prop] = int(counts.get(prop, 0)) + (c.get_meta("instance_xforms") as Array).size()
-	check(int(counts.get("kb_wall_seg", 0)) > 30, "fortress wall segments (%d)" % int(counts.get("kb_wall_seg", 0)))
-	check(int(counts.get("kb_wall_tower", 0)) > 4, "wall towers")
-	check_eq(int(counts.get("kb_wall_gate", 0)), 1, "one gate")
+	check(decor.landmarks.has("kb_sh_fortress"), "Şuşa qalası in the scene")
 	check(int(counts.get("kb_blvd_seg", 0)) > 15, "the Həkəri boulevard (%d)" % int(counts.get("kb_blvd_seg", 0)))
 	var houses := int(counts.get("kb_house_a", 0)) + int(counts.get("kb_house_b", 0)) + int(counts.get("kb_house_c", 0))
 	check(houses >= 8, "Laçın town houses (%d)" % houses)

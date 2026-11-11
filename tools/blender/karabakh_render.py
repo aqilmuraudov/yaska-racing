@@ -300,7 +300,7 @@ def place_landmarks(coll):
             continue
         ob = bpy.data.objects.new(t[0], proto[t[0]].data)
         ob.location = B(t[1], t[2], t[3])
-        ob.rotation_euler = (0.0, 0.0, t[4])
+        ob.rotation_euler = (t[6] if len(t) > 6 else 0.0, 0.0, t[4])
         if len(t) > 5:
             ob.scale = (t[5],) * 3
         coll.objects.link(ob)
@@ -432,6 +432,10 @@ def short_map(sc, cam):
         if ONLY and not any(o in name for o in ONLY.split(",")):
             continue
         fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
+        if lm["id"] == "kb_sh_fortress":      # 0.20.1: driving up to the gate
+            eye, _look = road_cam((s_at(lm["x"], lm["z"]) - 70.0) % L, back=0.0, up=3.0)
+            shoot(sc, cam, eye, B(lm["x"], lm["y"] + 7.0, lm["z"]), name, lens=24)
+            continue
         if lm["id"] == "kb_flag_square":      # from the road before it: the square, the mast, the flag
             eye, _look = road_cam((s_at(lm["x"], lm["z"]) - 45.0) % L, back=0.0, up=5.0)
             shoot(sc, cam, eye, B(lm["x"], lm["y"] + 14.0, lm["z"]), name, lens=22)
@@ -439,6 +443,25 @@ def short_map(sc, cam):
         d = max(lm["w"], lm["d"]) * 1.1 + 12.0
         eye = B(lm["x"] + fx * d + fz * d * 0.35, lm["y"] + 9.0, lm["z"] + fz * d - fx * d * 0.35)
         shoot(sc, cam, eye, B(lm["x"], lm["y"] + 6.0, lm["z"]), name, lens=26)
+    lp = os.path.join(KB, "lines.json")     # 0.20.1: the peak's name from the road
+    hl = [t for t in json.load(open(lp, encoding="utf-8"))["instances"] if t[0].startswith("kb_hl_")]         if os.path.exists(lp) else []
+    if hl and (not ONLY or "hocaz" in ONLY):
+        cx_, cy_, cz_ = (sum(t[1] for t in hl) / len(hl), sum(t[2] for t in hl) / len(hl), sum(t[3] for t in hl) / len(hl))
+        eye, _look = road_cam(s_at(cx_ + 300.0, cz_), back=0.0, up=3.0)
+        shoot(sc, cam, eye, B(cx_, cy_ + 12.0, cz_), f"{tag}_hocaz_label.jpg", lens=30)
+    if TRACK.get("rivers") and (not ONLY or "river" in ONLY):
+        cafe = next((q for q in TRACK.get("landmarks", []) if q["id"] == "kb_garden_cafe"), None)
+        if cafe:
+            eye, look = road_cam((s_at(cafe["x"], cafe["z"]) - 60.0) % L, back=0.0, up=2.6, ahead=50.0)
+            shoot(sc, cam, eye, look, f"{tag}_river_road.jpg", lens=24)
+            # looking across at the water, 50 m further along
+            hk = TRACK["rivers"][0]["points"]
+            si = (s_at(cafe["x"], cafe["z"]) + 50.0) % L
+            eye, _l = road_cam(si, back=0.0, up=2.6)
+            pts_ = ROAD["points"]
+            pi_ = pts_[int(si / (L / len(pts_))) % len(pts_)]
+            near_ = min(hk, key=lambda q: (q[0] - pi_[0]) ** 2 + (q[1] - pi_[2]) ** 2)
+            shoot(sc, cam, eye, B(near_[0], pi_[1] - 2.0, near_[1]), f"{tag}_river_side.jpg", lens=24)
     if ONLY:
         print("DONE")
         return
@@ -536,6 +559,16 @@ def main():
     for name, eye, look, lens in wide:
         if not ONLY or any(k in name for k in ONLY.split(",")):
             shoot(sc, cam, eye, look, name, lens=lens)
+    for lm in TRACK.get("landmarks", []):       # 0.20.1: driving up to Şuşa qalası
+        if lm["id"] == "kb_sh_fortress" and (not ONLY or "kb_36" in ONLY):
+            eye, _look = road_cam((s_at(lm["x"], lm["z"]) - 70.0) % ROAD["length"], back=0.0, up=3.0)
+            shoot(sc, cam, eye, B(lm["x"], lm["y"] + 7.0, lm["z"]), "kb_36_fortress.jpg", lens=24)
+    lp = os.path.join(KB, "lines.json")
+    hl = [t for t in json.load(open(lp, encoding="utf-8"))["instances"] if t[0].startswith("kb_hl_")]         if os.path.exists(lp) else []
+    if hl and (not ONLY or "kb_37" in ONLY):    # 0.20.1: HOÇAZ from Laçın
+        cx_, cy_, cz_ = (sum(t[1] for t in hl) / len(hl), sum(t[2] for t in hl) / len(hl), sum(t[3] for t in hl) / len(hl))
+        eye, _look = road_cam(s_at(-765.0, 20.0), back=0.0, up=3.0)
+        shoot(sc, cam, eye, B(cx_, cy_ + 15.0, cz_), "kb_37_hocaz.jpg", lens=30)
     for nb in TRACK.get("name_boards", []):     # 0.20.1: each name board from the oncoming road
         name = f"kb_nb_{nb['id'][8:]}.jpg"
         if ONLY and not any(k in name for k in ONLY.split(",")):

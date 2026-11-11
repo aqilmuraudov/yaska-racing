@@ -68,6 +68,8 @@ func test_town_entry_signs() -> void:
 func test_landmarks_beside_the_road() -> void:
 	for lm: Dictionary in _td.raw.landmarks:
 		var id := String(lm.id)
+		if lm.get("spans_road", false):
+			continue # Şuşa qalası stands over the road (round 43)
 		var worst := INF
 		var f := _front(lm)
 		var a := Vector2(f.y, -f.x)
@@ -147,11 +149,11 @@ func test_hakari_by_the_road_in_lachin() -> void:
 	check(_front(cafe).dot(to_road) > 0.7, "the café terrace faces the road")
 
 
-func test_fortress_wall_by_the_road() -> void:
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(String(_td.raw.terrain_dir) + "/lines.json"))
+## 0.20.1: the long wall became the small fortress the road runs through (round 43).
+func test_fortress_on_the_road() -> void:
 	var n := 0
-	for t: Array in parsed.instances:
-		if String(t[0]) == "kb_wall_seg":
+	for lm: Dictionary in _td.raw.landmarks:
+		if String(lm.id) == "kb_sh_fortress":
 			n += 1
-			check(_gap(Vector2(float(t[1]), float(t[3]))) < 8.0, "wall segment by the road")
-	check(n > 25, "a long wall (%d segments)" % n)
+			check(lm.get("spans_road", false), "the road runs through it")
+	check_eq(n, 1, "one Şuşa qalası")

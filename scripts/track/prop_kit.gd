@@ -334,6 +334,12 @@ const GLTF_PROPS := {
 	"kb_name_mountains": "res://assets/models/karabakh_names/karabakh_names",
 	"kb_name_bridges": "res://assets/models/karabakh_names/karabakh_names",
 	"kb_flag_square": "res://assets/models/karabakh_names/karabakh_names",
+	"kb_hl_h": "res://assets/models/karabakh_names/karabakh_names",
+	"kb_hl_o": "res://assets/models/karabakh_names/karabakh_names",
+	"kb_hl_c": "res://assets/models/karabakh_names/karabakh_names",
+	"kb_hl_a": "res://assets/models/karabakh_names/karabakh_names",
+	"kb_hl_z": "res://assets/models/karabakh_names/karabakh_names",
+	"kb_sh_fortress": "res://assets/models/karabakh_shusha_town/karabakh_shusha_town",
 	# 0.20.1 Laçın town fill (tools/blender/karabakh_lachin_town.py, owner's aerial photos)
 	"kb_lc_house_1": "res://assets/models/karabakh_lachin_town/karabakh_lachin_town",
 	"kb_lc_house_2": "res://assets/models/karabakh_lachin_town/karabakh_lachin_town",

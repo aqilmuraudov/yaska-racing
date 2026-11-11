@@ -6,10 +6,10 @@ extends TestCase
 
 const BOARDS := {
 	"karabakh": ["kb_name_cinema", "kb_name_hotel", "kb_name_flag", "kb_name_mosque", "kb_name_vagif",
-			"kb_name_fortress", "kb_name_victory", "kb_name_university", "kb_name_stadium", "kb_name_mountains",
+			"kb_name_victory", "kb_name_university", "kb_name_stadium", "kb_name_mountains",
 			"kb_name_bridges"],
 	"karabakh_lachin": ["kb_name_cinema", "kb_name_hotel", "kb_name_flag"],
-	"karabakh_shusha": ["kb_name_mosque", "kb_name_vagif", "kb_name_bulbul", "kb_name_fortress"],
+	"karabakh_shusha": ["kb_name_mosque", "kb_name_vagif", "kb_name_bulbul"],
 }
 var _orig_config := {}
 

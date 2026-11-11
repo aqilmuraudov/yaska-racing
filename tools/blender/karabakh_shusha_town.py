@@ -43,11 +43,12 @@ PALETTE = {
     "flower": ("D6457A", 0.8, 0.0),
     "leaf": ("4C7A2E", 0.9, 0.0),
     "trunk": ("6B4A32", 0.9, 0.0),
+    "letters_red": ("C8202F", 0.5, 0.0),
 }
 PAINT_MAT = ["glass", "glass_red", "glass_yellow"]   # windows glow at night
 LOOK = {"rubble": "cobble", "cut_stone": "cut", "plinth": "cut", "grass": "grass", "paving": "paving",
         "roof_green": "plain", "roof_red": "plain", "roof_grey": "plain", "wood": "plain", "wood_light": "plain"}
-GROUPS = ["kb_sh_house_a", "kb_sh_house_b", "kb_sh_house_c", "kb_bulbul"]
+GROUPS = ["kb_sh_house_a", "kb_sh_house_b", "kb_sh_house_c", "kb_bulbul", "kb_sh_fortress"]
 UV_SCALE = {g: 1.0 for g in GROUPS}
 FAR_RATIO = {g: 0.4 for g in GROUPS}
 F = S.FOUND
@@ -190,6 +191,70 @@ def build_bulbul(hi):
     S.slab(f"{g}_lintel_{tag}", -1.95, 1.95, 2.6, 3.0, D / 2 - 0.6, D / 2 + 0.1, "cut_stone", g, hi)
 
 
+# --- Şuşa qalası (0.20.1, owner: "a small fortress; the road goes through it, as in İçərişəhər,
+# and ŞUŞA in red letters on it") --------------------------------------------------------------
+FORT_L, FORT_W = 72.0, 66.0      # along the road (x, the karts drive +x), across (z)
+GATE_HALF = 13.0                 # half the gate opening (road 15-16 m + run-off 3 m each side)
+WALL_H, WALL_T = 9.0, 2.2
+
+
+def merlons(g, tag, hi, name, x0, x1, z0, z1, y):
+    if not hi:
+        S.slab(f"{g}_{name}_m_{tag}", x0, x1, y, y + 1.2, z0, z1, "rubble", g, hi, bevel=0.0)
+        return
+    along_x = (x1 - x0) >= (z1 - z0)
+    n = int(((x1 - x0) if along_x else (z1 - z0)) // 2.4)
+    for k in range(n):
+        a = (x0 if along_x else z0) + 0.6 + k * 2.4
+        if along_x:
+            S.slab(f"{g}_{name}_m{k}_{tag}", a, a + 1.2, y, y + 1.3, z0, z1, "rubble", g, hi, bevel=0.0)
+        else:
+            S.slab(f"{g}_{name}_m{k}_{tag}", x0, x1, y, y + 1.3, a, a + 1.2, "rubble", g, hi, bevel=0.0)
+
+
+def wall(g, tag, hi, name, x0, x1, z0, z1, h=WALL_H):
+    S.slab(f"{g}_{name}_{tag}", x0, x1, -F - 2.0, h, z0, z1, "rubble", g, hi)
+    S.slab(f"{g}_{name}_walk_{tag}", x0, x1, h, h + 0.2, z0, z1, "plinth", g, hi, bevel=0.0)
+    merlons(g, tag, hi, name, x0, x1, z0, z1, h + 0.2)
+
+
+def round_tower(g, tag, hi, name, x, z, r=4.2, h=12.5):
+    S.cylinder(f"{g}_{name}_{tag}", r, -F - 2.0, h, (x, z), "rubble", g, hi, seg=(10, 20))
+    S.cylinder(f"{g}_{name}_cap_{tag}", r + 0.4, h, h + 0.6, (x, z), "plinth", g, hi, seg=(10, 20))
+    n = K.L(hi, 6, 10)
+    for k in range(n):
+        a = 2 * math.pi * k / n
+        S.box(f"{g}_{name}_mer{k}_{tag}", (1.3, 1.3, 1.0), (x + (r - 0.2) * math.cos(a), h + 1.25,
+                                                         z + (r - 0.2) * math.sin(a)), "rubble", g, hi, bevel=0.0)
+
+
+def build_fortress(hi):
+    tag = "H" if hi else "L"
+    g = "kb_sh_fortress"
+    L2, W2, T = FORT_L / 2, FORT_W / 2, WALL_T
+    for sz in (-1, 1):                       # the long walls beside the road
+        wall(g, tag, hi, f"side{sz}", -L2, L2, sz * W2 - T / 2, sz * W2 + T / 2)
+    for sx in (-1, 1):                       # the end walls with the gates across the road
+        x0, x1 = sx * L2 - T / 2, sx * L2 + T / 2
+        for sz in (-1, 1):
+            a, b = sorted((sz * (GATE_HALF + 4.5), sz * W2))
+            wall(g, tag, hi, f"end{sx}{sz}", x0, x1, a, b)
+            # gate towers flanking the opening
+            zc = sz * (GATE_HALF + 2.5)
+            S.slab(f"{g}_gt{sx}{sz}_{tag}", x0 - 1.4, x1 + 1.4, -F - 2.0, 10.5, zc - 2.5, zc + 2.5, "cut_stone", g, hi)
+        # the lintel over the road (clear height 10.5 m) with a pointed arch face
+        S.slab(f"{g}_lintel{sx}_{tag}", x0 - 0.8, x1 + 0.8, 10.5, 17.0, -GATE_HALF - 5.0, GATE_HALF + 5.0, "cut_stone",
+               g, hi)
+        merlons(g, tag, hi, f"lm{sx}", x0 - 0.8, x1 + 0.8, -GATE_HALF - 5.0, GATE_HALF + 5.0, 17.0)
+        # ŞUŞA in red letters on the outer face of each gate
+        rot = Matrix.Rotation(sx * math.pi / 2, 4, "Y")     # faces outwards, reads left to right
+        S.text3d(f"{g}_name{sx}_{tag}", "ŞUŞA", 6.0,
+                 Matrix.Translation((sx * (L2 + T / 2 + 1.05), 13.6, 0.0)) @ rot, "letters_red", g, hi, depth=0.5)
+    for sx in (-1, 1):                       # corner towers
+        for sz in (-1, 1):
+            round_tower(g, tag, hi, f"ct{sx}{sz}", sx * L2, sz * W2)
+
+
 def build(hi):
     global _looked
     if not _looked:
@@ -199,7 +264,8 @@ def build(hi):
 
 
 _build = S.run_set(GROUPS, {"kb_sh_house_a": build_house_a, "kb_sh_house_b": build_house_b,
-                            "kb_sh_house_c": build_house_c, "kb_bulbul": build_bulbul}, 60.0)
+                            "kb_sh_house_c": build_house_c, "kb_bulbul": build_bulbul,
+                            "kb_sh_fortress": build_fortress}, 120.0)
 K.CAGE, K.RAY, K.AO_DIST = 0.08, 0.2, 2.0
 K.setup("karabakh_shusha_town", "assets/models/karabakh_shusha_town", PALETTE, PAINT_MAT, GROUPS, UV_SCALE, FAR_RATIO,
         stone_mats=["__no_stone__"])

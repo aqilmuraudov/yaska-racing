@@ -194,6 +194,9 @@ func ground_y(p: Vector3) -> float:
 ## on Low, they are only ~40 triangles each).
 var chunk_size := {}
 var skyline_min := {}
+## 0.20.1: props that keep their full model at every distance (no near / far
+## swap seen while driving) - the decor fills it (Qarabağ town houses).
+var full_lod := {}
 
 
 ## 0.11.2: every placed transform of one prop (e.g. "lamp" for NightGlow).
@@ -325,7 +328,7 @@ func _flush_instances() -> void:
 		var mesh := PropKit.get_mesh(prop)
 		# 0.17.3: the malls keep their full model far away too (a few hundred
 		# triangles; Ganjlik Mall's far model read as a blank grey box).
-		var lo := mesh if prop in FULL_LOD_PROPS else PropKit.get_mesh(prop + PropKit.LO_SUFFIX)
+		var lo := mesh if (prop in FULL_LOD_PROPS or full_lod.has(prop)) else PropKit.get_mesh(prop + PropKit.LO_SUFFIX)
 		for key in _instances[prop].keys():
 			var list: Array = _instances[prop][key]
 			_register_occluders(mesh, list)

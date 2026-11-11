@@ -598,7 +598,8 @@ def check_far_tiles(fars, hs):
     lp = os.path.join(OUT, "lines.json")
     if os.path.exists(lp):
         for t in json.load(open(lp, encoding="utf-8"))["instances"]:
-            pts.append((t[0], t[1], t[3]))
+            if not t[0].startswith("kb_hl_"):        # the peak's letters stand on legs over the slope
+                pts.append((t[0], t[1], t[3]))
     worst = (0.0, "")
     worst_town = (0.0, "")
     town_ids = {q["id"] for q in TOWN_PADS}
@@ -618,6 +619,57 @@ def check_far_tiles(fars, hs):
     print(f"FAR LOD under the town houses: worst {worst_town[0]:.2f} m ({worst_town[1]})")
     assert worst[0] < 0.5, "far terrain tiles leave a landmark floating / sunk"
     assert worst_town[0] < 1.0, "far terrain tiles leave a town house floating / sunk"
+
+
+LABEL_SIZES = os.path.join(ROOT, "assets", "models", "karabakh_names", "sizes.json")
+LETTER_ID = {"H": "kb_hl_h", "O": "kb_hl_o", "Ç": "kb_hl_c", "A": "kb_hl_a", "Z": "kb_hl_z"}
+
+
+def peak_labels():
+    """0.20.1 (owner): the peak's name in big white letters standing on its face, turned to the
+    town (as a name on a hill). Each letter on its own ground; "at" = how high up the face."""
+    out = []
+    sizes = json.load(open(LABEL_SIZES, encoding="utf-8"))["sizes"] if os.path.exists(LABEL_SIZES) else {}
+    for pk in PEAKS:
+        lb = pk.get("label")
+        if not lb:
+            continue
+        f = np.array(pk["face"], dtype=np.float64)
+        f /= np.linalg.norm(f)
+        side = np.array([-f[1], f[0]])
+        ss = np.linspace(0.05, 1.2, 116) * pk["r"]
+        hs_, _i = height((pk["x"] + f[0] * ss)[:, None], (pk["z"] + f[1] * ss)[:, None])
+        hs_ = hs_[:, 0]
+        target = hs_.min() + (hs_.max() - hs_.min()) * lb.get("at", 0.45)
+        top = int(np.argmax(hs_))
+        k = int(np.argmin(np.where(np.arange(len(ss)) > top, np.abs(hs_ - target), 1e9)))
+        c = np.array([pk["x"], pk["z"]]) + f * ss[k]
+        sc = float(lb.get("scale", 1.0))
+        ids = [LETTER_ID[ch] for ch in lb["text"]]
+        ws = [sizes.get(i, [20.0])[0] * sc for i in ids]
+        gap = 4.0 * sc
+        total = sum(ws) + gap * (len(ws) - 1)
+        yaw = math.atan2(f[0], f[1])
+        # the letter's local +x (its reading direction) in the world: (cos yaw, -sin yaw)
+        ax = np.array([math.cos(yaw), -math.sin(yaw)])
+        # upright letters on one baseline along the cliff's contour at that height: each letter
+        # slides along the face direction until its foot meets the contour (the face is a ~70 deg
+        # cliff, so the rock rises behind the letter and never in front of it)
+        base = float(target)
+        u = -total / 2
+        for i, w in zip(ids, ws):
+            q0 = c + ax * (u + w / 2)
+            sl = np.linspace(-120.0, 160.0, 281)
+            gy = height((q0[0] + f[0] * sl)[:, None], (q0[1] + f[1] * sl)[:, None])[0][:, 0]
+            # the first point going out towards the town where the ground drops under the baseline
+            j = next((k_ for k_ in range(len(sl)) if gy[k_] <= base and sl[k_] > -120.0 and k_ > 0
+                      and gy[k_ - 1] > base), int(np.argmin(np.abs(gy - base))))
+            q = q0 + f * (sl[j] + 5.0)
+            out.append([i, round(float(q[0]), 2), round(base - 1.0, 2), round(float(q[1]), 2), round(yaw, 4),
+                        round(sc, 3), 0.0])
+            u += w + gap
+        print(f"PEAK LABEL {lb['text']} on {pk['id']}: ({c[0]:.0f}, {c[1]:.0f}) y {target:.0f}, {total:.0f} m wide")
+    return out
 
 
 def write_lines(hs):
@@ -659,7 +711,8 @@ def write_lines(hs):
             e = pts[-1]
             out.append([ln["tower"], round(float(e[0]), 2), round(ground(*e) - 0.6, 2), round(float(e[1]), 2),
                         round(math.atan2(-(pts[-1][1] - pts[-2][1]), pts[-1][0] - pts[-2][0]), 4)])
-    json.dump({"doc": "module, x, y, z, yaw (Godot space; local +x along the run)", "instances": out},
+    out += peak_labels()
+    json.dump({"doc": "module, x, y, z, yaw[, scale] (Godot space; local +x along the run)", "instances": out},
               open(os.path.join(OUT, "lines.json"), "w", encoding="utf-8", newline="\n"))
     print(f"LINES {len(out)} module instances")
 

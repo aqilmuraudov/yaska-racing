@@ -37,7 +37,24 @@ func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
 	]
 
 
+## 0.20.1 (owner, phone video): houses and trees popped up and changed shape
+## while driving (near / far swap at ~110 m, cut at the decor distance 260 m).
+## The town keeps its full low-poly models at every distance and stays in view
+## over the whole town; the forest reaches farther too.
+const TOWN_VIEW := 900.0
+const FOREST_VIEW := 450.0
+
+
 func _reserve_kb_plots() -> void:
+	for id: String in PropKit.GLTF_PROPS.keys():
+		if id.begins_with("kb_house") or id.begins_with("kb_sh_house") or id.begins_with("kb_lc_") 				or id == "kb_cypress":
+			full_lod[id] = true
+			skyline_min[id] = TOWN_VIEW
+		elif id.begins_with("kb_hl_"):        # HOÇAZ on the mountain: seen from everywhere
+			full_lod[id] = true
+			skyline_min[id] = 3000.0
+		elif id in ["kb_beech", "kb_oak", "kb_hornbeam", "kb_maple", "kb_pine", "kb_bush", "kb_rock", "kb_lamp", "kb_post"]:
+			skyline_min[id] = FOREST_VIEW
 	for pl: Array in landmark_plots():
 		_reserved.append([Vector3(float(pl[0]), 0.0, float(pl[1])), float(pl[2])])
 
@@ -186,7 +203,11 @@ func _place_kb_lines() -> void:
 	for t: Array in parsed.instances:
 		var id := String(t[0])
 		if kb_model_ready(id):
-			add_instance(id, Transform3D(Basis(Vector3.UP, float(t[4])), Vector3(float(t[1]), float(t[2]), float(t[3]))))
+			# 0.20.1: the peak's letters are scaled and lie back on the slope (pitch about local x)
+			var sc := float(t[5]) if t.size() > 5 else 1.0
+			var pitch := float(t[6]) if t.size() > 6 else 0.0
+			var b := (Basis(Vector3.UP, float(t[4])) * Basis(Vector3.RIGHT, pitch)).scaled(Vector3.ONE * sc)
+			add_instance(id, Transform3D(b, Vector3(float(t[1]), float(t[2]), float(t[3]))))
 
 
 ## 0.20.1 the Laçın town fill (owner's aerial photos): houses, blocks of flats

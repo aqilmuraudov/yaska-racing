@@ -45,9 +45,15 @@ CONFIG = {
             (60, -138, "S"), (-250, -95, "N"), (-260, -90, "S"), (-300, 0, "W"), (-300, -30, "E"),
             (-280, 60, "E"), (-120, 92, "S"), (-60, 110, "N"), (100, 130, "N"), (210, 100, "N"),
             (300, 40, "W"), (310, -50, "W"), (300, -80, "E")]],
-        "sign": ("kb_sign_shusha", 170.0),         # metres after the start line (past the mosque)
-        # the fortress wall beside the south leg, on its gorge (south) side
-        "wall": {"x": (-240.0, 230.0), "side": "S", "zmin": 60.0},
+        # 0.20.1 (owner): the sign first (just after the start), then the mosque and the town
+        "sign": ("kb_sign_shusha", 12.0),
+        # 0.20.1 (owner): Şuşa qalası is a small fortress the road runs through (was a 480 m wall)
+        "fortress": {"x": (-170.0, 170.0), "zmin": 60.0},
+        # 0.20.1 (owner): "Şuşa looks sparse" - old Şuşa houses on streets inside the plateau loop
+        "town": {"rings_in": [42.0, 84.0], "rings_out": [], "cross": [(-100, -135), (120, 110), (-290, -20)],
+                 "rounds": [], "street_w": 5.0, "seed": 7, "block_p": 0.0,
+                 "types": [("kb_sh_house_a", 12.0, 11.0, 0.34), ("kb_sh_house_b", 12.0, 11.0, 0.33),
+                           ("kb_sh_house_c", 12.0, 11.0, 0.33)]},
         "peaks": [],
     },
     "karabakh_lachin": {
@@ -60,10 +66,13 @@ CONFIG = {
                                                                           (-140, 170), (10, 305), (20, -320)],
                  "rounds": [0, 2], "street_w": 6.0, "seed": 11},
         "sign": ("kb_sign_lachin", 60.0),
-        "boulevard": {"river": "hakari", "z": (-300.0, 260.0)},
+        # 0.20.1 (owner: "the river is hardly seen from the road"): the water ~0.6-3.7 m under the
+        # road, the boulevard 0.5 m over the water (its low river wall no longer hides it)
+        "boulevard": {"river": "hakari", "z": (-300.0, 260.0), "rise": 0.5},
         "cafe": True,
         # Hoçaz (owner's photo): beyond the river, its cliff face turned to the town
-        "peaks": [{"id": "hocaz", "x": -470.0, "z": -60.0, "h": 220.0, "r": 300.0, "face": [0.9923, 0.124]}],
+        "peaks": [{"id": "hocaz", "x": -470.0, "z": -60.0, "h": 220.0, "r": 300.0, "face": [0.9923, 0.124],
+                   "label": {"text": "HOÇAZ", "at": 0.45, "scale": 1.3}}],   # 0.20.1 the name on the mountain
     },
     # 0.20.1 the big map: only the Laçın town fill (its landmarks / lines / plots stay as
     # tools/karabakh_layout.py made them); the town keeps to its area round the Laçın zone
@@ -190,7 +199,7 @@ if "boulevard" in CFG:
         if n @ (np.array([P[j][0], P[j][2]]) - p0) < 0:
             n = -n                                  # towards the road
         q = p0 + n * (hk["hw"] + 6.0)
-        blvd.append([round(float(q[0]), 2), round(float(q[1]), 2), round(float(hk["lev"][k]) + 1.8, 2)])
+        blvd.append([round(float(q[0]), 2), round(float(q[1]), 2), round(float(hk["lev"][k]) + bc.get("rise", 1.8), 2)])
     _g = [road_gap([q[0]], [q[1]]) for q in blvd]
     _in = [k for k, g in enumerate(_g) if g < 4.5 + 12.0]
     blvd = blvd[_in[0]:_in[-1] + 1]
@@ -217,6 +226,14 @@ if "boulevard" in CFG:
         print(f"kb_garden_cafe       ({c[0]:7.1f}, {c[1]:7.1f}) on the boulevard, {road_gap(xs, zs):.1f} m from the run-off")
 
 # the fortress wall first (landmarks must keep clear of it) -----------------------------------
+if "fortress" in CFG:
+    import kb_fortress
+    fc = CFG["fortress"]
+    _cands = [i for i in range(N) if fc["x"][0] <= P[i][0] <= fc["x"][1] and P[i][2] >= fc["zmin"]]
+    fort = kb_fortress.place(P, HW, OW, _cands, lambda xs, zs: not (RIVERS and river_gap(xs, zs) < 6.0), CFG["zone"])
+    assert fort is not None, "no straight stretch for Şuşa qalası"
+    placed.append(fort)
+    print(f"kb_sh_fortress       ({fort['x']:7.1f}, {fort['z']:7.1f}) the road through its gates")
 if "wall" in CFG:
     wc = CFG["wall"]
     sec = [i for i in range(N) if wc["x"][0] <= P[i][0] <= wc["x"][1] and P[i][2] >= wc["zmin"]]
@@ -568,11 +585,12 @@ if "town" in CFG:
                 t = pts[k] - pts[k - 1]
                 t = t / np.linalg.norm(t)
                 n = np.array([-t[1], t[0]]) * side
-                if rnd.random() < block_p:
+                if rnd.random() < block_p and tc.get("block_p", 1.0) > 0.0:
                     hid, w, d = BLOCK
                 else:
-                    r = rnd.random() * sum(q[3] for q in TOWN_TYPES)
-                    for hid, w, d, wt in TOWN_TYPES:
+                    _types = tc.get("types", TOWN_TYPES)
+                    r = rnd.random() * sum(q[3] for q in _types)
+                    for hid, w, d, wt in _types:
                         r -= wt
                         if r <= 0:
                             break
@@ -626,7 +644,7 @@ for ln in lines:
 plots = []
 for q in placed:
     s = 8.0
-    lane = 30.0 if q["id"].startswith(("kb_sign", "kb_name")) else (0.0 if q["id"] == "kb_garden_cafe" else
+    lane = 30.0 if q["id"].startswith(("kb_sign", "kb_name")) else 0.0 if q.get("spans_road") else (0.0 if q["id"] == "kb_garden_cafe" else
                                                         max(q["setback"] - 4.5, 0.0))
     fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
     cx, cz = q["x"] + fx * lane / 2, q["z"] + fz * lane / 2

@@ -63,6 +63,8 @@ func test_layout() -> void:
 	var ids := {}
 	for lm: Dictionary in _td.raw.landmarks:
 		ids[String(lm.id)] = true
+		if lm.get("spans_road", false):
+			continue # Şuşa qalası: the road through its gates (round 43)
 		var f := Vector2(sin(float(lm.yaw)), cos(float(lm.yaw)))
 		var a := Vector2(f.y, -f.x)
 		var front := Vector2(float(lm.x), float(lm.z)) + f * float(lm.d) / 2.0
@@ -83,8 +85,8 @@ func test_layout() -> void:
 	for t: Array in parsed.instances:
 		if String(t[0]) == "kb_wall_seg":
 			wall += 1
-			check(_gap(Vector2(float(t[1]), float(t[3]))) < 8.0, "wall by the road")
-	check(wall > 30, "the fortress wall (%d segments)" % wall)
+	check_eq(wall, 0, "no long wall (0.20.1: the fortress on the road, round 43)")
+	check(ids.has("kb_sh_fortress"), "Şuşa qalası")
 
 
 func test_terrain_under_the_road() -> void:

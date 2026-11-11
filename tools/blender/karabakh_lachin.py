@@ -385,11 +385,12 @@ def build_blvd(hi):
     S.slab(f"{g}_paving_{tag}", -L2, L2, 0.15, 0.25, -3.0, 4.2, "paving", g, hi, bevel=0.0)
     S.slab(f"{g}_lawn_{tag}", -L2, L2, 0.15, 0.3, -4.5, -3.0, "grass", g, hi, bevel=0.0)
     # river wall + railing (+z = the river)
-    S.slab(f"{g}_wall_{tag}", -L2, L2, -3.2, 0.7, 4.2, 4.7, "stone", g, hi, bevel=0.0)
-    S.slab(f"{g}_rail_{tag}", -L2, L2, 1.55, 1.65, 4.35, 4.55, "steel", g, hi, bevel=0.0)
+    # 0.20.1: a low wall (the water must be seen from the road over it) and a light railing
+    S.slab(f"{g}_wall_{tag}", -L2, L2, -3.2, 0.3, 4.2, 4.7, "stone", g, hi, bevel=0.0)
+    S.slab(f"{g}_rail_{tag}", -L2, L2, 1.05, 1.12, 4.4, 4.5, "steel", g, hi, bevel=0.0)
     for k in range(3):
         x = -BLVD / 2 + 1.6 + k * 3.4
-        S.slab(f"{g}_rp{k}_{tag}", x - 0.05, x + 0.05, 0.7, 1.6, 4.4, 4.5, "steel", g, hi, bevel=0.0)
+        S.slab(f"{g}_rp{k}_{tag}", x - 0.04, x + 0.04, 0.3, 1.08, 4.42, 4.48, "steel", g, hi, bevel=0.0)
     # lamp, bench, a tree on the land side
     S.cylinder(f"{g}_lamp_{tag}", 0.09, 0.25, 4.6, (0.0, 3.7), "frame", g, hi, seg=(5, 8))
     S.cylinder(f"{g}_lamphead_{tag}", 0.32, 4.6, 5.0, (0.0, 3.7), "lamp_head", g, hi, seg=(6, 10))
