@@ -261,7 +261,7 @@ def place_trees(coll):
             coll.objects.link(ob)
 
 
-LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin", "karabakh_signs"]
+LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin", "karabakh_signs", "karabakh_shusha_town"]
 
 
 def place_landmarks(coll):

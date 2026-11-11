@@ -71,8 +71,13 @@ func test_layout() -> void:
 			g = minf(g, _gap(front + a * u * float(lm.w)))
 		check(g < 10.0, "%s beside the road (%.1f m)" % [lm.id, g])
 		check(_gap(Vector2(float(lm.x), float(lm.z)) - f * 0.0) > 0.0, "%s off the road" % lm.id)
-	for id in ["kb_mosque", "kb_vagif", "kb_sign_shusha"]:
+	for id in ["kb_mosque", "kb_vagif", "kb_sign_shusha", "kb_bulbul"]:
 		check(ids.has(id), "%s on the map" % id)
+	var houses := 0
+	for lm: Dictionary in _td.raw.landmarks:
+		if String(lm.id).begins_with("kb_sh_house"):
+			houses += 1
+	check(houses >= 12, "old stone houses along the streets (%d)" % houses)
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(String(_td.raw.terrain_dir) + "/lines.json"))
 	var wall := 0
 	for t: Array in parsed.instances:
@@ -117,8 +122,13 @@ func test_race_scene_builds() -> void:
 	check(race.builder.get_node_or_null("Terrain") != null, "Blender terrain")
 	check_eq(int(race.config.laps), 2, "two laps kept")
 	var d: KarabakhDecor = race.decor
-	for id in ["kb_mosque", "kb_vagif", "kb_sign_shusha"]:
+	for id in ["kb_mosque", "kb_vagif", "kb_sign_shusha", "kb_bulbul"]:
 		check(d.landmarks.has(id), "%s in the scene" % id)
+	var placed_houses := 0
+	for c in d.get_children():
+		if c is MultiMeshInstance3D and c.has_meta("instance_xforms") and String(c.get_meta("prop")).begins_with("kb_sh_house"):
+			placed_houses += (c.get_meta("instance_xforms") as Array).size()
+	check(placed_houses >= 12, "houses placed in the race (%d)" % placed_houses)
 	check(d.landmarks.has("flag_shusha"), "the flag on the sign")
 	var trees := 0
 	for c in d.get_children():

@@ -37,7 +37,14 @@ COMPASS = {"N": (0.0, -1.0), "S": (0.0, 1.0), "E": (1.0, 0.0), "W": (-1.0, 0.0)}
 CONFIG = {
     "karabakh_shusha": {
         "zone": "shusha",
-        "landmarks": [("kb_mosque", (0, -135), "N", 28, 32), ("kb_vagif", (-200, 112), "N", 18, 18)],
+        "landmarks": [("kb_mosque", (0, -135), "N", 28, 32), ("kb_vagif", (-200, 112), "N", 18, 18),
+                      ("kb_bulbul", (200, -125), "S", 18, 13)],
+        # old stone houses along the streets (both sides; skipped where there is no room)
+        "houses": [((x, z), side) for (x, z, side) in [
+            (150, -128, "N"), (240, -110, "N"), (-130, -138, "N"), (-160, -132, "S"), (-60, -128, "S"),
+            (60, -138, "S"), (-250, -95, "N"), (-260, -90, "S"), (-300, 0, "W"), (-300, -30, "E"),
+            (-280, 60, "E"), (-120, 92, "S"), (-60, 110, "N"), (100, 130, "N"), (210, 100, "N"),
+            (300, 40, "W"), (310, -50, "W"), (300, -80, "E")]],
         "sign": ("kb_sign_shusha", 170.0),         # metres after the start line (past the mosque)
         # the fortress wall beside the south leg, on its gorge (south) side
         "wall": {"x": (-240.0, 230.0), "side": "S", "zmin": 60.0},
@@ -141,6 +148,33 @@ for lid, hint, side, w, d in CFG["landmarks"]:
                    "z": round(float(c[1]), 2), "yaw": round(yaw, 4), "w": w, "d": d, "zone": CFG["zone"],
                    "setback": round(float(base + grow - HW[i] - OW), 2)})
     print(f"{lid:20s} ({c[0]:7.1f}, {c[1]:7.1f}) setback {base + grow - HW[i] - OW:4.1f} m")
+
+# old town houses (instanced): three variants in turn; a house without room is skipped
+for k, (hint, side) in enumerate(CFG.get("houses", [])):
+    lid = ["kb_sh_house_a", "kb_sh_house_b", "kb_sh_house_c"][k % 3]
+    w, d = 12.0, 11.0
+    i = nearest(*hint)
+    t = tangent(i)
+    n = np.array([-t[1], t[0]])
+    if n @ np.array(COMPASS[side]) < 0:
+        n = -n
+    base = HW[i] + OW + CLEAR
+    ok = False
+    for grow in np.arange(0.0, 8.0, 1.0):
+        c = np.array([P[i][0], P[i][2]]) + n * (base + grow + d / 2)
+        yaw = math.atan2(-n[0], -n[1])
+        xs, zs = rect_points(c[0], c[1], yaw, w, d)
+        if road_gap(xs, zs) < CLEAR - 0.01 or clashes(xs, zs, 2.0):
+            continue
+        ok = True
+        break
+    if not ok:
+        print(f"house at {hint} {side}: no room, skipped")
+        continue
+    placed.append({"id": lid, "x": round(float(c[0]), 2), "y": round(pad_y(c, 30.0), 2), "z": round(float(c[1]), 2),
+                   "yaw": round(yaw, 4), "w": w, "d": d, "zone": CFG["zone"],
+                   "setback": round(float(base + grow - HW[i] - OW), 2)})
+print(f"HOUSES {sum(1 for q in placed if q['id'].startswith('kb_sh_house'))}")
 
 # the sign: some way after the start, on the right, facing the karts ----------------------------
 if "sign" in CFG:

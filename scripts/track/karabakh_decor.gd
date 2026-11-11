@@ -142,7 +142,7 @@ func _place_kb_landmarks() -> void:
 			continue
 		var p := Vector3(float(lm.x), float(lm.y), float(lm.z))
 		var yaw := float(lm.yaw)
-		if id.begins_with("kb_house"):
+		if id.begins_with("kb_house") or id.begins_with("kb_sh_house"):   # town houses: instanced
 			add_instance(id, Transform3D(Basis(Vector3.UP, yaw), p))
 			continue
 		var node := _landmark_prop(id, p, yaw, id.trim_prefix("kb_").to_pascal_case())

@@ -316,6 +316,10 @@ const GLTF_PROPS := {
 	"kb_house_b": "res://assets/models/karabakh_lachin/karabakh_lachin",
 	"kb_house_c": "res://assets/models/karabakh_lachin/karabakh_lachin",
 	"kb_blvd_seg": "res://assets/models/karabakh_lachin/karabakh_lachin",
+	"kb_sh_house_a": "res://assets/models/karabakh_shusha_town/karabakh_shusha_town",
+	"kb_sh_house_b": "res://assets/models/karabakh_shusha_town/karabakh_shusha_town",
+	"kb_sh_house_c": "res://assets/models/karabakh_shusha_town/karabakh_shusha_town",
+	"kb_bulbul": "res://assets/models/karabakh_shusha_town/karabakh_shusha_town",
 	# 0.19.2 town entry signs (tools/blender/karabakh_signs.py)
 	"kb_sign_khankendi": "res://assets/models/karabakh_signs/karabakh_signs",
 	"kb_sign_shusha": "res://assets/models/karabakh_signs/karabakh_signs",
