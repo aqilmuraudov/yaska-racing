@@ -595,6 +595,13 @@ TROPHY_KL_QUICK_PODIUM,Lachin: podium in a quick race,Laçın: sürətli yarış
 TROPHY_KL_QUICK_WIN,Lachin: win %d quick races,Laçın: %d sürətli yarışda qalib gəl
 TROPHY_KL_TT_FINISH,Lachin: %d time trials,Laçın: %d vaxta qarşı yarış
 TROPHY_KL_TT_RECORD,Lachin: beat your record %d times,Laçın: rekordunu %d dəfə yenilə
+TRACK_KB_KHANKENDI,Khankendi,Xankəndi
+TRACK_KB_KHANKENDI_DESC,"Through the town: the new avenue, the Victory square, the university, the stadium, the blocks of flats","Şəhərin içindən: yeni prospekt, Zəfər meydanı, universitet, stadion, çoxmərtəbəli binalar"
+TROPHY_KX_QUICK_FINISH,Khankendi: finish a quick race,Xankəndi: sürətli yarışı bitir
+TROPHY_KX_QUICK_PODIUM,Khankendi: podium in a quick race,Xankəndi: sürətli yarışda podium
+TROPHY_KX_QUICK_WIN,Khankendi: win %d quick races,Xankəndi: %d sürətli yarışda qalib gəl
+TROPHY_KX_TT_FINISH,Khankendi: %d time trials,Xankəndi: %d vaxta qarşı yarış
+TROPHY_KX_TT_RECORD,Khankendi: beat your record %d times,Xankəndi: rekordunu %d dəfə yenilə
 STARTER_TITLE,Pick your first kart,İlk maşınını seç
 STARTER_PICK,This one is mine!,Bu mənimdir!
 GARAGE_MY_KARTS,My karts,Maşınlarım

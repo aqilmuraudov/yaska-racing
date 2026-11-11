@@ -106,7 +106,10 @@ TOWN = TRACK.get("town")
 TOWN_ON = False              # height() leaves the town out while its street heights are sampled
 STREETS = []                 # {"pts": (n, 2), "y": (n,), "hw"}
 TOWN_PADS = []               # {"id", "x", "y", "z", "yaw", "w", "d"} (houses, roundabout islands)
-TOWN_HILL = float(TERRAIN.get("town_hill", 0.0))      # the town on a hill inside the loop
+TOWN_PROXY_H = {"kb_lc_block": 12.0, "kb_xk_block5": 15.5, "kb_xk_tower9": 26.0, "kb_xk_new4": 14.0,
+                "kb_xk_villa": 8.0}   # AO proxy heights (contact shade); other houses 7 m
+TOWN_HILL = float(TERRAIN.get("town_hill", 0.0))
+TOWN_FAR_KEEP = float(TERRAIN.get("town_far_keep", 0.75))   # 0.20.2 Xankəndi: big blocks on terraces keep more      # the town on a hill inside the loop
 ZONE_FLAT = float(TERRAIN.get("zone_flat", 0.75))
 
 
@@ -1071,7 +1074,7 @@ def tree_proxies(coll, trees):
         tmp = bmesh.new()
         bmesh.ops.create_cube(tmp, size=1.0)
         fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
-        hgt = 12.0 if q["id"] == "kb_lc_block" else 7.0
+        hgt = TOWN_PROXY_H.get(q["id"], 7.0)
         for v in tmp.verts:
             u, w, hh = v.co.x * (q["w"] - 3.0), v.co.y * (q["d"] - 3.0), (v.co.z + 0.5) * hgt
             gx, gz = q["x"] + fz * u + fx * w, q["z"] - fx * u + fz * w
@@ -1208,7 +1211,7 @@ def main():
         # 0.20.1: a tile full of town pads (most vertices protected) must keep more, or the
         # collapse has to take protected ones (a house pad 2.7 m off in the far LOD)
         town_tile = any(abs(q["x"] - cx) < 80.0 and abs(q["z"] - cz) < 80.0 for q in TOWN_PADS)
-        decimate(far, 0.4 if big else (0.75 if town_tile else (0.5 if padded else 0.06)), "border")
+        decimate(far, 0.4 if big else (TOWN_FAR_KEEP if town_tile else (0.5 if padded else 0.06)), "border")
         fars.append(far)
         decimate(ob, 0.28, "road")
     check_far_tiles(fars, hs)

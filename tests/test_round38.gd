@@ -56,7 +56,7 @@ func test_regions_cover_every_track_once() -> void:
 	for id in TrackList.IDS:
 		check(seen.has(id), "%s belongs to a city" % id)
 	check_eq(TrackList.region_tracks("baku"), ["seafront_sprint", "downtown_towers", "old_city"], "Bakı: three maps")
-	check_eq(TrackList.region_tracks("karabakh"), ["karabakh", "karabakh_shusha", "karabakh_lachin"], "Qarabağ: the big map, Şuşa, Laçın")
+	check_eq(TrackList.region_tracks("karabakh"), ["karabakh", "karabakh_khankendi", "karabakh_shusha", "karabakh_lachin"], "Qarabağ: the big map, Xankəndi, Şuşa, Laçın")
 	check_eq(TrackList.region_of("old_city"), "baku", "İçərişəhər is in Bakı")
 	check_eq(TrackList.region_of("karabakh"), "karabakh", "Qarabağ")
 
@@ -96,7 +96,7 @@ func test_cities_first_then_maps() -> void:
 	# Qarabağ opens its map; a tap picks it
 	screen.open_region("karabakh")
 	await tree.process_frame
-	check_eq(screen.cards.size(), 3, "the big map, Şuşa, Laçın")
+	check_eq(screen.cards.size(), 4, "the big map, Xankəndi, Şuşa, Laçın")
 	check(screen.cards.has("karabakh"), "Qarabağ map")
 	screen.choose("karabakh", false)
 	check_eq(Game.race_config.track_id, "karabakh", "picked")

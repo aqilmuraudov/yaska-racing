@@ -10,6 +10,7 @@ const BOARDS := {
 			"kb_name_bridges"],
 	"karabakh_lachin": ["kb_name_cinema", "kb_name_hotel", "kb_name_flag"],
 	"karabakh_shusha": ["kb_name_mosque", "kb_name_vagif", "kb_name_bulbul"],
+	"karabakh_khankendi": ["kb_name_victory", "kb_name_university", "kb_name_stadium", "kb_name_mountains"],   # 0.20.2
 }
 var _orig_config := {}
 

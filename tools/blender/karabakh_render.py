@@ -262,7 +262,7 @@ def place_trees(coll):
 
 
 LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin", "karabakh_signs", "karabakh_shusha_town",
-                 "karabakh_lachin_town", "karabakh_names"]
+                 "karabakh_lachin_town", "karabakh_names", "karabakh_khankendi_town"]
 
 
 def place_landmarks(coll):
@@ -441,7 +441,9 @@ def short_map(sc, cam):
             shoot(sc, cam, eye, B(lm["x"], lm["y"] + 14.0, lm["z"]), name, lens=22)
             continue
         d = max(lm["w"], lm["d"]) * 1.1 + 12.0
-        eye = B(lm["x"] + fx * d + fz * d * 0.35, lm["y"] + 9.0, lm["z"] + fz * d - fx * d * 0.35)
+        # 0.20.2 a town across the road (Xankəndi): look over its roofs
+        up = 9.0 + (0.45 * d if TRACK.get("town") and lm["w"] > 30 else 0.0)
+        eye = B(lm["x"] + fx * d + fz * d * 0.35, lm["y"] + up, lm["z"] + fz * d - fx * d * 0.35)
         shoot(sc, cam, eye, B(lm["x"], lm["y"] + 6.0, lm["z"]), name, lens=26)
     lp = os.path.join(KB, "lines.json")     # 0.20.1: the peak's name from the road
     hl = [t for t in json.load(open(lp, encoding="utf-8"))["instances"] if t[0].startswith("kb_hl_")]         if os.path.exists(lp) else []
@@ -555,6 +557,8 @@ def main():
         ("kb_20_university.jpg", B(760, 16, -470), B(800, 18, -522), 30),
         ("kb_34_lachin_town.jpg", B(-470, 140, 190), B(-700, 20, -10), 26),     # 0.20.1 the town fill
         ("kb_35_lachin_town_n.jpg", B(-640, 95, -330), B(-690, 20, 0), 26),
+        ("kb_37_khankendi_town.jpg", B(900, 120, -260), B(640, 15, -520), 26),     # 0.20.2 the Xankəndi town
+        ("kb_38_khankendi_start.jpg", B(860, 16, -506), B(600, 14, -522), 30),
     ]
     for name, eye, look, lens in wide:
         if not ONLY or any(k in name for k in ONLY.split(",")):

@@ -1,4 +1,4 @@
-"""Landmark layout for the short Qarabağ maps (0.20.1+): Şuşa, Laçın, Xankəndi.
+"""Landmark layout for the short Qarabağ maps (0.20.1+): Şuşa, Laçın, Xankəndi (0.20.2).
 
   godot --headless --path . -s tools/export_road_samples.gd -- <track>
   python tools/karabakh_maps_layout.py <track>
@@ -74,13 +74,47 @@ CONFIG = {
         "peaks": [{"id": "hocaz", "x": -470.0, "z": -60.0, "h": 220.0, "r": 300.0, "face": [0.9923, 0.124],
                    "label": {"text": "HOÇAZ", "at": 0.45, "scale": 1.3}}],   # 0.20.1 the name on the mountain
     },
+    # 0.20.2 Xankəndi (owner: "the town and its houses after modern photos"): the new avenue on the
+    # east leg (start), the Victory square and the university on it, "Biz və bizim dağlar" on the north
+    # bend, the stadium on the south bend; a town of five-storey blocks, nine-storey towers, the new
+    # avenue buildings and old stone houses (tools/blender/karabakh_khankendi_town.py)
+    "karabakh_khankendi": {
+        "zone": "khankendi",
+        "landmarks": [("kb_victory_square", (148, 150), "E", 70, 64), ("kb_university", (140, -150), "E", 46, 24),
+                      ("kb_stadium", (0, 318), "S", 100, 74), ("kb_our_mountains", (-20, -330), "N", 16, 12)],
+        "sign": ("kb_sign_khankendi", 40.0),
+        "town": {"rings_in": [42.0, 86.0, 130.0], "rings_out": [46.0], "cross": [(-160, -180), (-158, 60),
+                                                                                (-150, 200), (146, -60), (60, 315)],
+                 "rounds": [1], "street_w": 7.0, "seed": 17, "sticky": 6, "block_gap": 5.0,
+                 "types": [("kb_xk_house_1", 12.0, 11.0, 0.44), ("kb_xk_house_2", 12.0, 10.0, 0.44),
+                           ("kb_xk_villa", 16.0, 13.0, 0.12)],
+                 # blocks of flats: (id, w, d, weight); chance per plot: on the race road / rings / cross
+                 "blocks": [("kb_xk_block5", 34.0, 15.0, 0.6), ("kb_xk_tower9", 18.0, 16.0, 0.25),
+                            ("kb_xk_new4", 32.0, 15.0, 0.15)],
+                 "block_road": 0.45, "block_ring": 0.4, "block_cross": 0.3,
+                 # the new avenue (east leg): mostly the new four-storey buildings
+                 "avenue": lambda x, z: x > 100.0, "avenue_p": 0.75,
+                 "avenue_blocks": [("kb_xk_new4", 32.0, 15.0, 0.8), ("kb_xk_villa", 16.0, 13.0, 0.2)]},
+        "peaks": [],
+    },
     # 0.20.1 the big map: only the Laçın town fill (its landmarks / lines / plots stay as
     # tools/karabakh_layout.py made them); the town keeps to its area round the Laçın zone
     "karabakh": {
         "zone": "lachin", "town_only": True, "landmarks": [],
-        "town": {"rings_in": [40.0, 80.0, 120.0], "rings_out": [40.0, 80.0], "cross": [(-700, -75), (-765, 15),
-                                                                                     (-766, 90)],
-                 "rounds": [1], "street_w": 6.0, "seed": 5, "area": (-690.0, 0.0, 240.0)},
+        "town": [{"rings_in": [40.0, 80.0, 120.0], "rings_out": [40.0, 80.0], "cross": [(-700, -75), (-765, 15),
+                                                                                      (-766, 90)],
+                  "rounds": [1], "street_w": 6.0, "seed": 5, "area": (-690.0, 0.0, 240.0)},
+                 # 0.20.2 the Xankəndi town round the start straight (the short map's house set and rules)
+                 {"prefix": "xk_", "rings_in": [42.0, 86.0, 130.0], "rings_out": [44.0, 88.0],
+                  "cross": [(520, -520), (680, -520), (760, -515)], "rounds": [], "street_w": 7.0, "seed": 23,
+                  "area": (640.0, -515.0, 230.0), "sticky": 6, "block_gap": 5.0,
+                  "types": [("kb_xk_house_1", 12.0, 11.0, 0.44), ("kb_xk_house_2", 12.0, 10.0, 0.44),
+                            ("kb_xk_villa", 16.0, 13.0, 0.12)],
+                  "blocks": [("kb_xk_block5", 34.0, 15.0, 0.6), ("kb_xk_tower9", 18.0, 16.0, 0.25),
+                             ("kb_xk_new4", 32.0, 15.0, 0.15)],
+                  "block_road": 0.45, "block_ring": 0.4, "block_cross": 0.3,
+                  "avenue": lambda x, z: True, "avenue_p": 0.75,
+                  "avenue_blocks": [("kb_xk_new4", 32.0, 15.0, 0.8), ("kb_xk_villa", 16.0, 13.0, 0.2)]}],
     },
 }
 CFG = CONFIG[TID]
@@ -406,8 +440,13 @@ TOWN_TYPES = [  # id, w (along the street), d (deep), weight
     ("kb_house_c", 12.0, 11.0, 0.08)]
 BLOCK = ("kb_lc_block", 28.0, 14.0)
 town = None
-if "town" in CFG:
-    tc = CFG["town"]
+# 0.20.2 "town" may be a list (the big map: the Laçın town and the Xankəndi town, each in its area)
+_TOWNS = CFG.get("town")
+_TOWNS = [] if _TOWNS is None else (_TOWNS if isinstance(_TOWNS, list) else [_TOWNS])
+streets, rounds, houses = [], [], []
+for tc in _TOWNS:
+    PRE = tc.get("prefix", "")      # street ids of a second town ("xk_ring_in0_0")
+    _s0 = len(streets)
     rnd = __import__("random").Random(tc["seed"])
     SW = tc["street_w"]
     P2 = P[:, [0, 2]]
@@ -474,8 +513,6 @@ if "town" in CFG:
                 out.append(cur)
         return out
 
-    streets = []
-
     def add_street(sid, pts, closed=False):
         if len(pts) < 3:
             return
@@ -483,7 +520,7 @@ if "town" in CFG:
         rs = resample(sm)
         if len(rs) * 4.0 < 60.0:
             return
-        streets.append({"id": sid, "width": SW, "points": [[round(float(a), 2), round(float(b), 2)] for a, b in rs]})
+        streets.append({"id": PRE + sid, "width": SW, "points": [[round(float(a), 2), round(float(b), 2)] for a, b in rs]})
 
     # contour streets: offsets of the road loop, inside (and outside where there is room)
     for k, off in enumerate(tc["rings_in"]):
@@ -504,7 +541,6 @@ if "town" in CFG:
         for j, r in enumerate(runs(cands, True)):
             add_street(f"ring_out{k}_{j}", np.array(r))
     # cross streets: from the verge straight in to the middle of the loop
-    rounds = []
     for k, hint in enumerate(tc["cross"]):
         i = nearest(*hint)
         n = inward(i)
@@ -518,7 +554,7 @@ if "town" in CFG:
         if len(pts) * 4.0 < 40.0:
             print(f"cross street {k}: too short, skipped")
             continue
-        streets.append({"id": f"cross{k}", "width": SW, "points": [[round(float(a), 2), round(float(b), 2)]
+        streets.append({"id": f"{PRE}cross{k}", "width": SW, "points": [[round(float(a), 2), round(float(b), 2)]
                                                                   for a, b in pts]})
         if k in tc["rounds"]:
             q = P2[i] + n * tc["rings_in"][0]      # on the first contour street
@@ -537,8 +573,6 @@ if "town" in CFG:
                 best = min(best, math.hypot(x - rx, z - rz) - rr)
         return best
 
-    houses = []
-
     def house_ok(c, yaw, w, d):
         xs, zs = rect_points(c[0], c[1], yaw, w, d, 3.0)
         if not all(TX[0] + 30 < x < TX[1] - 30 and TX[2] + 30 < z < TX[3] - 30 for x, z in zip(xs, zs)):
@@ -555,13 +589,15 @@ if "town" in CFG:
         if any(keepout((x, z), 4.0) for x, z in zip(xs, zs)) or _clashes_plain(xs, zs, 4.0):
             return False
         for h in houses:          # houses: bounding circles first, then the rectangles
-            if math.hypot(h["x"] - c[0], h["z"] - c[1]) > (math.hypot(w, d) + math.hypot(h["w"], h["d"])) / 2 + 1.5:
+            # 0.20.2 big blocks keep a wider gap (their pads on different levels need room for the bank)
+            gap = tc.get("block_gap", 1.2) if max(w, h["w"]) >= 18.0 else 1.2
+            if math.hypot(h["x"] - c[0], h["z"] - c[1]) > (math.hypot(w, d) + math.hypot(h["w"], h["d"])) / 2 + gap + 0.3:
                 continue
             fx, fz = math.sin(h["yaw"]), math.cos(h["yaw"])
             for x, z in zip(xs, zs):
                 u = (x - h["x"]) * fz - (z - h["z"]) * fx
                 v = (x - h["x"]) * fx + (z - h["z"]) * fz
-                if abs(u) < h["w"] / 2 + 1.2 and abs(v) < h["d"] / 2 + 1.2:
+                if abs(u) < h["w"] / 2 + gap and abs(v) < h["d"] / 2 + gap:
                     return False
             # and the other way round (turned houses: its corner inside ours)
             mx, mz = math.sin(yaw), math.cos(yaw)
@@ -569,7 +605,7 @@ if "town" in CFG:
             for x, z in zip(hx, hz):
                 u = (x - c[0]) * mz - (z - c[1]) * mx
                 v = (x - c[0]) * mx + (z - c[1]) * mz
-                if abs(u) < w / 2 + 1.2 and abs(v) < d / 2 + 1.2:
+                if abs(u) < w / 2 + gap and abs(v) < d / 2 + gap:
                     return False
         return True
 
@@ -579,14 +615,38 @@ if "town" in CFG:
         cum = np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(pts, axis=0).T))])
         for side in (-1.0, 1.0):
             s = rnd.uniform(2.0, 8.0)
+            stick, tries = None, 0     # 0.20.2 a block that did not fit is tried again a little further on
             while s < cum[-1] - 4.0:
                 k = int(np.searchsorted(cum, s))
                 k = min(max(k, 1), len(pts) - 1)
                 t = pts[k] - pts[k - 1]
                 t = t / np.linalg.norm(t)
                 n = np.array([-t[1], t[0]]) * side
-                if rnd.random() < block_p and tc.get("block_p", 1.0) > 0.0:
-                    hid, w, d = BLOCK
+                if stick is not None:
+                    hid, w, d = stick
+                    c = pts[k] + n * (gap_of(k) + rnd.uniform(0.0, 2.5) + d / 2)
+                    yaw = math.atan2(-n[0], -n[1]) + rnd.uniform(-0.06, 0.06)
+                    if house_ok(c, yaw, w, d):
+                        houses.append({"id": hid, "x": round(float(c[0]), 2), "z": round(float(c[1]), 2),
+                                       "yaw": round(yaw, 4), "w": w, "d": d, "front": front})
+                        s += w + rnd.uniform(3.0, 8.0)
+                        stick = None
+                    else:
+                        tries += 1
+                        s += 3.0
+                        if tries >= tc.get("sticky", 0):
+                            stick = None
+                    continue
+                bp, blocks = block_p, tc.get("blocks", [BLOCK + (1.0,)])
+                if front == "road" and "avenue" in tc and tc["avenue"](*pts[k]):
+                    bp, blocks = tc["avenue_p"], tc["avenue_blocks"]
+                if rnd.random() < bp and tc.get("block_p", 1.0) > 0.0:
+                    # one block type (Laçın): no extra draw, so the older towns stay as they were
+                    r = rnd.random() * sum(q[3] for q in blocks) if len(blocks) > 1 else 0.0
+                    for hid, w, d, wt in blocks:
+                        r -= wt
+                        if r <= 0:
+                            break
                 else:
                     _types = tc.get("types", TOWN_TYPES)
                     r = rnd.random() * sum(q[3] for q in _types)
@@ -605,12 +665,15 @@ if "town" in CFG:
                     s += w + rnd.uniform(3.0, 8.0)
                 else:
                     s += 3.0
+                    if tc.get("sticky", 0) and any(hid == q[0] for q in blocks):
+                        stick, tries = (hid, w, d), 0
 
     # the race road first (the houses the karts pass), then the streets
-    line_houses(P2, lambda k: float(HW[k] + OW + CLEAR + 0.3), "road", 0.08)
-    for st in streets:
+    line_houses(P2, lambda k: float(HW[k] + OW + CLEAR + 0.3), "road", tc.get("block_road", 0.08))
+    for st in streets[_s0:]:
         line_houses(np.array(st["points"]), lambda k: SW / 2 + 1.2, st["id"],
-                    0.10 if st["id"].startswith("ring") else 0.0)
+                    tc.get("block_ring", 0.10) if "ring" in st["id"] else tc.get("block_cross", 0.0))
+if _TOWNS:
     town = {"streets": streets, "rounds": rounds, "houses": houses}
     print(f"TOWN {len(streets)} streets ({sum(len(st['points']) for st in streets) * 4.0:.0f} m), "
           f"{len(rounds)} roundabouts, {len(houses)} houses "

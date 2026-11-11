@@ -47,7 +47,7 @@ const FOREST_VIEW := 450.0
 
 func _reserve_kb_plots() -> void:
 	for id: String in PropKit.GLTF_PROPS.keys():
-		if id.begins_with("kb_house") or id.begins_with("kb_sh_house") or id.begins_with("kb_lc_") 				or id == "kb_cypress":
+		if id.begins_with("kb_house") or id.begins_with("kb_sh_house") or id.begins_with("kb_lc_") 				or id.begins_with("kb_xk_") or id == "kb_cypress":   # 0.20.2 + the Xankəndi town
 			full_lod[id] = true
 			skyline_min[id] = TOWN_VIEW
 		elif id.begins_with("kb_hl_"):        # HOÇAZ on the mountain: seen from everywhere

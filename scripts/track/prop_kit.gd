@@ -348,6 +348,13 @@ const GLTF_PROPS := {
 	"kb_lc_block": "res://assets/models/karabakh_lachin_town/karabakh_lachin_town",
 	"kb_lc_round": "res://assets/models/karabakh_lachin_town/karabakh_lachin_town",
 	"kb_cypress": "res://assets/models/karabakh_lachin_town/karabakh_lachin_town",
+	# 0.20.2 Xankəndi town fill (tools/blender/karabakh_khankendi_town.py, modern photos of the town)
+	"kb_xk_block5": "res://assets/models/karabakh_khankendi_town/karabakh_khankendi_town",
+	"kb_xk_tower9": "res://assets/models/karabakh_khankendi_town/karabakh_khankendi_town",
+	"kb_xk_new4": "res://assets/models/karabakh_khankendi_town/karabakh_khankendi_town",
+	"kb_xk_villa": "res://assets/models/karabakh_khankendi_town/karabakh_khankendi_town",
+	"kb_xk_house_1": "res://assets/models/karabakh_khankendi_town/karabakh_khankendi_town",
+	"kb_xk_house_2": "res://assets/models/karabakh_khankendi_town/karabakh_khankendi_town",
 	# 0.19.2 town entry signs (tools/blender/karabakh_signs.py)
 	"kb_sign_khankendi": "res://assets/models/karabakh_signs/karabakh_signs",
 	"kb_sign_shusha": "res://assets/models/karabakh_signs/karabakh_signs",
