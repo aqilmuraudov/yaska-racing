@@ -1,6 +1,17 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-11 · Build: 0.19.2 · Engine: Godot 4.4.1-stable
+Date: 2026-11-11 · Build: 0.20.0 · Engine: Godot 4.4.1-stable
+
+## Update 0.20.0 (versionCode 50) — choose the city, then its map
+- **Owner (2026-11-11):** the three Baku maps as one city choice - picking Bakı shows its three maps; picking Qarabağ shows its map (one big map for now).
+- **"Şəhəri seç"** (`scripts/ui/city_select.gd`) is two steps now: two big city cards - Bakı (its three map pictures side by side, "3 xəritə", trophies of all three, "Yeni!" while one is never raced) and Qarabağ ("1 xəritə") - and a tap ("Aç") opens "Bakı · Xəritəni seç" / "Qarabağ · Xəritəni seç" with the map cards as before (picture, mini map, length, best lap, trophies, "Sür!"). Geri / Esc goes from the maps back to the cities, then to the mode menu. The last map stays pre-selected (its city is highlighted on the first step). The time of day bar stays under both steps.
+- `TrackList.REGIONS` / `REGION_TRACKS` / `region_of()`: Bakı = seafront_sprint, downtown_towers, old_city; Qarabağ = karabakh (its own short maps can be added to the list later). The cup, the daily challenge and the records do not change.
+- New strings: REGION_BAKU, REGION_KARABAKH, MAP_TITLE, REGION_MAPS, REGION_MAP_ONE, REGION_OPEN (AZ / EN).
+- `tools/phone_fps.py`: measures every map's FPS on the phone over USB (autopilot race started with `am start --esa command_line_params`, STATS lines from logcat). Not run yet - the phone was not connected; whether Godot 4.4 passes these parameters on Android is unverified.
+- Tests: round 38 (every map in exactly one city; the city step first with two cards that fit; Bakı opens three maps, Qarabağ one; Geri goes back to the cities; picking a map is remembered; "Yeni!" on a city); round 21 follows the new flow.
+- Not checked: the look of the new screen (no window on this PC - owner's rule); to be seen on the phone.
+- Strict suite: **288 methods, 9390 checks, 0 failures, 0 script errors**.
+- Build: `_builds/YaskaRacing-0.20.0-v50-debug.apk`, 276.0 MB, versionCode 50, signed with the usual key (SHA-256 726cd353…6e25d9). Not installed on the phone yet (not connected).
 
 ## Update 0.19.2 (versionCode 49) — Qarabağ: town entry signs with the flag, everything beside the road
 - **Owner (2026-11-11):** at the entry of every town a big sign with its name and the flag; the buildings and sights of the towns beside the road so all are seen; the Həkəri and the things by it (restaurant etc.) beside the road so they are seen while racing.

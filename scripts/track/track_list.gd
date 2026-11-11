@@ -24,6 +24,27 @@ static func max_laps(id: String) -> int:
 static func clamp_laps(id: String, laps: int) -> int:
 	return clampi(laps, 1, max_laps(id))
 
+## 0.20.0 (owner 2026-11-11): two-step choice - the city (region) first, then
+## its maps. Bakı has three maps, Qarabağ the big map (its own short maps later).
+const REGIONS := ["baku", "karabakh"]
+const REGION_TRACKS := {"baku": ["seafront_sprint", "downtown_towers", "old_city"], "karabakh": ["karabakh"]}
+const REGION_KEYS := {"baku": "REGION_BAKU", "karabakh": "REGION_KARABAKH"}
+
+
+static func region_of(id: String) -> String:
+	for r in REGIONS:
+		if id in REGION_TRACKS[r]:
+			return String(r)
+	return String(REGIONS[0])
+
+
+static func region_tracks(region: String) -> Array:
+	return REGION_TRACKS.get(region, REGION_TRACKS[REGIONS[0]])
+
+
+static func region_key(region: String) -> String:
+	return String(REGION_KEYS.get(region, REGION_KEYS[REGIONS[0]]))
+
 
 static func is_valid(id: String) -> bool:
 	return id in IDS

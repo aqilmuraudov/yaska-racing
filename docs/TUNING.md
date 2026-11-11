@@ -251,6 +251,10 @@ Saved in `cup_progress` after every finished race; closing the app mid-race re-r
 - "Yeni!" shown for every city except `TrackList.IDS[0]` until `CityCards.is_played` (played_tracks, a record, or a quick/tt finish stat).
 - Thumbnails: 640×400 JPEG crops of 1280×720 `--no-hud` race captures (seafront: cinematic t=9 s; downtown: chase t=17 s), colour ×1.12.
 
+## City select in two steps (0.20.0)
+- Step 1: one card per `TrackList.REGIONS` entry (Bakı, Qarabağ); the picture holds the city's map thumbnails side by side; chips: map count, trophies of all its maps; "Yeni!" while any of its maps is new. Step 2: the map cards of `TrackList.REGION_TRACKS[region]` (as before). Card width clamp((avail - gap·(n-1) - 24) / max(n, 2), 250, 600): a single map card is never wider than half the row.
+- Geri / Esc: maps -> cities -> mode menu. First focus: the city of the last map, then the last map.
+
 ## Phone optimisation and night polish (0.11.2)
 - **Render height cap** (`presets.json` `render_height`, `Settings.render_scale_for`): on phones the 3D scale is `min(resolution_scale, render_height / screen short side)`, clamped 0.5–1.0. Low 648, Medium 864, High 1080 px. A 1080p phone (Mi 12 Lite) renders exactly as before (0.6 / 0.8 / 1.0); a 1440p phone renders 0.5 / 0.6 / 0.75 instead of 0.6 / 0.8 / 1.0 (−31…−44 % pixels). Desktop keeps the plain fraction. Dynamic resolution works on top of it.
 - **Upscaling**: phones stay on bilinear. FSR 1.0 is Forward+-only in Godot 4.4 (engine error "FSR1 is only available when using the Forward+ renderer", seen on the Mobile renderer in 0.11.2).

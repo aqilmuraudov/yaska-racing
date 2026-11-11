@@ -103,7 +103,11 @@ func test_city_select_screen() -> void:
 	host.add_child(screen)
 	for k in 6:
 		await tree.process_frame
-	check_eq(screen.cards.size(), TrackList.IDS.size(), "one card per city")
+	# 0.20.0: the city (region) step first, then its maps (round 38)
+	screen.open_region(TrackList.region_of("downtown_towers"))
+	for k in 4:
+		await tree.process_frame
+	check_eq(screen.cards.size(), TrackList.region_tracks("baku").size(), "one card per Baku map")
 	check_eq(screen.selected, "downtown_towers", "last city pre-selected")
 	check_eq(Game.race_config.track_id, "downtown_towers", "config follows the pre-selection")
 	check_eq(screen.first_focus(), screen.cards["downtown_towers"], "focus on the last city")
@@ -113,7 +117,7 @@ func test_city_select_screen() -> void:
 	for nm in ["Image", "MiniMap", "Name", "Length", "Best", "Trophies", "Go"]:
 		check(card.find_child(nm, true, false) != null, "card has %s" % nm)
 	check_eq((card.find_child("Name", true, false) as Label).text, tr("TRACK_DOWNTOWN"), "city name")
-	# 0.18.0: four cities share the row (~280 px each at the 1280 base width).
+	# 0.20.0: three Baku maps share the row.
 	check(card.size.x >= 270.0 and card.size.y >= 320.0, "big cards (%s)" % card.size)
 	var a: Rect2 = screen.cards["seafront_sprint"].get_global_rect()
 	check(not a.intersects(card.get_global_rect()), "cards don't overlap")

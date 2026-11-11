@@ -543,6 +543,12 @@ CITY_TITLE,Pick a city,Şəhəri seç
 CITY_NEW,New!,Yeni!
 CITY_SEAFRONT,Seaside Baku,Dəniz sahili
 CITY_GO,Go!,Sür!
+REGION_BAKU,Baku,Bakı
+REGION_KARABAKH,Karabakh,Qarabağ
+MAP_TITLE,Pick a map,Xəritəni seç
+REGION_MAPS,%d maps,%d xəritə
+REGION_MAP_ONE,1 map,1 xəritə
+REGION_OPEN,Open,Aç
 REPLAY_BADGE,REPLAY,TƏKRAR
 REPLAY_SKIP,Skip,Keç
 LESSON_DONE,Great!,Əla!
