@@ -558,7 +558,7 @@ def main():
         ("kb_34_lachin_town.jpg", B(-470, 140, 190), B(-700, 20, -10), 26),     # 0.20.1 the town fill
         ("kb_35_lachin_town_n.jpg", B(-640, 95, -330), B(-690, 20, 0), 26),
         ("kb_37_khankendi_town.jpg", B(900, 120, -260), B(640, 15, -520), 26),     # 0.20.2 the Xankəndi town
-        ("kb_38_khankendi_start.jpg", B(860, 16, -506), B(600, 14, -522), 30),
+        ("kb_38_khankendi_start.jpg", B(745, 15, -505), B(600, 13, -533), 30),
     ]
     for name, eye, look, lens in wide:
         if not ONLY or any(k in name for k in ONLY.split(",")):

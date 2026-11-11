@@ -196,20 +196,27 @@ func test_race_scene_instances_the_town() -> void:
 func test_big_map_lachin_town() -> void:
 	var td := TrackData.load_from_file(TrackList.path("karabakh"))
 	var houses: Array = td.raw.get("town", {}).get("houses", [])
-	check(houses.size() >= 100, "big map: Laçın houses (%d)" % houses.size())
-	var z: Array = []
+	check(houses.size() >= 200, "big map: town houses (%d)" % houses.size())
+	var zones := {}
 	for zn: Array in td.raw.zones:
-		if String(zn[0]) == "lachin":
-			z = zn
+		zones[String(zn[0])] = Vector2(float(zn[1]), float(zn[2]))
+	var n_lachin := 0
 	for h: Dictionary in houses:
-		var d := Vector2(float(h.x) - float(z[1]), float(h.z) - float(z[2])).length()
-		# the town area (karabakh_maps_layout.py: centre 60 m east of the zone, r 240 + 15)
-		check(d < 320.0, "%s in Laçın (%.0f m from its centre)" % [h.id, d])
+		# 0.20.2 two towns on the big map: the Xankəndi set round Xankəndi, the rest in Laçın
+		var zid := "khankendi" if String(h.id).begins_with("kb_xk_") else "lachin"
+		if zid == "lachin":
+			n_lachin += 1
+		var d := Vector2(float(h.x), float(h.z)).distance_to(zones[zid])
+		# the town areas (karabakh_maps_layout.py: Laçın centre 60 m east of the zone, r 240 + 15;
+		# Xankəndi (640, -515) r 230)
+		check(d < 320.0, "%s in %s (%.0f m from its centre)" % [h.id, zid, d])
 		var g := INF
 		for q: Vector2 in _corners(h, 0.0):
 			var c := td.main.closest(Vector3(q.x, 0, q.y))
 			g = minf(g, c.distance - td.main.half_width_at(c.s) - td.offroad_width)
 		check(g > 2.9, "%s behind the run-off (%.1f m)" % [h.id, g])
+	check(n_lachin >= 100, "big map: Laçın houses (%d)" % n_lachin)
+	check(houses.size() - n_lachin >= 80, "big map: Xankəndi buildings (%d)" % (houses.size() - n_lachin))
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(String(td.raw.terrain_dir) + "/town.json"))
 	check(typeof(parsed) == TYPE_DICTIONARY and (parsed.instances as Array).size() >= houses.size(), "big map town.json")
 	var b := TrackBuilder.new()

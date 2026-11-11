@@ -16,7 +16,7 @@ Həmişə Azərbaycan dilində cavab ver.
 2. UI oyun stilində, sadə, vizual, az mətnli — kiçik uşaq üçün.
 3. Əvvəl test et, ekran görüntülərini tənqidi yoxla, yalnız sonra APK çıxar.
 4. Hər buraxılışda `export_presets.cfg`-də versionCode-u 1 artır; STATUS.md və TUNING.md-ni yenilə;
-   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 42).
+   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 44).
 5. Dəyişiklikdən əvvəl backup (git commit və ya zip).
 6. Zəif yerləri dürüst de; ölçülməyəni ölçülmüş kimi göstərmə.
 7. Aqil bir neçə xüsusiyyəti **bir APK-da** almağı üstün tutur (hər addıma ayrı APK yox).
@@ -44,7 +44,7 @@ gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), 
 Qarabağ xəritəsi (0.19.0, böyük): 4,9 km bir dövrə, Xankəndi → Şuşa yaylası → Laçın → Həkəri → Araz sahili (Xudafərin körpüləri: 15 və 11 aşırımlı, `karabakh_bridges.py`) → Xankəndi; relyef/meşə/lampalar/körpülər tam Blender-də
 (`tools/blender/karabakh_*.py`, ardıcıllıq TUNING.md-də). 0.19.1: Aqilin adını çəkdiyi abidələr hazırdır (Şuşa, Xankəndi, Laçın + Hoçaz; `karabakh_{khankendi,shusha,lachin}.py`, yerləşmə `tools/karabakh_layout.py`). Aqil şəkil göndərəndə model ona uyğunlaşdırılır. 0.19.2: hər şəhərin girişində bayraqlı ad lövhəsi (`karabakh_signs.py`), bütün abidələr yolun 3–9 m yanında, Həkəri Laçında yolun yanından axır (bulvar, kafe yolla su arasında).
 0.20.0: şəhər seçimi iki addımlı - əvvəl Bakı / Qarabağ, sonra xəritələri (`TrackList.REGIONS`). Telefonda FPS: `python tools/phone_fps.py` (USB).
-0.20.1: Qarabağın qısa xəritələri Şuşa və Laçın (`tools/karabakh_maps_layout.py`), Laçın təpədə sıx şəhər (`karabakh_lachin_town.py`, "town" açarı), görməli yerlərin ad lövhələri və Bayraq meydanı (`karabakh_names.py`). Xankəndi qısa xəritəsi qalır.
+0.20.1: Qarabağın qısa xəritələri Şuşa və Laçın (`tools/karabakh_maps_layout.py`), Laçın təpədə sıx şəhər (`karabakh_lachin_town.py`, "town" açarı), görməli yerlərin ad lövhələri və Bayraq meydanı (`karabakh_names.py`). 0.20.2 (iş gedir): Xankəndi qısa xəritəsi (`karabakh_khankendi`) və müasir şəkillərə görə şəhər (`karabakh_khankendi_town.py`: 5/9 mərtəbəli bloklar, yeni tağlı binalar, köhnə evlər), böyük xəritədə də.
 Vizual yoxlama yalnız Blender render ilə (Godot pəncərəsi yox).
 Əvvəlki iş GPU-suz bulud mühitində aparılıb — **heç bir rəqəm real telefonda ölçülməyib.**
 
