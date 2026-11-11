@@ -2,6 +2,11 @@
 
 Date: 2026-11-11 · Build: 0.20.0 · Engine: Godot 4.4.1-stable
 
+## In progress 0.20.1 — the short Qarabağ maps (one APK once Laçın and Xankəndi are done)
+- **Şuşa** (`data/tracks/karabakh_shusha.json`, done): a 1532 m two-lane loop on the plateau, 2 laps, S-bends on the north and south legs; the mosque and the ŞUŞA sign with the flag on the north straight, Vaqif's mausoleum by the west bend, the fortress wall (gate, towers) all along the south leg with the Daşaltı gorge right behind it. Grade ≤ 3.4 %, tightest bend r 42 m, legs ≥ 112 m apart. Autopilot lap 52.6 s (`LAP_SCALE` 1.03, like a Baku lap). Headless day / night / chaos races finished, no stuck events.
+- Pipeline now per map: `karabakh_terrain.py --track <id>` (the map's own `terrain` block: inner / ring extents, plateau, gorge; 2048² textures), `tools/karabakh_maps_layout.py <id>` (landmarks, sign, wall for the short maps), `karabakh_render.py --track <id>` (road views, landmark views, overview, the city card). The big map's output is byte-identical after the change (heights / trees / lines checked). Terrain folders of the short maps: `assets/models/kb_map_<name>` (APK include filter added).
+- Qarabağ in "Şəhəri seç" now offers two maps: Böyük dövrə (the big map, `MAP_KB_GRAND`) and Şuşa. Tests: round 39 (Şuşa); rounds 20 / 34 / 38 count five maps.
+
 ## Update 0.20.0 (versionCode 50) — choose the city, then its map
 - **Owner (2026-11-11):** the three Baku maps as one city choice - picking Bakı shows its three maps; picking Qarabağ shows its map (one big map for now).
 - **"Şəhəri seç"** (`scripts/ui/city_select.gd`) is two steps now: two big city cards - Bakı (its three map pictures side by side, "3 xəritə", trophies of all three, "Yeni!" while one is never raced) and Qarabağ ("1 xəritə") - and a tap ("Aç") opens "Bakı · Xəritəni seç" / "Qarabağ · Xəritəni seç" with the map cards as before (picture, mini map, length, best lap, trophies, "Sür!"). Geri / Esc goes from the maps back to the cities, then to the mode menu. The last map stays pre-selected (its city is highlighted on the first step). The time of day bar stays under both steps.

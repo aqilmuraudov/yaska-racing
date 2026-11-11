@@ -1,0 +1,1 @@
+{"x0": -624.0, "z0": -432.0, "cell": 3.0, "nx": 417, "nz": 289, "doc": "float32 little-endian, row-major (z rows, x columns), Godot metres; ground height (no canopy)"}

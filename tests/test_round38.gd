@@ -56,7 +56,7 @@ func test_regions_cover_every_track_once() -> void:
 	for id in TrackList.IDS:
 		check(seen.has(id), "%s belongs to a city" % id)
 	check_eq(TrackList.region_tracks("baku"), ["seafront_sprint", "downtown_towers", "old_city"], "Bakı: three maps")
-	check_eq(TrackList.region_tracks("karabakh"), ["karabakh"], "Qarabağ: the big map")
+	check_eq(TrackList.region_tracks("karabakh"), ["karabakh", "karabakh_shusha"], "Qarabağ: the big map and Şuşa")
 	check_eq(TrackList.region_of("old_city"), "baku", "İçərişəhər is in Bakı")
 	check_eq(TrackList.region_of("karabakh"), "karabakh", "Qarabağ")
 
@@ -96,20 +96,20 @@ func test_cities_first_then_maps() -> void:
 	# Qarabağ opens its map; a tap picks it
 	screen.open_region("karabakh")
 	await tree.process_frame
-	check_eq(screen.cards.size(), 1, "the big map")
+	check_eq(screen.cards.size(), 2, "the big map and Şuşa")
 	check(screen.cards.has("karabakh"), "Qarabağ map")
 	screen.choose("karabakh", false)
 	check_eq(Game.race_config.track_id, "karabakh", "picked")
 	check_eq(String(Settings.get_value("gameplay", "track", "")), "karabakh", "remembered")
 	var one: Button = screen.cards["karabakh"]
-	check(one.size.x >= 300.0 and one.size.x <= 620.0, "a single map card keeps a sensible size (%s)" % one.size)
+	check(one.size.x >= 300.0 and one.size.x <= 620.0, "map cards keep a sensible size (%s)" % one.size)
 
 
 func test_new_badge_on_a_city() -> void:
 	await _open("seafront_sprint")
 	check(screen.new_badges.has("baku"), "Yeni! on Bakı (two maps never raced)")
 	check(screen.new_badges.has("karabakh"), "Yeni! on Qarabağ")
-	for id in ["downtown_towers", "old_city", "karabakh"]:
+	for id in TrackList.IDS:
 		CityCards.mark_played(SaveManager.data, id)
 	screen.show_regions()
 	await tree.process_frame

@@ -52,14 +52,17 @@ def arg(name, default):
 
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-OUT = os.path.join(ROOT, "assets", "models", "karabakh")
+# 0.20.1: one script for every Qarabağ map: --track <id> (default the big map).
+TRACK_ID = arg("--track", "karabakh")
 WORK = os.path.join(ROOT, "tools", "blender", "out")
-RES = int(arg("--res", "4096"))
+RES = int(arg("--res", "4096" if TRACK_ID == "karabakh" else "2048"))
 BAKE = "--no-bake" not in ARGV
 RENDER = "--render" in ARGV
 
-ROAD = json.load(open(os.path.join(WORK, "karabakh_road.json"), encoding="utf-8"))
-TRACK = json.load(open(os.path.join(ROOT, "data", "tracks", "karabakh.json"), encoding="utf-8"))
+ROAD = json.load(open(os.path.join(WORK, TRACK_ID + "_road.json"), encoding="utf-8"))
+TRACK = json.load(open(os.path.join(ROOT, "data", "tracks", TRACK_ID + ".json"), encoding="utf-8"))
+OUT = os.path.join(ROOT, TRACK["terrain_dir"].replace("res://", ""))
+TERRAIN = TRACK.get("terrain", {})   # short maps: their own extents and landscape anchors
 PTS = np.array(ROAD["points"], dtype=np.float64)  # (n, 3) x, y, z
 HW = np.array(ROAD["half_widths"], dtype=np.float64)
 OW = float(ROAD["offroad_width"])
@@ -72,12 +75,20 @@ Z0, Z1 = -912.0, 960.0
 MCELL = 20.0
 MX0, MX1 = -2300.0, 2300.0
 MZ0, MZ1 = -2100.0, 2220.0
+if "inner" in TERRAIN:
+    X0, X1, Z0, Z1 = (float(v) for v in TERRAIN["inner"])
+    MX0, MX1, MZ0, MZ1 = (float(v) for v in TERRAIN["ring"])
 TILE_CELLS = 48               # near tiles: 144 m
 
 # Landscape anchors (Godot x, z).
 SHUSHA = (50.0, -255.0, 300.0, 150.0)   # plateau centre and radii (the town table)
 # Daşaltı gorge: a winding canyon under the southern edge of the plateau.
 GORGE = np.array([[345.0, -140.0], [200.0, -92.0], [20.0, -68.0], [-150.0, -92.0]])
+GORGE_FLOOR = 6.0
+if "inner" in TERRAIN:
+    SHUSHA = tuple(TERRAIN["plateau"]) if TERRAIN.get("plateau") else None
+    GORGE = np.array(TERRAIN["gorge"], dtype=np.float64) if TERRAIN.get("gorge") else None
+    GORGE_FLOOR = float(TERRAIN.get("gorge_floor", 6.0))
 ZONES = TRACK.get("zones", [])          # [id, x, z, radius]
 # 0.19.1 landmarks (tools/karabakh_layout.py): level pads under the footprints,
 # terraces under boulevard runs, big peaks (Hoçaz).
@@ -107,7 +118,7 @@ for _rv in TRACK.get("rivers", []):
     else:  # falls along its length
         _lev = _rv["drop"][0] + (_rv["drop"][1] - _rv["drop"][0]) * _cum / _cum[-1]
     RIVERS.append({"id": _rv["id"], "pts": _p, "lev": _lev, "hw": float(_rv["width"]) / 2.0})
-_ARAZ = next(r for r in RIVERS if r["id"] == "araz")["pts"]
+_ARAZ = next((r["pts"] for r in RIVERS if r["id"] == "araz"), None)
 
 
 # --- Noise -------------------------------------------------------------------------
@@ -249,6 +260,9 @@ def river_fields(xs, zs):
 
 
 def araz_z(xs):
+    """The Araz's course (the dry far bank lies south of it); far away without the Araz."""
+    if _ARAZ is None:
+        return np.full(np.shape(xs), 1e6)
     return np.interp(xs, _ARAZ[:, 0], _ARAZ[:, 1])
 
 
@@ -312,13 +326,17 @@ def natural(xs, zs, droad, inside):
     # Towns and sights stand on open, nearly level ground at road height;
     # the Şuşa plateau is a full table.
     zm = zone_mask(xs, zs)
-    plate = 1.0 - smooth(0.8, 1.15, np.hypot((xs - SHUSHA[0]) / SHUSHA[2], (zs - SHUSHA[1]) / SHUSHA[3]))
+    if SHUSHA is None:
+        plate = np.zeros(xs.shape)
+    else:
+        plate = 1.0 - smooth(0.8, 1.15, np.hypot((xs - SHUSHA[0]) / SHUSHA[2], (zs - SHUSHA[1]) / SHUSHA[3]))
     flat = np.maximum(zm * 0.75, plate)
     h = h * (1.0 - flat) + (base + 0.8 + fbm(xs, zs, 3, 1.0 / 60.0)) * flat
     # Daşaltı gorge under the plateau: limestone cliffs, then the gorge floor.
-    dg = polyline_dist(xs, zs, GORGE) + fbm(xs, zs, 3, 1.0 / 45.0) * 9.0
-    cut = 1.0 - smooth(34.0, 52.0, dg)
-    h = h * (1.0 - cut) + (6.0 + fbm(xs, zs, 3, 1.0 / 50.0) * 2.5) * cut
+    if GORGE is not None:
+        dg = polyline_dist(xs, zs, GORGE) + fbm(xs, zs, 3, 1.0 / 45.0) * 9.0
+        cut = 1.0 - smooth(34.0, 52.0, dg)
+        h = h * (1.0 - cut) + (GORGE_FLOOR + fbm(xs, zs, 3, 1.0 / 50.0) * 2.5) * cut
     # Rivers: a bed 1.4 m under the water, a gravel shore just above it, then
     # banks blending into the land.
     rdist = np.full(xs.shape, 1e9)
@@ -865,8 +883,9 @@ def main():
     gz_, gx_ = np.gradient(hs, CELL)
     cliff = smooth(1.1, 1.7, np.hypot(gx_, gz_))   # bare limestone above ~50 deg
     attrs = {"forest": forest, "canopy": can_on, "verge": verge, "riverbed": riverbed, "dry": dry, "rock": cliff}
-    rmin = min(float(np.min(np.hypot(PTS[:, 0][:, None] - rv["pts"][:, 0][None, :],
-                                     PTS[:, 2][:, None] - rv["pts"][:, 1][None, :]))) - rv["hw"] for rv in RIVERS)
+    rmin = min((float(np.min(np.hypot(PTS[:, 0][:, None] - rv["pts"][:, 0][None, :],
+                                      PTS[:, 2][:, None] - rv["pts"][:, 1][None, :]))) - rv["hw"] for rv in RIVERS),
+               default=float("inf"))
     print(f"ROAD - RIVER bank: {rmin:.0f} m at the closest")
 
     trees = scatter_forest(hfun)
@@ -1030,7 +1049,7 @@ def main():
                               export_skins=False, export_morph=False, export_cameras=False, export_lights=False,
                               export_attributes=False)
     print("WROTE", os.path.join(OUT, "terrain.glb"))
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(WORK, "karabakh_terrain.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(WORK, TRACK_ID + "_terrain.blend"))
     print(f"DONE in {time.time() - t_all:.0f}s")
 
 

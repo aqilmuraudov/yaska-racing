@@ -224,7 +224,7 @@ func test_race_scene_builds_qarabag() -> void:
 
 
 func test_menu_has_four_cities() -> void:
-	check_eq(TrackList.IDS.size(), 4, "four cities")
+	check_eq(TrackList.IDS.size(), 5, "five maps (0.20.1 Şuşa)")
 	var days := {}
 	for d in 40:
 		var date := Time.get_date_string_from_unix_time(1_800_000_000 + d * 86400)

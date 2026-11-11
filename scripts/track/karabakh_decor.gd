@@ -104,7 +104,7 @@ func instance_transforms(prop: String) -> Array:
 ## carry the baked forest canopy instead of single trees.
 func _place_kb_forest() -> void:
 	var dir := String(data.raw.get("terrain_dir", ""))
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(dir + "/trees.json")) if dir != "" else null
+	var parsed = _read_json(dir + "/trees.json") if dir != "" else null
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for t: Array in parsed.trees:
@@ -122,7 +122,7 @@ func _place_kb_forest() -> void:
 ## Scenery beside the road: no collision, the guardrail keeps the karts off.
 func _place_kb_bridges() -> void:
 	var dir := String(data.raw.get("terrain_dir", ""))
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(dir + "/bridges.json")) if dir != "" else null
+	var parsed = _read_json(dir + "/bridges.json") if dir != "" else null
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for t: Array in parsed.instances:
@@ -174,7 +174,7 @@ func _add_flag(parent: Node3D, top: Vector3, key: String) -> void:
 ## rim and the Həkəri boulevard in Laçın (Blender terrain -> lines.json).
 func _place_kb_lines() -> void:
 	var dir := String(data.raw.get("terrain_dir", ""))
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(dir + "/lines.json")) if dir != "" else null
+	var parsed = _read_json(dir + "/lines.json") if dir != "" else null
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for t: Array in parsed.instances:
@@ -211,3 +211,10 @@ func _place_kb_sky() -> void:
 			clouds.add(ShapeKit.superellipsoid(sz, 1.0, 1.0, Vector2.ONE, Vector2.ONE, 5, 8), Transform3D(Basis.IDENTITY, cpos + off), cloud_mat)
 	var cloud_mi := _landmark(clouds.commit(), Transform3D.IDENTITY, "Clouds")
 	cloud_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## 0.20.1: a map may lack a file (the short maps have no bridges.json): null, no error.
+static func _read_json(path: String) -> Variant:
+	if not FileAccess.file_exists(path):
+		return null
+	return JSON.parse_string(FileAccess.get_file_as_string(path))

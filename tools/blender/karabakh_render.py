@@ -30,9 +30,12 @@ WORK = os.path.join(ROOT, "tools", "blender", "out")
 OUT = os.path.join(ROOT, arg("--out", "docs/screenshots/0.19.0"))
 SAMPLES = int(arg("--samples", "48"))
 ONLY = arg("--only", "")
-KB = os.path.join(ROOT, "assets", "models", "karabakh")
+# 0.20.1: --track <id> renders a short Qarabağ map (its own terrain, generic views + its city card)
+TRACK_ID = arg("--track", "karabakh")
+TRACK = json.load(open(os.path.join(ROOT, "data", "tracks", TRACK_ID + ".json"), encoding="utf-8"))
+KB = os.path.join(ROOT, TRACK["terrain_dir"].replace("res://", ""))
 FL = os.path.join(ROOT, "assets", "models", "karabakh_flora")
-ROAD = json.load(open(os.path.join(WORK, "karabakh_road.json"), encoding="utf-8"))
+ROAD = json.load(open(os.path.join(WORK, TRACK_ID + "_road.json"), encoding="utf-8"))
 
 
 def B(x, y, z):
@@ -259,7 +262,6 @@ def place_trees(coll):
 
 
 LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin", "karabakh_signs"]
-TRACK = json.load(open(os.path.join(ROOT, "data", "tracks", "karabakh.json"), encoding="utf-8"))
 
 
 def place_landmarks(coll):
@@ -326,6 +328,8 @@ def place_bridges(coll):
             proto[o.name] = o
             o.hide_render = True
             o.hide_viewport = True
+    if not os.path.exists(os.path.join(KB, "bridges.json")):
+        return
     for t in json.load(open(os.path.join(KB, "bridges.json"), encoding="utf-8"))["instances"]:
         ob = bpy.data.objects.new(t[0], proto[t[0]].data)
         ob.location = B(t[1], t[2], t[3])
@@ -387,8 +391,44 @@ def shoot(sc, cam, eye, look, name, res=(1280, 720), lens=24):
     print("WROTE", sc.render.filepath)
 
 
+def short_map(sc, cam):
+    """A short map: road views every 1/6 lap, its landmarks from the road, an overview, the city card."""
+    tag = TRACK_ID.replace("karabakh_", "")
+    L = ROAD["length"]
+    f = ROAD["finish"]
+    s0 = s_at(f[0], f[2])
+    for k in range(6):
+        name = f"{tag}_{k + 1}_road.jpg"
+        if ONLY and not any(o in name for o in ONLY.split(",")):
+            continue
+        eye, look = road_cam((s0 + 20.0 + L * k / 6.0) % L)
+        shoot(sc, cam, eye, look, name)
+    xs = [p[0] for p in ROAD["points"]]
+    zs = [p[2] for p in ROAD["points"]]
+    cx, cz = (min(xs) + max(xs)) / 2, (min(zs) + max(zs)) / 2
+    span = max(max(xs) - min(xs), max(zs) - min(zs))
+    if not ONLY or "overview" in ONLY:
+        shoot(sc, cam, B(cx, span * 0.75, cz + span * 0.95), B(cx, 20, cz), f"{tag}_0_overview.jpg", lens=28)
+    for lm in TRACK.get("landmarks", []):
+        name = f"{tag}_lm_{lm['id']}.jpg"
+        if ONLY and not any(o in name for o in ONLY.split(",")):
+            continue
+        fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
+        d = max(lm["w"], lm["d"]) * 1.1 + 12.0
+        eye = B(lm["x"] + fx * d + fz * d * 0.35, lm["y"] + 9.0, lm["z"] + fz * d - fx * d * 0.35)
+        shoot(sc, cam, eye, B(lm["x"], lm["y"] + 6.0, lm["z"]), name, lens=26)
+    if ONLY:
+        print("DONE")
+        return
+    eye, look = road_cam((s0 + L * 0.55) % L, back=14.0, up=6.5, ahead=70.0)
+    shoot(sc, cam, eye, look, f"{TRACK_ID}_card.jpg", res=(640, 400), lens=22)
+    import shutil
+    shutil.copy(os.path.join(OUT, f"{TRACK_ID}_card.jpg"), os.path.join(ROOT, "assets", "ui", "cities", TRACK_ID + ".jpg"))
+    print("DONE")
+
+
 def main():
-    bpy.ops.wm.open_mainfile(filepath=os.path.join(WORK, "karabakh_terrain.blend"))
+    bpy.ops.wm.open_mainfile(filepath=os.path.join(WORK, TRACK_ID + "_terrain.blend"))
     sc = bpy.context.scene
     coll = bpy.data.collections.new("Review")
     sc.collection.children.link(coll)
@@ -430,6 +470,9 @@ def main():
     sc.collection.objects.link(cam)
     sc.camera = cam
     os.makedirs(OUT, exist_ok=True)
+    if TRACK_ID != "karabakh":
+        short_map(sc, cam)
+        return
     views = [("kb_1_khankendi_start.jpg", (700, -516)), ("kb_2_climb.jpg", (400, -320)),
              ("kb_3_shusha_plateau.jpg", (140, -260)), ("kb_4_descent_west.jpg", (-330, -170)),
              ("kb_5_lachin.jpg", (-700, -90)), ("kb_6_hakari_valley.jpg", (-690, 380)),
