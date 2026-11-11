@@ -95,6 +95,15 @@ ZONES = TRACK.get("zones", [])          # [id, x, z, radius]
 LANDMARKS = TRACK.get("landmarks", [])
 LINES = TRACK.get("lines", [])
 PEAKS = TRACK.get("peaks", [])
+# 0.20.1 town fill (tools/karabakh_maps_layout.py "town"): decorative streets painted into the
+# ground on their own terraces, roundabouts, houses on level pads. Heights resolved here
+# (resolve_town) and written to town.json for Godot.
+TOWN = TRACK.get("town")
+TOWN_ON = False              # height() leaves the town out while its street heights are sampled
+STREETS = []                 # {"pts": (n, 2), "y": (n,), "hw"}
+TOWN_PADS = []               # {"id", "x", "y", "z", "yaw", "w", "d"} (houses, roundabout islands)
+TOWN_HILL = float(TERRAIN.get("town_hill", 0.0))      # the town on a hill inside the loop
+ZONE_FLAT = float(TERRAIN.get("zone_flat", 0.75))
 
 
 def _chaikin(pts, rounds=3):
@@ -316,6 +325,8 @@ def natural(xs, zs, droad, inside):
     # Inside the loop: forest hills, higher towards the north.
     hills = np.maximum(11.0 + 9.0 * fbm(xs, zs, 4, 1.0 / 240.0) + 6.0 * smooth(300.0, -500.0, zs), 2.0)
     h = np.where(inside, h + hills * smooth(30.0, 170.0, droad), h)
+    if TOWN_HILL > 0.0:      # Laçın: the town climbs a hill inside the loop (owner's aerial photos)
+        h = np.where(inside, h + TOWN_HILL * smooth(15.0, 110.0, droad), h)
     # Outside: the mountain ring rises with distance from the course.
     far = smooth(70.0, 520.0, droad)
     mount = (55.0 + 95.0 * ridge(xs, zs)) * far * far + fbm(xs, zs, 4, 1.0 / 90.0) * 6.0 * far
@@ -330,7 +341,7 @@ def natural(xs, zs, droad, inside):
         plate = np.zeros(xs.shape)
     else:
         plate = 1.0 - smooth(0.8, 1.15, np.hypot((xs - SHUSHA[0]) / SHUSHA[2], (zs - SHUSHA[1]) / SHUSHA[3]))
-    flat = np.maximum(zm * 0.75, plate)
+    flat = np.maximum(zm * ZONE_FLAT, plate)
     h = h * (1.0 - flat) + (base + 0.8 + fbm(xs, zs, 3, 1.0 / 60.0)) * flat
     # Daşaltı gorge under the plateau: limestone cliffs, then the gorge floor.
     if GORGE is not None:
@@ -393,6 +404,42 @@ def height(xs, zs, with_canopy=False):
         m = 1.0 - smooth(ln["width"] / 2, ln["width"] / 2 + 10.0, d)
         h = h * (1.0 - m) + ly * m
         pad = np.maximum(pad, 1.0 - smooth(ln["width"] / 2, ln["width"] / 2 + 2.0, d))
+    street = np.zeros(xs.shape)
+    clear = np.zeros(xs.shape)       # town: no forest canopy round the houses / along the streets
+    if TOWN_ON:              # town streets: each on its own terrace, painted (asphalt)
+        fx_, fz_ = xs.ravel(), zs.ravel()
+        hf, sf, pf = h.ravel().copy(), street.ravel(), pad.ravel()
+        cf = clear.ravel()
+        for st in STREETS:
+            win = np.nonzero((fx_ > st["box"][0]) & (fx_ < st["box"][1]) & (fz_ > st["box"][2]) & (fz_ < st["box"][3]))[0]
+            if win.size == 0:
+                continue
+            wx, wz = fx_[win], fz_[win]
+            d = np.full(wx.shape, 1e9)
+            ly = np.zeros(wx.shape)
+            sp, sy = st["pts"], st["y"]
+            for a in range(len(sp) - 1):
+                vx, vz = sp[a + 1, 0] - sp[a, 0], sp[a + 1, 1] - sp[a, 1]
+                t2 = np.clip(((wx - sp[a, 0]) * vx + (wz - sp[a, 1]) * vz) / (vx * vx + vz * vz + 1e-9), 0.0, 1.0)
+                dd = np.hypot(wx - (sp[a, 0] + t2 * vx), wz - (sp[a, 1] + t2 * vz))
+                mm = dd < d
+                d = np.where(mm, dd, d)
+                ly = np.where(mm, sy[a] + (sy[a + 1] - sy[a]) * t2, ly)
+            m = 1.0 - smooth(st["hw"], st["hw"] + 7.0, d)
+            hf[win] = hf[win] * (1.0 - m) + ly * m
+            sf[win] = np.maximum(sf[win], 1.0 - smooth(st["hw"] - 0.4, st["hw"] + 0.3, d))
+            pf[win] = np.maximum(pf[win], 1.0 - smooth(st["hw"], st["hw"] + 2.0, d))
+            cf[win] = np.maximum(cf[win], 1.0 - smooth(st["hw"] + 3.0, st["hw"] + 9.0, d))
+        for rx, rz, rr, ry in TOWN_ROUNDS:
+            d = np.hypot(fx_ - rx, fz_ - rz)
+            m = 1.0 - smooth(rr, rr + 6.0, d)
+            hf = hf * (1.0 - m) + ry * m
+            sf[:] = np.maximum(sf, 1.0 - smooth(rr - 0.4, rr + 0.3, d))
+            pf[:] = np.maximum(pf, 1.0 - smooth(rr, rr + 2.0, d))
+        h = hf.reshape(xs.shape)
+        street = sf.reshape(xs.shape)
+        clear = cf.reshape(xs.shape)
+        pad = pf.reshape(xs.shape)
     # pads last: a pad on a terrace (the café on the boulevard) stays exactly level
     mbest = np.zeros(xs.shape)
     ybest = np.zeros(xs.shape)
@@ -406,13 +453,92 @@ def height(xs, zs, with_canopy=False):
         mbest = np.where(better, m, mbest)
         ybest = np.where(better, lm["y"], ybest)
         pad = np.maximum(pad, 1.0 - smooth(0.0, 2.0, e))
+    if TOWN_ON and TOWN_PADS:   # town houses: small pads with short banks (terraces), windowed
+        fx_, fz_ = xs.ravel(), zs.ravel()
+        mb, yb, pf = mbest.ravel().copy(), ybest.ravel().copy(), pad.ravel().copy()
+        cf = clear.ravel().copy()
+        for lm in TOWN_PADS:
+            r = math.hypot(lm["w"], lm["d"]) / 2 + 10.0
+            win = np.nonzero(np.abs(fx_ - lm["x"]) < r)[0]
+            win = win[np.abs(fz_[win] - lm["z"]) < r]
+            if win.size == 0:
+                continue
+            fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
+            u = np.abs((fx_[win] - lm["x"]) * fz - (fz_[win] - lm["z"]) * fx) - lm["w"] / 2
+            v = np.abs((fx_[win] - lm["x"]) * fx + (fz_[win] - lm["z"]) * fz) - lm["d"] / 2
+            e = np.maximum(u, v)
+            m = 1.0 - smooth(1.5, 8.0, e)     # level 1.5 m round the plot (a 3 m cell never straddles the bank)
+            better = m > mb[win]
+            mb[win] = np.where(better, m, mb[win])
+            yb[win] = np.where(better, lm["y"], yb[win])
+            pf[win] = np.maximum(pf[win], 1.0 - smooth(0.0, 2.0, e))
+            cf[win] = np.maximum(cf[win], 1.0 - smooth(4.0, 10.0, e))
+        mbest, ybest, pad = mb.reshape(xs.shape), yb.reshape(xs.shape), pf.reshape(xs.shape)
+        clear = cf.reshape(xs.shape)
     h = h * (1.0 - mbest) + ybest * mbest
     # the road rule again: pads / terraces never lift the ground over the verge
     h = np.minimum(h, cut_max)
     h = np.where(k < 0.0, yroad - 0.7, h)
-    info = {"droad": droad, "yroad": yroad, "edge": edge, "inside": inside, "rdist": rdist, "zone": zm, "pad": pad}
+    info = {"droad": droad, "yroad": yroad, "edge": edge, "inside": inside, "rdist": rdist, "zone": zm, "pad": pad,
+            "street": street, "clear": clear}
     return h, info
 
+
+
+TOWN_ROUNDS = []             # [x, z, r, y]
+
+
+def resolve_town():
+    """Street heights: the natural ground along each street (the road cut included),
+    smoothed over ~30 m. House pads: the race road (as the landmarks) or their street."""
+    global TOWN_ON
+    if not TOWN:
+        return
+    t0 = time.time()
+    for st in TOWN["streets"]:
+        p = np.array(st["points"], dtype=np.float64)
+        h, _info = height(p[:, 0:1], p[:, 1:2])
+        h = h[:, 0]
+        k = 7
+        hs = np.convolve(np.pad(h, (k // 2, k // 2), mode="edge"), np.ones(k) / k, mode="valid")
+        hw = float(st["width"]) / 2
+        STREETS.append({"id": st["id"], "pts": p, "y": hs - 0.1, "hw": hw,
+                        "box": (p[:, 0].min() - hw - 9, p[:, 0].max() + hw + 9, p[:, 1].min() - hw - 9,
+                                p[:, 1].max() + hw + 9)})
+
+    def street_y(x, z, only=None):
+        best = (1e9, 0.0)
+        for st in STREETS:
+            if only is not None and st["id"] != only:
+                continue
+            d = np.hypot(st["pts"][:, 0] - x, st["pts"][:, 1] - z)
+            i = int(np.argmin(d))
+            if d[i] < best[0]:
+                best = (float(d[i]), float(st["y"][i]))
+        return best[1]
+    for rx, rz, rr in TOWN["rounds"]:
+        TOWN_ROUNDS.append((rx, rz, rr, street_y(rx, rz)))
+        TOWN_PADS.append({"id": "kb_lc_round", "x": rx, "y": street_y(rx, rz), "z": rz, "yaw": 0.0, "w": 1.0, "d": 1.0,
+                          "island": True})
+    for hh in TOWN["houses"]:
+        if hh["front"] == "road":
+            near = np.hypot(PTS[:, 0] - hh["x"], PTS[:, 2] - hh["z"]) < 30.0
+            y = float(PTS[near, 1].min()) - 0.4
+        else:
+            y = street_y(hh["x"], hh["z"], hh["front"]) + 0.15
+        TOWN_PADS.append(dict(hh, y=round(y, 2)))
+    TOWN_ON = True
+    print(f"TOWN {len(STREETS)} streets, {len(TOWN_ROUNDS)} roundabouts, "
+          f"{sum(1 for q in TOWN_PADS if not q.get('island'))} houses resolved in {time.time() - t0:.0f}s")
+
+
+def write_town():
+    if not TOWN:
+        return
+    out = [[q["id"], round(q["x"], 2), round(q["y"], 2), round(q["z"], 2), round(q["yaw"], 4)] for q in TOWN_PADS]
+    json.dump({"doc": "module, x, y, z, yaw (Godot space; model +z faces its street)", "instances": out},
+              open(os.path.join(OUT, "town.json"), "w", encoding="utf-8", newline="\n"))
+    print(f"TOWN {len(out)} instances -> town.json")
 
 
 def check_far_tiles(fars, hs):
@@ -448,20 +574,36 @@ def check_far_tiles(fars, hs):
         for u in np.linspace(-lm["w"] / 2 + 1.5, lm["w"] / 2 - 1.5, 6):
             for v in np.linspace(-lm["d"] / 2 + 1.5, lm["d"] / 2 - 1.5, 5):
                 pts.append((lm["id"], lm["x"] + fz * u + fx * v, lm["z"] - fx * u + fz * v))
+    for q in TOWN_PADS:
+        if q.get("island"):
+            continue
+        fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
+        for u in (-q["w"] / 2 + 1.5, 0.0, q["w"] / 2 - 1.5):
+            for v in (-q["d"] / 2 + 1.5, q["d"] / 2 - 1.5):
+                pts.append((q["id"], q["x"] + fz * u + fx * v, q["z"] - fx * u + fz * v))
     lp = os.path.join(OUT, "lines.json")
     if os.path.exists(lp):
         for t in json.load(open(lp, encoding="utf-8"))["instances"]:
             pts.append((t[0], t[1], t[3]))
     worst = (0.0, "")
+    worst_town = (0.0, "")
+    town_ids = {q["id"] for q in TOWN_PADS}
     for name, x, z in pts:
         h = far_h(x, z)
         if h is None:
             continue
         d = abs(h - ground(x, z))
-        if d > worst[0]:
+        # 0.20.1 town houses: neighbours on their own levels meet in a step about a metre from a
+        # plot - a 3 m far triangle can lift a corner a little; their plinths reach 1.5 m down
+        if name in town_ids and not any(lm["id"] == name for lm in LANDMARKS):
+            if d > worst_town[0]:
+                worst_town = (d, f"{name} at ({x:.0f}, {z:.0f})")
+        elif d > worst[0]:
             worst = (d, f"{name} at ({x:.0f}, {z:.0f})")
     print(f"FAR LOD under the landmarks: worst {worst[0]:.2f} m ({worst[1]}), {len(pts)} points")
+    print(f"FAR LOD under the town houses: worst {worst_town[0]:.2f} m ({worst_town[1]})")
     assert worst[0] < 0.5, "far terrain tiles leave a landmark floating / sunk"
+    assert worst_town[0] < 1.0, "far terrain tiles leave a town house floating / sunk"
 
 
 def write_lines(hs):
@@ -601,6 +743,17 @@ def scatter_forest(hfun):
     gx = gx + np.array([[rnd.uniform(-2.6, 2.6) for _ in range(gx.shape[1])] for _ in range(gx.shape[0])])
     gz = gz + np.array([[rnd.uniform(-2.6, 2.6) for _ in range(gx.shape[1])] for _ in range(gx.shape[0])])
     h, info = hfun(gx, gz)
+    # town: streets / house plots stay clear; gardens get cypresses and fruit trees
+    occupied = info["street"] > 0.0
+    for q in TOWN_PADS:
+        fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
+        r = (8.0 if q.get("island") else 0.0)
+        u = np.abs((gx - q["x"]) * fz - (gz - q["z"]) * fx) - q["w"] / 2 - r
+        v = np.abs((gx - q["x"]) * fx + (gz - q["z"]) * fz) - q["d"] / 2 - r
+        occupied |= np.maximum(u, v) < 1.5
+    near_house = np.zeros(gx.shape, dtype=bool)
+    for q in TOWN_PADS:
+        near_house |= np.hypot(gx - q["x"], gz - q["z"]) < math.hypot(q["w"], q["d"]) / 2 + 9.0
     # slope from neighbouring samples
     hx, _ = hfun(gx + 1.5, gz)
     hz, _ = hfun(gx, gz + 1.5)
@@ -609,13 +762,23 @@ def scatter_forest(hfun):
     for idx in np.ndindex(gx.shape):
         x, z, y = float(gx[idx]), float(gz[idx]), float(h[idx])
         kk = float(k[idx])
-        if kk < 5.0 or kk > TREE_BAND:
-            continue
+        if kk < 5.0 or kk > (TREE_BAND + 90.0 * float(info["zone"][idx]) if TOWN else TREE_BAND):
+            continue      # a town-filled map: the trees reach the hilltop in the middle of the town
         if not plot_clear(x, z, 3.0):
             continue
         if float(info["rdist"][idx]) < 6.0:   # water and the gravel shore
             continue
-        if rnd.random() < float(info["zone"][idx]) * 0.9:   # towns: a few trees only
+        if occupied[idx]:
+            continue
+        if TOWN and near_house[idx]:     # town gardens
+            if rnd.random() < 0.45:
+                kind = "kb_cypress" if rnd.random() < 0.45 else ("kb_maple" if rnd.random() < 0.4 else "kb_oak")
+                sc = rnd.uniform(0.8, 1.1) if kind == "kb_cypress" else rnd.uniform(0.55, 0.8)
+                pts.append([kind, round(x, 2), round(y - 0.25, 2), round(z, 2), round(rnd.uniform(0, 6.28), 3),
+                            round(sc, 3)])
+            continue
+        # towns: a few trees only (a town-filled map: the green hilltop keeps half of its trees)
+        if rnd.random() < float(info["zone"][idx]) * (0.45 if TOWN else 0.9):
             continue
         s = float(slope[idx])
         # A meadow strip along the road, then closed forest.
@@ -746,6 +909,8 @@ def terrain_material(name, crown_scale=0.22, rock_z=(0.6, 0.42)):
     c = mix(attr("rock"), c, rock)  # cliffs: from the height grid slope (face normals gave hard facets)  # only cliffs (> ~55 deg) are bare limestone
     c = mix(attr("verge"), c, verge)
     c = mix(attr("riverbed"), c, bed)
+    asphalt = ramp(noise(1.2, 3.0), 0.35, 0.65, lin("4F5256"), lin("5E6165"))
+    c = mix(attr("street"), c, asphalt)
     nt.links.new(c, emit.inputs["Color"])
     return m
 
@@ -820,7 +985,7 @@ def tree_proxies(coll, trees):
     bm = bmesh.new()
     sizes = {"kb_beech": (3.4, 3.0, 10.0), "kb_oak": (4.0, 2.8, 8.4), "kb_hornbeam": (2.6, 3.2, 7.6),
              "kb_maple": (3.0, 2.6, 6.2), "kb_pine": (2.4, 1.6, 11.2), "kb_bush": (1.6, 1.0, 1.0),
-             "kb_rock": (1.8, 1.0, 0.9)}
+             "kb_rock": (1.8, 1.0, 0.9), "kb_cypress": (1.0, 4.2, 4.6)}
     for t in trees:
         rx, ry, cy = sizes[t[0]]
         s = t[5]
@@ -828,6 +993,22 @@ def tree_proxies(coll, trees):
         bmesh.ops.create_icosphere(tmp, subdivisions=1, radius=1.0)
         for v in tmp.verts:
             v.co = Vector((t[1] + v.co.x * rx * s, -t[3] + v.co.y * rx * s, t[2] + cy * s + v.co.z * ry * s))
+        me = bpy.data.meshes.new("tmp")
+        tmp.to_mesh(me)
+        tmp.free()
+        bm.from_mesh(me)
+        bpy.data.meshes.remove(me)
+    for q in TOWN_PADS:          # 0.20.1 town houses: boxes (contact shade round each house)
+        if q.get("island"):
+            continue
+        tmp = bmesh.new()
+        bmesh.ops.create_cube(tmp, size=1.0)
+        fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
+        hgt = 12.0 if q["id"] == "kb_lc_block" else 7.0
+        for v in tmp.verts:
+            u, w, hh = v.co.x * (q["w"] - 3.0), v.co.y * (q["d"] - 3.0), (v.co.z + 0.5) * hgt
+            gx, gz = q["x"] + fz * u + fx * w, q["z"] - fx * u + fz * w
+            v.co = Vector((gx, -gz, q["y"] + hh))
         me = bpy.data.meshes.new("tmp")
         tmp.to_mesh(me)
         tmp.free()
@@ -848,6 +1029,7 @@ def main():
     t_all = time.time()
     coll = reset()
     os.makedirs(OUT, exist_ok=True)
+    resolve_town()
 
     def hfun(xs, zs):
         return height(xs, zs)
@@ -866,6 +1048,7 @@ def main():
                "doc": "float32 little-endian, row-major (z rows, x columns), Godot metres; ground height (no canopy)"},
               open(os.path.join(OUT, "heights.json"), "w"))
     write_lines(hs)
+    write_town()
     k = info["droad"] - info["edge"]
     forest = smooth(18.0, 40.0, k)
     verge = 1.0 - smooth(-0.5, 1.0, k)
@@ -876,14 +1059,15 @@ def main():
     plots = np.zeros_like(xs)
     for pl in PLOTS:
         plots = np.maximum(plots, 1.0 - smooth(pl[2] - 4.0, pl[2] + 6.0, np.sqrt((xs - pl[0]) ** 2 + (zs - pl[1]) ** 2)))
-    open_f = (1.0 - plots) * (1.0 - wet) * (1.0 - zm) * (1.0 - dry) * (1.0 - info["pad"])
+    open_f = (1.0 - plots) * (1.0 - wet) * (1.0 - zm) * (1.0 - dry) * (1.0 - info["pad"]) * (1.0 - info["clear"])
     can = can * open_f
     can_on = can_on * open_f
     forest = forest * (1.0 - plots) * (1.0 - wet) * (1.0 - 0.85 * zm) * (1.0 - dry)
     shown = hs + can
     gz_, gx_ = np.gradient(hs, CELL)
     cliff = smooth(1.1, 1.7, np.hypot(gx_, gz_))   # bare limestone above ~50 deg
-    attrs = {"forest": forest, "canopy": can_on, "verge": verge, "riverbed": riverbed, "dry": dry, "rock": cliff}
+    attrs = {"forest": forest * (1.0 - info["street"]), "canopy": can_on, "verge": verge, "riverbed": riverbed,
+             "dry": dry, "rock": cliff * (1.0 - info["street"]), "street": info["street"]}
     rmin = min((float(np.min(np.hypot(PTS[:, 0][:, None] - rv["pts"][:, 0][None, :],
                                       PTS[:, 2][:, None] - rv["pts"][:, 1][None, :]))) - rv["hw"] for rv in RIVERS),
                default=float("inf"))
@@ -944,7 +1128,10 @@ def main():
         # tiles carrying a landmark pad / wall run keep more (a pad cut into a slope
         # collapses badly at 0.06 - 0.19.2, the stadium beside the road)
         padded = bool(far.get("pads", False))
-        decimate(far, 0.4 if big else (0.5 if padded else 0.06), "border")
+        # 0.20.1: a tile full of town pads (most vertices protected) must keep more, or the
+        # collapse has to take protected ones (a house pad 2.7 m off in the far LOD)
+        town_tile = any(abs(q["x"] - cx) < 80.0 and abs(q["z"] - cz) < 80.0 for q in TOWN_PADS)
+        decimate(far, 0.4 if big else (0.75 if town_tile else (0.5 if padded else 0.06)), "border")
         fars.append(far)
         decimate(ob, 0.28, "road")
     check_far_tiles(fars, hs)
@@ -973,6 +1160,7 @@ def main():
     mopen = (1.0 - mwet) * (1.0 - mdry)
     msh = np.where(inner, mhs - 1.5, mhs + mcan * mopen)
     mattrs = {"forest": smooth(18.0, 40.0, mk) * (1.0 - mdry), "canopy": mcan_on * mopen, "verge": np.zeros_like(mxs),
+              "street": np.zeros_like(mxs),
               "riverbed": mriver, "dry": mdry,
               "rock": np.maximum(rock, smooth(1.0, 2.0, np.hypot(*np.gradient(mhs, MCELL))) * (1.0 - 0.5 * mdry))}
 

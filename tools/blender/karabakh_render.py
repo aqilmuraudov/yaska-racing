@@ -261,7 +261,8 @@ def place_trees(coll):
             coll.objects.link(ob)
 
 
-LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin", "karabakh_signs", "karabakh_shusha_town"]
+LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin", "karabakh_signs", "karabakh_shusha_town",
+                 "karabakh_lachin_town"]
 
 
 def place_landmarks(coll):
@@ -286,6 +287,12 @@ def place_landmarks(coll):
     lp = os.path.join(KB, "lines.json")
     if os.path.exists(lp):
         items += json.load(open(lp, encoding="utf-8"))["instances"]
+    tp = os.path.join(KB, "town.json")      # 0.20.1 the town fill (houses, roundabout islands)
+    if os.path.exists(tp):
+        items += json.load(open(tp, encoding="utf-8"))["instances"]
+    for t in json.load(open(os.path.join(KB, "trees.json"), encoding="utf-8"))["trees"]:
+        if t[0] == "kb_cypress":            # the town gardens' cypresses live in the town set
+            items.append([t[0], t[1], t[2], t[3], t[4], t[5]])
     n = 0
     for t in items:
         if t[0] not in proto:
@@ -293,6 +300,8 @@ def place_landmarks(coll):
         ob = bpy.data.objects.new(t[0], proto[t[0]].data)
         ob.location = B(t[1], t[2], t[3])
         ob.rotation_euler = (0.0, 0.0, t[4])
+        if len(t) > 5:
+            ob.scale = (t[5],) * 3
         coll.objects.link(ob)
         n += 1
         if t[0].startswith("kb_sign_"):   # flat stand-in for the waving flag (Godot: LandmarkKit.flag_mesh)
@@ -409,6 +418,9 @@ def short_map(sc, cam):
     span = max(max(xs) - min(xs), max(zs) - min(zs))
     if not ONLY or "overview" in ONLY:
         shoot(sc, cam, B(cx, span * 0.75, cz + span * 0.95), B(cx, 20, cz), f"{tag}_0_overview.jpg", lens=28)
+    if TRACK.get("town") and (not ONLY or "aerial" in ONLY):   # as the owner's aerial photos of the town
+        shoot(sc, cam, B(cx + 260, 150, cz + 330), B(cx - 20, 25, cz - 40), f"{tag}_0_aerial_1.jpg", lens=26)
+        shoot(sc, cam, B(cx - 60, 95, cz - 330), B(cx + 40, 25, cz + 10), f"{tag}_0_aerial_2.jpg", lens=24)
     for lm in TRACK.get("landmarks", []):
         name = f"{tag}_lm_{lm['id']}.jpg"
         if ONLY and not any(o in name for o in ONLY.split(",")):
@@ -508,6 +520,8 @@ def main():
         ("kb_25_mosque.jpg", B(142.6, 52.4, -232.8), B(160.6, 50, -284.8), 26),
         ("kb_26_vagif.jpg", B(-34.7, 49.8, -281.6), B(-21.4, 52, -249.2), 26),
         ("kb_20_university.jpg", B(760, 16, -470), B(800, 18, -522), 30),
+        ("kb_34_lachin_town.jpg", B(-470, 140, 190), B(-700, 20, -10), 26),     # 0.20.1 the town fill
+        ("kb_35_lachin_town_n.jpg", B(-640, 95, -330), B(-690, 20, 0), 26),
     ]
     for name, eye, look, lens in wide:
         if not ONLY or any(k in name for k in ONLY.split(",")):

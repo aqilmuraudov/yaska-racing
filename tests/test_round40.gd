@@ -73,10 +73,8 @@ func test_layout() -> void:
 		check(_gap(Vector2(float(lm.x), float(lm.z)) - f * 0.0) > 0.0, "%s off the road" % lm.id)
 	for id in ["kb_cinema", "kb_hotel", "kb_garden_cafe", "kb_sign_lachin"]:
 		check(ids.has(id), "%s on the map" % id)
-	var houses := 0
-	for lm: Dictionary in _td.raw.landmarks:
-		if String(lm.id).begins_with("kb_house"):
-			houses += 1
+	# 0.20.1: the houses are the town fill now (round 41 checks it in full)
+	var houses: int = (_td.raw.town.houses as Array).size()
 	check(houses >= 12, "town houses (%d)" % houses)
 	# the Həkəri beside the west leg, the boulevard by the road
 	var hk: Dictionary = _td.raw.rivers[0]
@@ -154,7 +152,7 @@ func test_race_scene_builds() -> void:
 	check(d.landmarks.has("flag_lachin"), "the flag on the sign")
 	var placed_houses := 0
 	for c in d.get_children():
-		if c is MultiMeshInstance3D and c.has_meta("instance_xforms") and String(c.get_meta("prop")).begins_with("kb_house"):
+		if c is MultiMeshInstance3D and c.has_meta("instance_xforms") and (String(c.get_meta("prop")).begins_with("kb_house") or String(c.get_meta("prop")).begins_with("kb_lc_house")):
 			placed_houses += (c.get_meta("instance_xforms") as Array).size()
 	check(placed_houses >= 12, "houses placed (%d)" % placed_houses)
 	var water := race.builder.get_node_or_null("Terrain/River_hakari")

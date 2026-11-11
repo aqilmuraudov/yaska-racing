@@ -31,7 +31,7 @@ func build_steps(td: TrackData, env: RaceEnvironment) -> Array[Callable]:
 		_place_kb_landmarks,
 		_place_kb_lines,
 		_place_kb_sky,
-		func(): pass,
+		_place_kb_town,
 		_flush_instances,
 		func(): _finish(env),
 	]
@@ -175,6 +175,21 @@ func _add_flag(parent: Node3D, top: Vector3, key: String) -> void:
 func _place_kb_lines() -> void:
 	var dir := String(data.raw.get("terrain_dir", ""))
 	var parsed = _read_json(dir + "/lines.json") if dir != "" else null
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for t: Array in parsed.instances:
+		var id := String(t[0])
+		if kb_model_ready(id):
+			add_instance(id, Transform3D(Basis(Vector3.UP, float(t[4])), Vector3(float(t[1]), float(t[2]), float(t[3]))))
+
+
+## 0.20.1 the Laçın town fill (owner's aerial photos): houses, blocks of flats
+## and roundabout islands on the pads the Blender terrain levelled for them
+## (karabakh_terrain.py -> town.json: module, x, y, z, yaw), all instanced.
+## The streets themselves are painted into the terrain texture.
+func _place_kb_town() -> void:
+	var dir := String(data.raw.get("terrain_dir", ""))
+	var parsed = _read_json(dir + "/town.json") if dir != "" else null
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for t: Array in parsed.instances:
