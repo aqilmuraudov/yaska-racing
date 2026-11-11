@@ -258,7 +258,7 @@ def place_trees(coll):
             coll.objects.link(ob)
 
 
-LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin"]
+LANDMARK_SETS = ["karabakh_khankendi", "karabakh_shusha", "karabakh_lachin", "karabakh_signs"]
 TRACK = json.load(open(os.path.join(ROOT, "data", "tracks", "karabakh.json"), encoding="utf-8"))
 
 
@@ -293,18 +293,18 @@ def place_landmarks(coll):
         ob.rotation_euler = (0.0, 0.0, t[4])
         coll.objects.link(ob)
         n += 1
-        if t[0] == "kb_shusha_sign":   # flat stand-in for the waving flag (Godot: LandmarkKit.flag_mesh)
+        if t[0].startswith("kb_sign_"):   # flat stand-in for the waving flag (Godot: LandmarkKit.flag_mesh)
             flag_stand_in(coll, ob)
     print("LANDMARKS placed", n)
 
 
 def flag_stand_in(coll, sign):
     import mathutils
-    top = mathutils.Vector((-5.6, 0.0, 10.6))   # SIGN_MAST_TOP (Godot x, -z, y)
+    top = mathutils.Vector((-12.6, 0.0, 17.0))   # SIGN_MAST_TOP (Godot x, -z, y); flies along +x
     for k, hx in enumerate(("00B5E2", "EF3340", "509E2F")):
         me = bpy.data.meshes.new("flag")
-        y0 = -k * 0.6
-        me.from_pydata([(0, 0, y0), (0, 3.6, y0), (0, 3.6, y0 - 0.6), (0, 0, y0 - 0.6)], [], [(0, 1, 2, 3)])
+        y0 = -k * 1.2
+        me.from_pydata([(0, 0, y0), (7.2, 0, y0), (7.2, 0, y0 - 1.2), (0, 0, y0 - 1.2)], [], [(0, 1, 2, 3)])
         me.materials.append(flat("flag%d" % k, hx, 0.7))
         ob = bpy.data.objects.new("Flag", me)
         ob.parent = sign
@@ -452,6 +452,12 @@ def main():
         ("kb_17_khankendi_overview.jpg", B(720, 75, -390), B(610, 5, -525), 24),
         ("kb_18_hocaz_from_lachin.jpg", B(-735, 23, 40), B(-1160, 140, -330), 30),
         ("kb_19_our_mountains.jpg", B(462, 17, -505), B(450, 16, -537), 30),
+        ("kb_28_sign_khankendi.jpg", B(819.5, 15.5, -417.1), B(834.4, 13.6, -488.5), 30),
+        ("kb_29_sign_shusha.jpg", B(296.1, 41.0, -234.2), B(238.5, 41.0, -254.6), 30),
+        ("kb_30_sign_lachin.jpg", B(-537.7, 27.2, -149.2), B(-604.6, 25.3, -154.4), 30),
+        ("kb_31_hakari_road.jpg", B(-757, 23.5, -12), B(-805, 12, 70), 28),
+        ("kb_32_stadium_road.jpg", B(644.0, 15.5, -529.6), B(587.6, 14.5, -475.6), 28),
+        ("kb_33_wall_road.jpg", B(320, 37.5, -246), B(200, 40, -225), 30),
         ("kb_21_lacinema.jpg", B(-706, 29, -92), B(-681.7, 27, -53.8), 26),
         ("kb_22_lachin_resort.jpg", B(-753.7, 40, 186), B(-683.8, 18, 147.1), 30),
         ("kb_23_boulevard_cafe.jpg", B(-852, 17, -22), B(-812, 11, 14), 26),

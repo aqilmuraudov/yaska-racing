@@ -44,34 +44,33 @@ COMPASS = {"N": (0.0, -1.0), "S": (0.0, 1.0), "E": (1.0, 0.0), "W": (-1.0, 0.0)}
 WANT = [
     # Xankəndi - Zəfər meydanı first (owner: "ən əsası")
     ("kb_victory_square", "khankendi", (600, -528), "N", 70, 64, 0, 0),
-    ("kb_university", "khankendi", (790, -490), "N", 46, 24, 2, 0),
-    ("kb_stadium", "khankendi", (585, -528), "S", 100, 74, 14, 0),
-    ("kb_our_mountains", "khankendi", (470, -500), "N", 16, 12, 22, 0),
+    ("kb_university", "khankendi", (790, -490), "N", 46, 24, 0, 0),
+    ("kb_stadium", "khankendi", (585, -528), "S", 100, 74, 0, 0),
+    ("kb_our_mountains", "khankendi", (470, -500), "N", 16, 12, 0, 0),
     # Şuşa
-    ("kb_shusha_sign", "shusha", (395, -330), "E", 14, 6, 0.5, 0),
     ("kb_mosque", "shusha", (150, -255), "N", 28, 32, 0, 0),
-    ("kb_vagif", "shusha", (-30, -272), "S", 18, 18, 2, 0),
-    # Laçın
+    ("kb_vagif", "shusha", (-30, -272), "S", 18, 18, 0, 0),
+    # Laçın: the Həkəri runs on the west / north side (boulevard, café), the town on the east / south side
     ("kb_cinema", "lachin", (-700, -80), "E", 32, 28, 0, 0),
-    ("kb_hotel", "lachin", (-735, 175), "E", 80, 46, 8, 0),
-    ("kb_house_a", "lachin", (-655, -105), "N", 12, 11, 0, 0),
-    ("kb_house_b", "lachin", (-765, -10), "E", 12, 11, 0, 0),
-    ("kb_house_c", "lachin", (-768, 75), "E", 12, 11, 0, 0),
-    ("kb_house_a", "lachin", (-752, 115), "E", 12, 11, 0, 0),
-    ("kb_house_b", "lachin", (-680, -100), "S", 12, 11, 0, 0),
-    ("kb_house_c", "lachin", (-718, -62), "S", 12, 11, 0, 0),
-    ("kb_house_a", "lachin", (-760, 45), "W", 12, 11, 0, 0),
-    ("kb_house_b", "lachin", (-748, 140), "W", 12, 11, 0, 0),
-    ("kb_house_c", "lachin", (-600, -128), "N", 12, 11, 0, 0),
-    ("kb_house_a", "lachin", (-620, -122), "S", 12, 11, 0, 0),
-    ("kb_house_b", "lachin", (-575, -135), "S", 12, 11, 0, 0),
-    ("kb_house_c", "lachin", (-762, -25), "W", 12, 11, 0, 0),
-    ("kb_house_a", "lachin", (-771, 95), "W", 12, 11, 0, 0),
-    ("kb_house_b", "lachin", (-690, 260), "E", 12, 11, 0, 0),
-    ("kb_house_c", "lachin", (-695, 245), "W", 12, 11, 0, 0),
-    ("kb_house_a", "lachin", (-715, 200), "W", 12, 11, 0, 0),
+    ("kb_hotel", "lachin", (-735, 175), "E", 80, 46, 0, 0),
+    ("kb_house_a", "lachin", (-640, -110), "S", 12, 11, 0, 0),
+    ("kb_house_b", "lachin", (-620, -120), "S", 12, 11, 0, 0),
+    ("kb_house_c", "lachin", (-600, -128), "S", 12, 11, 0, 0),
+    ("kb_house_a", "lachin", (-580, -134), "S", 12, 11, 0, 0),
+    ("kb_house_b", "lachin", (-730, -50), "E", 12, 11, 0, 0),
+    ("kb_house_c", "lachin", (-748, -25), "E", 12, 11, 0, 0),
+    ("kb_house_a", "lachin", (-758, 0), "E", 12, 11, 0, 0),
+    ("kb_house_b", "lachin", (-765, 25), "E", 12, 11, 0, 0),
+    ("kb_house_c", "lachin", (-768, 50), "E", 12, 11, 0, 0),
+    ("kb_house_a", "lachin", (-767, 75), "E", 12, 11, 0, 0),
+    ("kb_house_b", "lachin", (-762, 100), "E", 12, 11, 0, 0),
+    ("kb_house_c", "lachin", (-640, -112), "N", 12, 11, 0, 0),
+    ("kb_house_a", "lachin", (-615, -122), "N", 12, 11, 0, 0),
+    ("kb_house_b", "lachin", (-700, 230), "E", 12, 11, 0, 0),
+    ("kb_house_c", "lachin", (-680, 255), "E", 12, 11, 0, 0),
+    ("kb_house_a", "lachin", (-690, 225), "W", 12, 11, 0, 0),
 ]
-SMALL_SETBACK = {"kb_shusha_sign"}   # a sign stands close to the road (guardrail in front)
+SMALL_SETBACK = set()
 
 
 def nearest(x, z):
@@ -172,6 +171,9 @@ for lid, zone, hint, side, w, d, extra, shift in WANT:
             continue
         ok = True
         break
+    if not ok and lid.startswith("kb_house"):
+        print(f"{lid} at {hint}: no room, skipped")
+        continue
     assert ok, f"{lid} at {hint}: no room"
     # Model origin = footprint front centre? No: the footprint centre (models are built centred).
     # the pad sits 0.4 m under the lowest road point beside the footprint (the
@@ -186,13 +188,19 @@ for lid, zone, hint, side, w, d, extra, shift in WANT:
 
 # Lines ----------------------------------------------------------------------------------------
 lines = []
-# Şuşa fortress walls along the southern rim of the plateau, above the Daşaltı gorge.
-SH = (50.0, -255.0, 300.0, 150.0)
+# Şuşa fortress walls beside the plateau road, on its south (Daşaltı gorge) side,
+# 14 m from the road centre: seen all along the plateau (0.19.2).
+sec = [i for i in range(N) if 40.0 <= P[i][0] <= 345.0 and -330.0 <= P[i][2] <= -180.0]
 wall = []
-for x in np.arange(-100.0, 296.0, 4.0):
-    u = (x - SH[0]) / (SH[2] * 0.9)
-    z = SH[1] + SH[3] * 0.86 * math.sqrt(max(0.0, 1.0 - u * u))
-    wall.append([round(float(x), 2), round(z, 2), None])
+for i in sec[::2]:
+    t = P[(i + 3) % N][[0, 2]] - P[i - 3][[0, 2]]
+    t = t / np.linalg.norm(t)
+    sn = np.array([-t[1], t[0]])
+    if sn[1] < 0:
+        sn = -sn                       # the south side
+    q = np.array([P[i][0], P[i][2]]) + sn * (HW[i] + OW + 3.6 + 3.0)
+    wall.append([round(float(q[0]), 2), round(float(q[1]), 2), None])
+wall.sort(key=lambda q: q[0])          # west -> east: module +z = south (the gorge, outer side)
 lines.append({"id": "shusha_wall", "zone": "shusha", "module": "kb_wall_seg", "tower": "kb_wall_tower",
               "gate": "kb_wall_gate", "step": 8.0, "tower_every": 6, "gate_at": 0.55, "width": 6.0, "points": wall})
 # Həkəri boulevard: a terrace on the east bank in Laçın (the road side).
@@ -200,7 +208,7 @@ hk = next(r for r in RIVERS if r["id"] == "hakari")
 blvd = []
 for k in range(len(hk["pts"]) - 1):
     p, q = hk["pts"][k], hk["pts"][k + 1]
-    if not (-170.0 <= p[1] <= 110.0):
+    if not (-90.0 <= p[1] <= 215.0):
         continue
     t = (q - p) / np.linalg.norm(q - p)
     n = np.array([-t[1], t[0]])
@@ -209,6 +217,10 @@ for k in range(len(hk["pts"]) - 1):
     off = hk["hw"] + 6.0
     blvd.append([round(float(p[0] + n[0] * off), 2), round(float(p[1] + n[1] * off), 2),
                  round(float(hk["lev"][k]) + 1.8, 2)])
+# keep the stretch where the river runs beside the road (its ends turn away)
+_g = [road_gap([q[0]], [q[1]]) for q in blvd]
+_in = [k for k, g in enumerate(_g) if g < 4.5 + 12.0]
+blvd = blvd[_in[0]:_in[-1] + 1]
 lines.append({"id": "hakari_boulevard", "zone": "lachin", "module": "kb_blvd_seg", "step": 10.0, "width": 9.0,
               "points": blvd})
 for ln in lines:
@@ -233,21 +245,26 @@ peaks = [{"id": "hocaz", "x": _pk[0], "z": _pk[1], "h": 235.0, "r": 360.0,
 # river (owner: "bulvar sahilində"), on the boulevard's terrace height.
 CAFE_W, CAFE_D = 22.0, 16.0
 bp = np.array([[q[0], q[1]] for q in blvd])
-k = int(np.argmin(np.hypot(bp[:, 0] + 835.0, bp[:, 1] - 15.0)))
+# where the river swings out for it (road samples 948-978, see the Həkəri course): the
+# boulevard point there farthest from the road
+_bulge = [k for k in range(len(bp)) if 0.0 <= bp[k][1] <= 60.0]
+k = max(_bulge, key=lambda k: float(np.min(np.hypot(P[:, 0] - bp[k][0], P[:, 2] - bp[k][1]))))
 t = bp[min(k + 1, len(bp) - 1)] - bp[max(k - 1, 0)]
 t /= np.linalg.norm(t)
 n_land = np.array([-t[1], t[0]])
 if n_land[0] < 0:
     n_land = -n_land
 c = bp[k] + n_land * (9.0 / 2 + CAFE_D / 2 + 0.5)
-f = -n_land
+f = n_land                     # terrace and pergola face the road (seen from the race)
 yaw = math.atan2(f[0], f[1])
 xs, zs = rect_points(c[0], c[1], yaw, CAFE_W, CAFE_D)
 assert river_gap(xs, zs) > 6.0 and road_gap(xs, zs) > CLEAR, "café"
-placed.append({"id": "kb_garden_cafe", "x": round(float(c[0]), 2), "y": round(float(blvd[k][2]), 2),
+# its pad at the lowest boulevard height beside it (its banks must not bury the paving)
+cafe_y = min(q[2] for q in blvd if math.hypot(q[0] - c[0], q[1] - c[1]) < 40.0)
+placed.append({"id": "kb_garden_cafe", "x": round(float(c[0]), 2), "y": round(float(cafe_y), 2),
                "z": round(float(c[1]), 2), "yaw": round(yaw, 4), "w": CAFE_W, "d": CAFE_D, "zone": "lachin",
                "setback": round(road_gap(xs, zs), 2)})
-print(f"kb_garden_cafe on the boulevard ({c[0]:.1f}, {c[1]:.1f}) y {blvd[k][2]:.1f}, "
+print(f"kb_garden_cafe on the boulevard ({c[0]:.1f}, {c[1]:.1f}) y {cafe_y:.1f}, "
       f"river bank {river_gap(xs, zs):.1f} m")
 for q in placed[:-1]:
     fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
@@ -256,12 +273,73 @@ for q in placed[:-1]:
         v = (x - q["x"]) * fx + (z - q["z"]) * fz
         assert not (abs(u) < q["w"] / 2 and abs(v) < q["d"] / 2), "café overlaps " + q["id"]
 
+SIGN_W, SIGN_D = 26.0, 4.0
+SIGNS = {"khankendi": "kb_sign_khankendi", "shusha": "kb_sign_shusha", "lachin": "kb_sign_lachin"}
+
+
+def clashes(xs, zs, margin=4.0):
+    for q in placed:
+        fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
+        for x, z in zip(xs, zs):
+            u = (x - q["x"]) * fz - (z - q["z"]) * fx
+            v = (x - q["x"]) * fx + (z - q["z"]) * fz
+            if abs(u) < q["w"] / 2 + margin and abs(v) < q["d"] / 2 + margin:
+                return q["id"]
+    return None
+
+
+def wall_clash(xs, zs):
+    for ln in lines:
+        lp = np.array([[q[0], q[1]] for q in ln["points"]])
+        for x, z in zip(xs, zs):
+            if float(np.min(np.hypot(lp[:, 0] - x, lp[:, 1] - z))) < ln["width"] / 2 + 3.0:
+                return True
+    return False
+
+
+for zid, zx, zz, zr in track["zones"]:
+    if zid not in SIGNS:
+        continue
+    inside = np.hypot(P[:, 0] - zx, P[:, 2] - zz) < zr
+    # first sample (in driving order) that enters the zone; finish line in Xankəndi: wrap
+    entry = next(i for i in range(N) if inside[i] and not inside[i - 1])
+    done = False
+    for back in range(8, 200, 3):
+        i = (entry - back) % N
+        t = P[(i + 3) % N][[0, 2]] - P[i - 3][[0, 2]]
+        t = t / np.linalg.norm(t)
+        right = np.array([-t[1], t[0]])
+        f = -t * math.cos(math.radians(30)) - right * math.sin(math.radians(30))   # faces the karts
+        yaw = math.atan2(f[0], f[1])
+        for off in np.arange(HW[i] + OW + 1.5 + SIGN_W / 2 * 0.5, HW[i] + OW + 20.0, 1.0):
+            c = np.array([P[i][0], P[i][2]]) + right * off
+            xs, zs = rect_points(c[0], c[1], yaw, SIGN_W, SIGN_D, 2.0)
+            if road_gap(xs, zs) < 1.5 or river_gap(xs, zs) < 6.0 or clashes(xs, zs) or wall_clash(xs, zs):
+                continue
+            done = True
+            break
+        if done:
+            break
+    assert done, zid
+    near = np.hypot(P[:, 0] - c[0], P[:, 2] - c[1]) < 30.0
+    placed.append({"id": SIGNS[zid], "x": round(float(c[0]), 2), "y": round(float(P[near, 1].min()) - 0.4, 2),
+                   "z": round(float(c[1]), 2), "yaw": round(yaw, 4), "w": SIGN_W, "d": SIGN_D, "zone": zid,
+                   "setback": round(road_gap(xs, zs), 2)})
+    print(f"{SIGNS[zid]:20s} ({c[0]:7.1f}, {c[1]:7.1f}) {back * 2} m before the town, "
+          f"{road_gap(xs, zs):.1f} m behind the run-off")
+
 # Plots (circles) covering every footprint and line --------------------------------------------
 plots = []
 for q in placed:
     # the footprint and a view lane in front of it, open to 2.5 m behind the run-off
     s = 8.0
-    lane = 0.0 if q["id"] == "kb_garden_cafe" else max(q["setback"] - 2.5 - 2.0, 0.0)
+    # signs: 30 m open in front of them (towards the oncoming karts)
+    if q["id"].startswith("kb_sign"):
+        lane = 30.0
+    elif q["id"] == "kb_garden_cafe":
+        lane = 0.0
+    else:
+        lane = max(q["setback"] - 2.5 - 2.0, 0.0)
     fx, fz = math.sin(q["yaw"]), math.cos(q["yaw"])
     cx, cz = q["x"] + fx * lane / 2, q["z"] + fz * lane / 2
     xs, zs = rect_points(cx, cz, q["yaw"], max(q["w"] - s, 0.1), max(q["d"] + lane - s, 0.1), s)

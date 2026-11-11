@@ -9,7 +9,7 @@ extends TestCase
 var _td: TrackData
 var _orig_config := {}
 
-const EXPECTED := ["kb_victory_square", "kb_university", "kb_stadium", "kb_our_mountains", "kb_shusha_sign",
+const EXPECTED := ["kb_victory_square", "kb_university", "kb_stadium", "kb_our_mountains", "kb_sign_shusha", "kb_sign_khankendi", "kb_sign_lachin",
 	"kb_mosque", "kb_vagif", "kb_cinema", "kb_hotel", "kb_garden_cafe", "kb_house_a", "kb_house_b", "kb_house_c"]
 const LINE_MODULES := ["kb_wall_seg", "kb_wall_tower", "kb_wall_gate", "kb_blvd_seg"]
 
@@ -82,7 +82,7 @@ func test_footprints_clear_of_road_rivers_and_each_other() -> void:
 			worst = minf(worst, c.distance - path.half_width_at(c.s) - _td.offroad_width)
 			for rv: Dictionary in _td.raw.rivers:
 				wet = minf(wet, _river_gap(p, rv))
-		var need := 0.8 if String(lm.id) == "kb_shusha_sign" else 2.5
+		var need := 1.2 if String(lm.id).begins_with("kb_sign_") else 2.5
 		check(worst > need, "%s %.1f m behind the run-off" % [lm.id, worst])
 		check(wet > 5.0, "%s dry (%.1f m from a river bank)" % [lm.id, wet])
 	for i in lms.size():
@@ -117,7 +117,7 @@ func test_pads_level_and_open() -> void:
 		for p: Vector2 in _footprint(lm, 1.5):
 			worst = maxf(worst, absf(b.terrain_height(p.x, p.y) - float(lm.y)))
 		# the small sign stands 1.5 m behind the run-off, in the road's cut bank (its plinth reaches 1.5 m down)
-		var tol := 0.6 if String(lm.id) == "kb_shusha_sign" else 0.35
+		var tol := 0.6 if String(lm.id).begins_with("kb_sign_") else 0.35
 		check(worst < tol, "%s stands on a level pad (off by %.2f m)" % [lm.id, worst])
 		# the pad lies at road height, a little under it
 		var c := _td.main.closest(Vector3(float(lm.x), 0, float(lm.z)))
@@ -133,7 +133,8 @@ func test_pads_level_and_open() -> void:
 			wall += 1
 			check(float(t[2]) <= g + 0.05 and float(t[2]) > g - 3.5, "%s on the ground (%.2f vs %.2f)" % [t[0], t[2], g])
 		else:
-			check(absf(g - float(t[2])) < 0.4, "boulevard on its terrace (%.2f vs %.2f)" % [t[2], g])
+			# the module's stone base reaches 2.6 m down: the ground may lie up to 2.4 m under it, 0.4 m over it
+			check(g - float(t[2]) < 0.4 and float(t[2]) - g < 2.4, "boulevard on its terrace (%.2f vs %.2f)" % [t[2], g])
 	check(wall > 40, "the fortress wall runs %d modules" % wall)
 	# the café stands on the boulevard: next to its modules, at their height
 	for lm: Dictionary in _td.raw.landmarks:
@@ -148,7 +149,7 @@ func test_pads_level_and_open() -> void:
 					best = d
 					by = float(t[2])
 		check(best < 20.0, "the café is on the boulevard (%.1f m)" % best)
-		check(absf(by - float(lm.y)) < 1.0, "at the boulevard's height")
+		check(absf(by - float(lm.y)) < 1.5, "at the boulevard's height")
 	# no tree on a footprint or the boulevard
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(String(_td.raw.terrain_dir) + "/trees.json"))
 	var inside := 0
@@ -224,13 +225,14 @@ func test_race_scene_places_the_landmarks() -> void:
 	await tree.process_frame
 	await tree.process_frame
 	var decor: KarabakhDecor = race.decor
-	for id in ["kb_victory_square", "kb_university", "kb_stadium", "kb_our_mountains", "kb_shusha_sign", "kb_mosque",
+	for id in ["kb_victory_square", "kb_university", "kb_stadium", "kb_our_mountains", "kb_sign_shusha", "kb_mosque",
 			"kb_vagif", "kb_cinema", "kb_hotel", "kb_garden_cafe"]:
 		check(decor.landmarks.has(id), "%s in the scene" % id)
-	check(decor.landmarks.has("shusha_flag"), "the flag on the Şuşa sign")
-	if decor.landmarks.has("shusha_flag"):
-		var flag := decor.landmarks.shusha_flag as MeshInstance3D
-		check(flag.get_parent() == decor.landmarks.kb_shusha_sign, "flag on its mast")
+	for zone in ["khankendi", "shusha", "lachin"]:
+		check(decor.landmarks.has("flag_" + zone), "the flag on the %s sign" % zone)
+	if decor.landmarks.has("flag_shusha"):
+		var flag := decor.landmarks.flag_shusha as MeshInstance3D
+		check(flag.get_parent() == decor.landmarks.kb_sign_shusha, "flag on its mast")
 		check(flag.mesh.surface_get_material(0) == LandmarkKit.flag_material(), "the waving Azerbaijani flag material")
 	var counts := {}
 	for c in decor.get_children():

@@ -3,9 +3,7 @@
   blender --background --factory-startup --python tools/blender/karabakh_shusha.py -- --bake-res 4096 --tex-res 2048
 Same pipeline as the other prop sets (kart_common.run). Frame: x along the
 road / the wall run, y up, z towards the road (front), origin on the pad.
-  kb_shusha_sign  the "ŞUŞA" sign at the entrance to the town (stone wall,
-                  big letters) with the flag mast; the Azerbaijani flag is the
-                  waving LandmarkKit flag added in Godot at SIGN_MAST_TOP.
+  (0.19.2: the ŞUŞA entry sign moved to karabakh_signs.py with the other towns'.)
   kb_mosque       Yuxarı Gövhər Ağa məscidi: grey stone prayer hall, the
                   arched front, two cylindrical brick minarets with
                   horizontal belts and balconies.
@@ -55,8 +53,8 @@ PAINT_MAT = "glass"
 LOOK = {"limestone": "cobble", "limestone_dark": "cobble", "grey_stone": "cut", "brick": "brick",
         "brick_light": "brick", "trim": "plain", "marble_white": "plain", "marble_grey": "plain",
         "marble_red": "plain", "grass": "grass", "paving": "paving", "roof": "plain"}
-GROUPS = ["kb_shusha_sign", "kb_mosque", "kb_vagif", "kb_wall_seg", "kb_wall_tower", "kb_wall_gate"]
-UV_SCALE = {"kb_shusha_sign": 1.1, "kb_mosque": 1.0, "kb_vagif": 1.0, "kb_wall_seg": 1.2, "kb_wall_tower": 1.0,
+GROUPS = ["kb_mosque", "kb_vagif", "kb_wall_seg", "kb_wall_tower", "kb_wall_gate"]
+UV_SCALE = {"kb_mosque": 1.0, "kb_vagif": 1.0, "kb_wall_seg": 1.2, "kb_wall_tower": 1.0,
             "kb_wall_gate": 1.1}
 FAR_RATIO = {g: 0.4 for g in GROUPS}
 F = S.FOUND
@@ -273,7 +271,7 @@ def build(hi):
     _build(hi)
 
 
-_build = S.run_set(GROUPS, {"kb_shusha_sign": build_sign, "kb_mosque": build_mosque, "kb_vagif": build_vagif,
+_build = S.run_set(GROUPS, {"kb_mosque": build_mosque, "kb_vagif": build_vagif,
                             "kb_wall_seg": build_wall_seg, "kb_wall_tower": build_wall_tower,
                             "kb_wall_gate": build_wall_gate}, 60.0)
 K.CAGE, K.RAY, K.AO_DIST = 0.08, 0.2, 2.0

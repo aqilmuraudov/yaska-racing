@@ -349,19 +349,6 @@ def height(xs, zs, with_canopy=False):
     # Level pads under the landmarks and terraces under the boulevard (after
     # the road cut: their edges stay >= 3 m behind the run-off).
     pad = np.zeros(xs.shape)
-    mbest = np.zeros(xs.shape)
-    ybest = np.zeros(xs.shape)
-    for lm in LANDMARKS:     # the nearest pad wins (no neighbour pulls a pad off level)
-        fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
-        u = np.abs((xs - lm["x"]) * fz - (zs - lm["z"]) * fx) - lm["w"] / 2
-        v = np.abs((xs - lm["x"]) * fx + (zs - lm["z"]) * fz) - lm["d"] / 2
-        e = np.maximum(u, v)                     # < 0 inside the footprint
-        m = 1.0 - smooth(1.0, 24.0, e)   # gentle banks round the pad
-        better = m > mbest
-        mbest = np.where(better, m, mbest)
-        ybest = np.where(better, lm["y"], ybest)
-        pad = np.maximum(pad, 1.0 - smooth(0.0, 2.0, e))
-    h = h * (1.0 - mbest) + ybest * mbest
     for ln in LINES:
         if ln["points"][0][2] is None:      # a wall on the ground: protect its corridor from decimation only
             pts = ln["points"]
@@ -387,6 +374,20 @@ def height(xs, zs, with_canopy=False):
         m = 1.0 - smooth(ln["width"] / 2, ln["width"] / 2 + 10.0, d)
         h = h * (1.0 - m) + ly * m
         pad = np.maximum(pad, 1.0 - smooth(ln["width"] / 2, ln["width"] / 2 + 2.0, d))
+    # pads last: a pad on a terrace (the café on the boulevard) stays exactly level
+    mbest = np.zeros(xs.shape)
+    ybest = np.zeros(xs.shape)
+    for lm in LANDMARKS:     # the nearest pad wins (no neighbour pulls a pad off level)
+        fx, fz = math.sin(lm["yaw"]), math.cos(lm["yaw"])
+        u = np.abs((xs - lm["x"]) * fz - (zs - lm["z"]) * fx) - lm["w"] / 2
+        v = np.abs((xs - lm["x"]) * fx + (zs - lm["z"]) * fz) - lm["d"] / 2
+        e = np.maximum(u, v)                     # < 0 inside the footprint
+        m = 1.0 - smooth(1.0, 24.0, e)   # gentle banks round the pad
+        better = m > mbest
+        mbest = np.where(better, m, mbest)
+        ybest = np.where(better, lm["y"], ybest)
+        pad = np.maximum(pad, 1.0 - smooth(0.0, 2.0, e))
+    h = h * (1.0 - mbest) + ybest * mbest
     # the road rule again: pads / terraces never lift the ground over the verge
     h = np.minimum(h, cut_max)
     h = np.where(k < 0.0, yroad - 0.7, h)
@@ -896,6 +897,8 @@ def main():
                     vg.add([v.index], 1.0, "REPLACE")
                 if border or info["pad"][gz, gx] > 0.0:   # far tiles keep pads / wall runs too
                     vgb.add([v.index], 1.0, "REPLACE")
+                if info["pad"][gz, gx] > 0.0:
+                    ob["pads"] = True
             tiles.append(ob)
             tj += 1
         ti += 1
@@ -918,7 +921,10 @@ def main():
         cx = np.mean([v.co.x for v in far.data.vertices])
         cz = -np.mean([v.co.y for v in far.data.vertices])
         big = any(math.hypot(cx - pk["x"], cz - pk["z"]) < pk["r"] for pk in PEAKS)
-        decimate(far, 0.4 if big else 0.06, "border")
+        # tiles carrying a landmark pad / wall run keep more (a pad cut into a slope
+        # collapses badly at 0.06 - 0.19.2, the stadium beside the road)
+        padded = bool(far.get("pads", False))
+        decimate(far, 0.4 if big else (0.5 if padded else 0.06), "border")
         fars.append(far)
         decimate(ob, 0.28, "road")
     check_far_tiles(fars, hs)

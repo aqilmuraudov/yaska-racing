@@ -365,9 +365,11 @@ Owner's brief: famous places of Karabakh (Laçın, Şuşa, Xankəndi, the Xudaf�
 | autopilot lap | 174.9 s (seafront 51 s) → `TrackList.LAP_SCALE` 3.4 |
 | barriers | `THEME_FOREST` style "guardrail": galvanised grey, white reflector line, 0.85 m |
 | zones | `zones` [id, x, z, radius]: khankendi 150, shusha 190, lachin 150, khudafarin 210 m - flattened 75 %, 90 % fewer trees, no canopy |
-| rivers | `rivers`: araz width 64, level −2.6; hakari width 22, `drop` 26 → −2.4; bed 1.4 m under the water; road ≥ 31 m from a bank |
+| rivers | `rivers`: araz width 64, level −2.6; hakari width 22, `drop` 43.5 → −2.4 (0.19.2: in Laçın it runs beside the road, centre 37 m from the road centre, 57 m at the café; water 2.6–6 m under the road there); bed 1.4 m under the water; road ≥ 26 m from a bank |
 | bridges | `bridges`: khudafarin15 at x 80, khudafarin11 at x −170 (across the Araz, north-south) |
-| landmarks | `landmarks` [id, x, y, z, yaw, w, d, zone, setback] from `tools/karabakh_layout.py` (footprint w along the road, d deep, front +z to the road; pad y); `lines` (shusha_wall: 8 m modules on the plateau rim, a tower every 6, one gate; hakari_boulevard: 10 m modules on a terrace 1.8 m over the river); `peaks` (hocaz: x -1150, z -300, h 235, r 360, cliff face towards Laçın) |
+| landmarks | `landmarks` [id, x, y, z, yaw, w, d, zone, setback] from `tools/karabakh_layout.py` (footprint w along the road, d deep, front +z to the road; pad y); `lines` (shusha_wall: 8 m modules beside the plateau road on its gorge side, 3.6 m behind the run-off, a tower every 6, one gate; hakari_boulevard: 10 m modules on a terrace 1.8 m over the river); `peaks` (hocaz: x -1150, z -300, h 235, r 360, cliff face towards Laçın) |
+| entry signs | `kb_sign_khankendi / shusha / lachin` (`karabakh_signs.py`): 22 m wall, letters 4–5 m, mast top (-12.6, 17, 0) = `KarabakhDecor.SIGN_MAST_TOP`, flag 7.2 × 3.6 m flying +x; placed 16–58 m before each town on the right, 1.5 m+ behind the run-off, turned 30° to the karts, 30 m forest-free lane in front |
+| setbacks | every landmark front 3–9 m behind the run-off (`extra` 0 in `WANT`); far terrain LOD keeps 0.5 of a tile carrying a pad (0.06 elsewhere, 0.4 for Hoçaz) |
 | landmark plots | circles covering every footprint + its view lane and the lines (forest / canopy cleared, `KarabakhDecor._reserved`), never over the run-off |
 Pipeline (headless / background only):
 1. `godot --headless --path . -s tools/export_road_samples.gd -- karabakh` → `tools/blender/out/karabakh_road.json` (the road is TrackPath's)

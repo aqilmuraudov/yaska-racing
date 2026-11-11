@@ -396,8 +396,9 @@ def build_blvd(hi):
     S.box(f"{g}_benchback_{tag}", (2.0, 0.5, 0.1), (2.6, 1.0, 2.95), "wood", g, hi)
     for sx in (-1, 1):
         S.box(f"{g}_benchleg{sx}_{tag}", (0.1, 0.45, 0.45), (2.6 + sx * 0.85, 0.47, 3.2), "frame", g, hi, bevel=0.0)
-    S.cylinder(f"{g}_tt_{tag}", 0.18, 0.3, 2.8, (-2.5, -3.7), "trunk", g, hi, seg=(5, 8))
-    S.tree_ball(f"{g}_tc_{tag}", (-2.5, 4.2, -3.7), 1.8, "leaf", g, hi, 1.0)
+    # 0.19.2: no tree on the land side - the river must be seen from the road
+    S.slab(f"{g}_planter_{tag}", -3.3, -1.7, 0.25, 0.75, -4.3, -3.2, "stone", g, hi)
+    S.tree_ball(f"{g}_shrub_{tag}", (-2.5, 1.1, -3.75), 0.7, "flower", g, hi, 1.0)
 
 
 def build(hi):

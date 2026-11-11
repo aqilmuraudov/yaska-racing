@@ -147,24 +147,27 @@ func _place_kb_landmarks() -> void:
 			continue
 		var node := _landmark_prop(id, p, yaw, id.trim_prefix("kb_").to_pascal_case())
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		if id == "kb_shusha_sign":
-			_add_flag(node, SIGN_MAST_TOP)
+		if id.begins_with("kb_sign_"):
+			_add_flag(node, SIGN_MAST_TOP, "flag_" + String(lm.zone))
 
 
-## Top of the flag mast on the Şuşa sign (model space, kb_shusha_sign).
-const SIGN_MAST_TOP := Vector3(-5.6, 10.6, 0.0)
+## 0.19.2 town entry signs (tools/blender/karabakh_signs.py): top of the flag
+## mast at the sign's left end (model space).
+const SIGN_MAST_TOP := Vector3(-12.6, 17.0, 0.0)
+const SIGN_FLAG := Vector2(7.2, 3.6)
 
 
-## The Azerbaijani flag (waving shader, as on the seafront) on a mast top.
-func _add_flag(parent: Node3D, top: Vector3) -> void:
+## The Azerbaijani flag (waving shader, as on the seafront) on a mast top,
+## flying to the right (+x) over the sign so the karts see its face.
+func _add_flag(parent: Node3D, top: Vector3, key: String) -> void:
 	var f := MeshInstance3D.new()
 	f.name = "Flag"
-	f.mesh = LandmarkKit.flag_mesh(3.6, 1.8)
-	f.position = top
+	f.mesh = LandmarkKit.flag_mesh(SIGN_FLAG.x, SIGN_FLAG.y)
+	f.transform = Transform3D(Basis(Vector3.UP, PI * 0.5), top)
 	f.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	f.extra_cull_margin = 3.0
+	f.extra_cull_margin = 4.0
 	parent.add_child(f)
-	landmarks["shusha_flag"] = f
+	landmarks[key] = f
 
 
 ## Wall segments / towers / the gate of the Şuşa fortress along the plateau

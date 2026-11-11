@@ -1,6 +1,17 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-10 · Build: 0.19.1 · Engine: Godot 4.4.1-stable
+Date: 2026-11-11 · Build: 0.19.2 · Engine: Godot 4.4.1-stable
+
+## Update 0.19.2 (versionCode 49) — Qarabağ: town entry signs with the flag, everything beside the road
+- **Owner (2026-11-11):** at the entry of every town a big sign with its name and the flag; the buildings and sights of the towns beside the road so all are seen; the Həkəri and the things by it (restaurant etc.) beside the road so they are seen while racing.
+- **Entry signs** (`tools/blender/karabakh_signs.py`, new set `assets/models/karabakh_signs`): XANKƏNDİ, ŞUŞA, LAÇIN - a 22 m limestone wall with a dark granite board, 4-5 m white letters, a flower bed and a 17 m mast; the Azerbaijani flag (waving LandmarkKit flag, 7.2 x 3.6 m) flies to the right over the letters. Placed by `tools/karabakh_layout.py` 16-58 m before each town on the right of the road, 1.6-1.9 m behind the run-off, turned 30° to face the oncoming karts, with 30 m kept free of forest in front. The old small ŞUŞA sign is gone.
+- **Beside the road:** every landmark front is now 3-9 m behind the run-off (was up to 25 m: stadium, "Biz və bizim dağlar", hotel); the Şuşa fortress wall runs right beside the plateau road on its gorge side (3.6 m behind the run-off, 32 segments, 6 towers, the gate) instead of on the far rim; Laçın's 16 houses on the town side of the road.
+- **Həkəri in Laçın:** the river was moved to run beside the road through the whole town (outside of the bend, its bank 26 m from the road centre; it swings out 20 m where the café stands); its water level is 2.6-6 m under the road there (was ~10 m lower and 80 m away). The boulevard (29 modules, 4.3 m behind the run-off) lies between the road and the water; its land-side trees were replaced by low flower planters so the water is seen from the road. The garden café stands between the road and the boulevard, its terrace and pergola facing the road.
+- Terrain build: tiles with a landmark pad keep half their triangles in the far LOD (a pad cut into a slope beside the road collapsed by up to 7.7 m at 0.06; the build check fails above 0.5 m - worst now 0.15 m); terraces are laid before the pads, so a pad on a terrace (the café) stays level.
+- Tests: round 37 (each town's sign before the town, on the right, facing the karts, close to the road; every landmark front <= 10 m behind the run-off, 14 m for the café; no tree between the road and a landmark front; the Həkəri beside the road for most of Laçın and never closer than 12 m; boulevard and café by the road, café facing it; the wall by the road); round 36 updated (three signs + flags, boulevard module base depth).
+- Strict suite: **285 methods, 9345 checks, 0 failures, 0 script errors**. Headless Qarabağ race (day, autopilot): finished, 174.9 s.
+- Build: `_builds/YaskaRacing-0.19.2-v49-debug.apk`, 276.0 MB, versionCode 49, signed with the usual key (SHA-256 726cd353…6e25d9). Not installed on the phone yet (not connected).
+- Review renders: `docs/screenshots/0.19.0/kb_28..kb_33` (three signs, the Həkəri by the road, the stadium, the wall) and the updated Laçın views.
 
 ## Update 0.19.1 (versionCode 48) — the Qarabağ landmarks the owner named
 - **Owner's list (2026-11-10):** Şuşa - the fortress walls, Yuxarı Gövhər Ağa mosque, Vaqif's mausoleum, the ŞUŞA sign at the entrance with the Azerbaijani flag; Xankəndi - "Biz və bizim dağlar", Zəfər meydanı ("ən əsası"), the stadium, Qarabağ University; Laçın - Hoçaz mountain ("mütləq"), the Həkəri boulevard with a garden café / restaurant, LaCinema, town houses, Lachin Resort & Spa. All built.

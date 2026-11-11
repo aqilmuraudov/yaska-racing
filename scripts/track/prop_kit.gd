@@ -304,7 +304,6 @@ const GLTF_PROPS := {
 	"kb_university": "res://assets/models/karabakh_khankendi/karabakh_khankendi",
 	"kb_stadium": "res://assets/models/karabakh_khankendi/karabakh_khankendi",
 	"kb_our_mountains": "res://assets/models/karabakh_khankendi/karabakh_khankendi",
-	"kb_shusha_sign": "res://assets/models/karabakh_shusha/karabakh_shusha",
 	"kb_mosque": "res://assets/models/karabakh_shusha/karabakh_shusha",
 	"kb_vagif": "res://assets/models/karabakh_shusha/karabakh_shusha",
 	"kb_wall_seg": "res://assets/models/karabakh_shusha/karabakh_shusha",
@@ -317,6 +316,10 @@ const GLTF_PROPS := {
 	"kb_house_b": "res://assets/models/karabakh_lachin/karabakh_lachin",
 	"kb_house_c": "res://assets/models/karabakh_lachin/karabakh_lachin",
 	"kb_blvd_seg": "res://assets/models/karabakh_lachin/karabakh_lachin",
+	# 0.19.2 town entry signs (tools/blender/karabakh_signs.py)
+	"kb_sign_khankendi": "res://assets/models/karabakh_signs/karabakh_signs",
+	"kb_sign_shusha": "res://assets/models/karabakh_signs/karabakh_signs",
+	"kb_sign_lachin": "res://assets/models/karabakh_signs/karabakh_signs",
 	# 0.19.0 the Xudafərin bridges (tools/blender/karabakh_bridges.py)
 	"kb_br_pier": "res://assets/models/karabakh_bridges/karabakh_bridges",
 	"kb_br_arch_w": "res://assets/models/karabakh_bridges/karabakh_bridges",
