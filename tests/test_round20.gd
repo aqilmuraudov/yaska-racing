@@ -50,7 +50,7 @@ func _host() -> Control:
 
 func test_track_list() -> void:
 	# 0.13.0: İçərişəhər added as the third city; 0.18.0 Qarabağ the fourth.
-	check_eq(TrackList.IDS, ["seafront_sprint", "downtown_towers", "old_city", "karabakh", "karabakh_shusha"], "five tracks, seafront first")
+	check_eq(TrackList.IDS, ["seafront_sprint", "downtown_towers", "old_city", "karabakh", "karabakh_shusha", "karabakh_lachin"], "six tracks, seafront first")
 	check_eq(TrackList.valid("nope"), "seafront_sprint", "unknown -> seafront")
 	TranslationServer.set_locale("az")
 	check_eq(tr(TrackList.name_key("downtown_towers")), "Göydələnlər şəhəri", "Azerbaijani name")

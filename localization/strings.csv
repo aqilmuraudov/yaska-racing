@@ -588,6 +588,13 @@ TROPHY_KS_QUICK_PODIUM,Shusha: podium in a quick race,Şuşa: sürətli yarışd
 TROPHY_KS_QUICK_WIN,Shusha: win %d quick races,Şuşa: %d sürətli yarışda qalib gəl
 TROPHY_KS_TT_FINISH,Shusha: %d time trials,Şuşa: %d vaxta qarşı yarış
 TROPHY_KS_TT_RECORD,Shusha: beat your record %d times,Şuşa: rekordunu %d dəfə yenilə
+TRACK_KB_LACHIN,Lachin,Laçın
+TRACK_KB_LACHIN_DESC,"Along the Hakari: the boulevard and the garden café, LaCinema, the resort hotel, Hochaz above","Həkəri boyunca: bulvar və bağ-kafe, LaCinema, otel, yuxarıda Hoçaz dağı"
+TROPHY_KL_QUICK_FINISH,Lachin: finish a quick race,Laçın: sürətli yarışı bitir
+TROPHY_KL_QUICK_PODIUM,Lachin: podium in a quick race,Laçın: sürətli yarışda podium
+TROPHY_KL_QUICK_WIN,Lachin: win %d quick races,Laçın: %d sürətli yarışda qalib gəl
+TROPHY_KL_TT_FINISH,Lachin: %d time trials,Laçın: %d vaxta qarşı yarış
+TROPHY_KL_TT_RECORD,Lachin: beat your record %d times,Laçın: rekordunu %d dəfə yenilə
 STARTER_TITLE,Pick your first kart,İlk maşınını seç
 STARTER_PICK,This one is mine!,Bu mənimdir!
 GARAGE_MY_KARTS,My karts,Maşınlarım

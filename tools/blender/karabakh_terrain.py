@@ -343,7 +343,8 @@ def natural(xs, zs, droad, inside):
     wob = fbm(xs, zs, 2, 1.0 / 35.0) * 4.0
     for d, lv, hw in river_fields(xs, zs):
         bed = lv - 1.4
-        bank = smooth(hw - 6.0, hw + 38.0 + hw, d + wob)
+        # 0.20.1: far from the road (the mountain ring) the valley opens wide - no dark slit canyon
+        bank = smooth(hw - 6.0, hw + 38.0 + hw + 160.0 * far, d + wob)
         carved = bed + (h - bed) * bank
         shore = np.minimum(h, bed + 1.75 * np.clip((d - hw + 1.0) / 3.0, 0.0, 1.0))
         carved = np.where(d > hw - 1.0, np.maximum(carved, shore), carved)

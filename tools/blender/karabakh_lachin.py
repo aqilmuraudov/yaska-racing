@@ -299,7 +299,8 @@ def build_cafe(hi):
     for k in range(9):
         x = -1.0 + k * 1.25
         S.slab(f"{g}_rafter{k}_{tag}", x - 0.06, x + 0.06, 3.45, 3.6, -6.3, 6.3, "wood", g, hi, bevel=0.0)
-    S.slab(f"{g}_vine_{tag}", -1.2, 9.2, 3.6, 3.75, -6.3, 6.3, "leaf", g, hi, bevel=0.0) if not hi else None
+    # 0.20.1: the leaf mat in the high model too - the bake rays hit leaves everywhere (no black patches)
+    S.slab(f"{g}_vine_{tag}", -1.2, 9.2, 3.6, 3.75, -6.3, 6.3, "leaf", g, hi, bevel=0.0)
     if hi:
         for k in range(14):   # vine leaves on the pergola
             S.tree_ball(f"{g}_vine{k}_{tag}", (rnd.uniform(-1, 9), 3.75, rnd.uniform(-6, 6)), 0.9, "leaf", g, hi,
