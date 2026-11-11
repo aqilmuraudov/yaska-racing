@@ -1,8 +1,9 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-11 · Build: 0.20.0 · Engine: Godot 4.4.1-stable
+Date: 2026-11-11 · Build: 0.20.1 · Engine: Godot 4.4.1-stable
 
-## In progress 0.20.1 — the short Qarabağ maps (one APK once Laçın and Xankəndi are done)
+## Update 0.20.1 (versionCode 51) — short Qarabağ maps Şuşa and Laçın, Laçın as a town, names of the sights, Bayraq meydanı
+- APK on the owner's request before Xankəndi (its short map follows). Strict suite: **306 methods, 22271 checks, 0 failures, 0 script errors**. Headless Laçın races (autopilot, chaos) and the big map (autopilot, 174.9 s) finished, no stuck events. Phone FPS not measured.
 - **Şuşa** (`data/tracks/karabakh_shusha.json`, done): a 1532 m two-lane loop on the plateau, 2 laps, S-bends on the north and south legs; the mosque and the ŞUŞA sign with the flag on the north straight, Vaqif's mausoleum by the west bend, the fortress wall (gate, towers) all along the south leg with the Daşaltı gorge right behind it. Grade ≤ 3.4 %, tightest bend r 42 m, legs ≥ 112 m apart. Autopilot lap 52.6 s (`LAP_SCALE` 1.03, like a Baku lap). Headless day / night / chaos races finished, no stuck events.
 - Şuşa town (weak point fixed): Bülbül's house-museum and 17 old stone houses (three variants: a wooden eyvan gallery on posts, arched şəbəkə windows with coloured glass, a corner eyvan and garden wall; green / red / grey hipped tin roofs) along both sides of the streets - new Blender set `tools/blender/karabakh_shusha_town.py` (houses instanced). Approximations of the 18th-19th century Şuşa house type (heritage listings); no bust, no lettering.
 - **Laçın** (`data/tracks/karabakh_lachin.json`, done): a 1616 m two-lane loop in the Həkəri valley, 2 laps (autopilot lap 56.9 s, `LAP_SCALE` 1.12). The Həkəri runs beside the whole west leg (bank ≥ 12 m from the run-off, water 2.6-3.7 m under the road), the boulevard (4.4 m behind the run-off) and the garden café (terrace facing the road) between the road and the water; LaCinema, Lachin Resort & Spa and 21 houses on the town side; the LAÇIN sign with the flag 63 m after the start; Hoçaz beyond the river (cliff to the town, ~200 m). Headless day / chaos races finished, no stuck events. Round 40.
