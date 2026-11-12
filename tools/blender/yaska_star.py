@@ -84,8 +84,8 @@ UV_SCALE = {"Body": 1.0, "WheelFL": 1.0, "WheelFR": 1.0, "WheelRear": 1.0,
             "SteeringWheel": 1.0, "Torso": 1.3, "Head": 2.3, "Eyes": 2.6,
             "BraidL": 1.3, "BraidR": 1.3, "ArmL": 1.2, "ArmR": 1.2}
 # Far LOD (beyond 28 m) target share of each group.
-FAR_RATIO = {"Body": 0.13, "WheelFL": 0.12, "WheelFR": 0.12, "WheelRear": 0.12,
-             "SteeringWheel": 0.2, "Torso": 0.2, "Head": 0.16, "Eyes": 0.3,
+FAR_RATIO = {"Body": 0.13, "WheelFL": 0.07, "WheelFR": 0.07, "WheelRear": 0.07,
+             "SteeringWheel": 0.2, "Torso": 0.2, "Head": 0.10, "Eyes": 0.2,
              "BraidL": 0.2, "BraidR": 0.2, "ArmL": 0.25, "ArmR": 0.25}
 
 # Rig pivots, kart space (keep in sync with KartModel / AnimalDriver).
@@ -233,7 +233,7 @@ def build_head(hi):
         k = (n.y + 1) / 2
         sx = 1.0 + 0.05 * (1 - k) - 0.04 * k
         return Vector((p.x * sx, p.y, p.z * (0.96 if n.z > 0 else 1.0)))
-    head = superellipsoid(f"head_{tag}", (0.29, 0.28, 0.285), hc, "skin", g, hi, (1.0, 1.0), L(hi, (20, 14), (96, 64)),
+    head = superellipsoid(f"head_{tag}", (0.29, 0.28, 0.285), hc, "skin", g, hi, (1.0, 1.0), L(hi, (28, 20), (96, 64)),  # 0.21: 20x14 -> 28x20
                           deform=head_def)
     if not hi:
         drop_faces(head, lambda c, n: c.y > 1.42 or (c.z > 0.16 and c.y > 1.14))
@@ -242,7 +242,7 @@ def build_head(hi):
         ellipsoid(f"ear{s}_{tag}", (0.03, 0.05, 0.035), (s * 0.29, 1.18, 0.18), "skin", g, hi, L(hi, (8, 5), (20, 12)))
     # Hair cap with the face opened.
     bm = bmesh.new()
-    seg = L(hi, (20, 14), (96, 64))
+    seg = L(hi, (28, 20), (96, 64))
     bmesh.ops.create_uvsphere(bm, u_segments=seg[0], v_segments=seg[1], radius=1.0)
     xform(bm, Matrix.Translation(Vector((0, 1.228, 0.172))) @ Matrix.Diagonal((0.306, 0.30, 0.312, 1)))
     gone = [v for v in bm.verts if (v.co.z < 0.03 and v.co.y < 1.375) or v.co.y < 1.02 or

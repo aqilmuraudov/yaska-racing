@@ -32,7 +32,7 @@ BAKE = "--no-bake" not in ARGV
 PREVIEW = "--preview" in ARGV
 BAKE_RES = int(arg_value("--bake-res", "2048"))
 TEX_RES = int(arg_value("--tex-res", "1024"))
-FONT_PATH = os.path.join(ROOT, "assets", "fonts", "Baloo2-Variable.ttf")
+FONT_PATH = os.path.join(ROOT, "tools", "blender", "fonts", "Baloo2-Regular-static.ttf")  # 0.21: static, overlaps removed (the variable font filled E/A/B holes at 2048)
 
 # --- Per-racer configuration (setup()) -------------------------------------------------
 PALETTE = {}
@@ -474,13 +474,13 @@ def build_wheel(group, center, radius, width, outer, hi, text="YASKA"):
     tag = "H" if hi else "L"
     hw = width / 2
     rin = radius * 0.6
-    pts = L(hi, 7, 26)
+    pts = L(hi, 9, 26)  # 0.21: 7 -> 9 profile points (rounder sidewall silhouette)
     prof = []
     for k in range(pts + 1):
         t = math.pi - math.pi * k / pts
         prof.append((hw * spow(math.cos(t), 0.4), rin + (radius - rin) * spow(math.sin(t), 0.35)))
     cx, cy, cz = center
-    steps = L(hi, 24, 72)
+    steps = L(hi, 40, 72)  # 0.21: 24 -> 40 round the tyre (was a visible polygon)
     tyre = lathe(f"{group}_tyre_{tag}", prof, center, "tire", group, hi, steps, outward=lambda p: p)
     # Rim: lip, deep dish and hub on the outer side; flat disc on the inner side.
     o = outer
@@ -572,7 +572,7 @@ def build_eyes(hi):
     for s in (-1, 1):
         c = Vector((s * 0.088, EYES_Y, -0.098))
         rot = (0.0, s * 0.22, 0.0)
-        e = ellipsoid(f"eye{s}_{tag}", (0.068, 0.088, 0.042), c, "eye_white", g, hi, L(hi, (14, 10), (48, 32)), rot=rot)
+        e = ellipsoid(f"eye{s}_{tag}", (0.068, 0.088, 0.042), c, "eye_white", g, hi, L(hi, (20, 14), (48, 32)), rot=rot)  # 0.21: smoother eye-white rim
         eyes.append(e)
         if hi:
             look = Vector((s * 0.12, 0.0, -1.0)).normalized()
@@ -999,6 +999,7 @@ def run(build):
     t0 = time.time()
     reset_scene()
     os.makedirs(WORK_DIR, exist_ok=True)
+    open(os.path.join(WORK_DIR, ".gdignore"), "a").close()  # Godot must not import bake leftovers
     build(False)
     lows = [o for o in COLL.objects if not o["hi"]]
     realize(lows)

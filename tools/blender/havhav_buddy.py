@@ -61,8 +61,8 @@ GROUPS = ["Body", "WheelFL", "WheelFR", "WheelRear", "SteeringWheel", "Torso", "
 UV_SCALE = {"Body": 1.0, "WheelFL": 1.0, "WheelFR": 1.0, "WheelRear": 1.0, "SteeringWheel": 1.0,
             "Torso": 1.3, "Head": 2.2, "Eyes": 2.6, "EarL": 1.3, "EarR": 1.3, "Tail": 1.2,
             "ArmL": 1.2, "ArmR": 1.2}
-FAR_RATIO = {"Body": 0.13, "WheelFL": 0.12, "WheelFR": 0.12, "WheelRear": 0.12, "SteeringWheel": 0.2,
-             "Torso": 0.2, "Head": 0.16, "Eyes": 0.3, "EarL": 0.3, "EarR": 0.3, "Tail": 0.3,
+FAR_RATIO = {"Body": 0.13, "WheelFL": 0.07, "WheelFR": 0.07, "WheelRear": 0.07, "SteeringWheel": 0.2,
+             "Torso": 0.2, "Head": 0.10, "Eyes": 0.2, "EarL": 0.3, "EarR": 0.3, "Tail": 0.3,
              "ArmL": 0.25, "ArmR": 0.25}
 
 FRONT_WHEEL = (0.62, 0.31, -0.72)   # KartModel._buddy: rf 0.31, wf 0.26
@@ -205,7 +205,7 @@ def build_head(hi):
     tag = "H" if hi else "L"
     g = "Head"
     hc = Vector((0, 1.20, 0.17))
-    head = superellipsoid(f"head_{tag}", (0.28, 0.26, 0.27), hc, "fur", g, hi, (1.0, 1.0), L(hi, (20, 14), (96, 64)))
+    head = superellipsoid(f"head_{tag}", (0.28, 0.26, 0.27), hc, "fur", g, hi, (1.0, 1.0), L(hi, (28, 20), (96, 64)))
     muzzle = superellipsoid(f"muzzle_{tag}", (0.15, 0.10, 0.12), (0, 1.10, -0.06), "fur_light", g, hi, (0.85, 0.9),
                             L(hi, (14, 10), (64, 40)))
     ellipsoid(f"nose_{tag}", (0.055, 0.038, 0.036), (0, 1.16, -0.175), "nose", g, hi, L(hi, (10, 6), (32, 20)))

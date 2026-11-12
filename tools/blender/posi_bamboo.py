@@ -59,8 +59,8 @@ GROUPS = ["Body", "WheelFL", "WheelFR", "WheelRear", "SteeringWheel", "Torso", "
           "Eyes", "EarL", "EarR", "ArmL", "ArmR"]
 UV_SCALE = {"Body": 1.0, "WheelFL": 1.0, "WheelFR": 1.0, "WheelRear": 1.0, "SteeringWheel": 1.0,
             "Torso": 1.3, "Head": 2.2, "Eyes": 2.6, "EarL": 1.2, "EarR": 1.2, "ArmL": 1.2, "ArmR": 1.2}
-FAR_RATIO = {"Body": 0.13, "WheelFL": 0.12, "WheelFR": 0.12, "WheelRear": 0.12, "SteeringWheel": 0.2,
-             "Torso": 0.2, "Head": 0.16, "Eyes": 0.3, "EarL": 0.35, "EarR": 0.35, "ArmL": 0.25, "ArmR": 0.25}
+FAR_RATIO = {"Body": 0.13, "WheelFL": 0.07, "WheelFR": 0.07, "WheelRear": 0.07, "SteeringWheel": 0.2,
+             "Torso": 0.2, "Head": 0.10, "Eyes": 0.2, "EarL": 0.35, "EarR": 0.35, "ArmL": 0.25, "ArmR": 0.25}
 
 FRONT_WHEEL = (0.62, 0.31, -0.72)
 REAR_WHEEL = (0.66, 0.36, 0.68)
@@ -183,7 +183,7 @@ def build_head(hi):
     tag = "H" if hi else "L"
     g = "Head"
     hc = Vector((0, 1.20, 0.17))
-    head = superellipsoid(f"head_{tag}", (0.30, 0.27, 0.28), hc, "fur", g, hi, (1.0, 1.0), L(hi, (20, 14), (96, 64)))
+    head = superellipsoid(f"head_{tag}", (0.30, 0.27, 0.28), hc, "fur", g, hi, (1.0, 1.0), L(hi, (28, 20), (96, 64)))
     muzzle = superellipsoid(f"muzzle_{tag}", (0.12, 0.08, 0.08), (0, 1.11, -0.07), "fur", g, hi, (0.9, 0.9),
                             L(hi, (12, 8), (48, 32)))
     ellipsoid(f"nose_{tag}", (0.04, 0.026, 0.026), (0, 1.155, -0.142), "nose", g, hi, L(hi, (10, 6), (32, 20)))

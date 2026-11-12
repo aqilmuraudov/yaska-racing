@@ -46,7 +46,7 @@ func test_files_and_textures() -> void:
 		var tex: Texture2D = load("res://assets/models/yaska/%s.png" % t)
 		check(tex != null, "%s texture loads" % t)
 		if tex:
-			check(tex.get_width() == 1024 and tex.get_height() == 1024, "%s is 1024x1024 (phone budget)" % t)
+			check(tex.get_width() == 2048 and tex.get_height() == 2048, "%s is 2048x2048 (0.21: sharper kart textures, 14 MB per kart in VRAM)" % t)
 
 
 func test_yaska_uses_gltf_on_the_rig() -> void:
