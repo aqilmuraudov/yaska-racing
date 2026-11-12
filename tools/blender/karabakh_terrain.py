@@ -314,7 +314,10 @@ def peak_crest(pk, xs, zs):
     back = np.clip(1.0 - (np.maximum(-v, 0.0) / 0.75) ** 2, 0.0, 1.0)
     across = np.where(vv > 0.0, front, back)
     ledges = 1.0 + 0.05 * fbm(xs, zs, 4, 1.0 / 25.0) * smooth(0.0, 0.1, v)
-    return pk["h"] * along * across * ledges * (0.94 + 0.12 * ridge(xs * 1.4, zs * 1.4))
+    # 0.21: gullies and rock ribs on the cliff face only (the shape stays the owner's photo);
+    # ~40 m ridged noise (finest octave ~9 m, a 3 m grid carries it), +-1.7 % of the height
+    gullies = 1.0 + 0.035 * (ridge(xs, zs, 1.0 / 40.0) - 0.55) * smooth(0.0, 0.12, v) * smooth(0.0, 0.25, along)
+    return pk["h"] * along * across * ledges * gullies * (0.94 + 0.12 * ridge(xs * 1.4, zs * 1.4))
 
 
 def peak_mask(xs, zs):
