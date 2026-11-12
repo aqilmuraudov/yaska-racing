@@ -203,7 +203,8 @@ func test_big_map_lachin_town() -> void:
 	var n_lachin := 0
 	for h: Dictionary in houses:
 		# 0.20.2 two towns on the big map: the Xankəndi set round Xankəndi, the rest in Laçın
-		var zid := "khankendi" if String(h.id).begins_with("kb_xk_") else "lachin"
+		# 0.20.4 + the Şuşa old houses on the plateau (round 46)
+		var zid := "khankendi" if String(h.id).begins_with("kb_xk_") else 			("shusha" if String(h.id).begins_with("kb_sh_house") else "lachin")
 		if zid == "lachin":
 			n_lachin += 1
 		var d := Vector2(float(h.x), float(h.z)).distance_to(zones[zid])
@@ -216,7 +217,8 @@ func test_big_map_lachin_town() -> void:
 			g = minf(g, c.distance - td.main.half_width_at(c.s) - td.offroad_width)
 		check(g > 2.9, "%s behind the run-off (%.1f m)" % [h.id, g])
 	check(n_lachin >= 100, "big map: Laçın houses (%d)" % n_lachin)
-	check(houses.size() - n_lachin >= 80, "big map: Xankəndi buildings (%d)" % (houses.size() - n_lachin))
+	var n_xk := houses.filter(func(q): return String(q.id).begins_with("kb_xk_")).size()
+	check(n_xk >= 80, "big map: Xankəndi buildings (%d)" % n_xk)
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(String(td.raw.terrain_dir) + "/town.json"))
 	check(typeof(parsed) == TYPE_DICTIONARY and (parsed.instances as Array).size() >= houses.size(), "big map town.json")
 	var b := TrackBuilder.new()

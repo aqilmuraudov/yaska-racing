@@ -16,7 +16,7 @@ Həmişə Azərbaycan dilində cavab ver.
 2. UI oyun stilində, sadə, vizual, az mətnli — kiçik uşaq üçün.
 3. Əvvəl test et, ekran görüntülərini tənqidi yoxla, yalnız sonra APK çıxar.
 4. Hər buraxılışda `export_presets.cfg`-də versionCode-u 1 artır; STATUS.md və TUNING.md-ni yenilə;
-   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 45).
+   yeni test faylı `tests/test_roundN.gd` (sonuncu: round 46).
 5. Dəyişiklikdən əvvəl backup (git commit və ya zip).
 6. Zəif yerləri dürüst de; ölçülməyəni ölçülmüş kimi göstərmə.
 7. Aqil bir neçə xüsusiyyəti **bir APK-da** almağı üstün tutur (hər addıma ayrı APK yox).
@@ -24,7 +24,7 @@ Həmişə Azərbaycan dilində cavab ver.
 ## Testlər və build
 - Strict testlər: `GODOT="<godot console exe>" python tools/run_tests.py` — skript xətası olan testi də uğursuz sayır.
   Runner bütün settings/profile yazılarını `user://test_run_*.json`-a yönləndirir (sahibin faylları toxunulmaz qalır).
-  Son tam qaçış: STATUS.md-də (0.20.3: 321 metod, 27349 yoxlama, 0 uğursuz).
+  Son tam qaçış: STATUS.md-də (0.20.4: 325 metod, 28640 yoxlama, 0 uğursuz).
 - Debug runner bayraqları `docs/BUILD.md`-də (`--race --autopilot --track=old_city --tod=night --capture=DIR ...`).
 - Android export: `--export-debug "Android" <apk>`. JDK 17 PATH-da olmalıdır, yoxsa APK imzasız çıxır.
 - İmza açarı: `_setup/yaska-debug.keystore` (alias `androiddebugkey`, şifrə `android`).
@@ -36,7 +36,7 @@ Həmişə Azərbaycan dilində cavab ver.
 - Hər Godot qaçışı `--headless` (sahib pəncərə görmək istəmir, ekrandan kənar pəncərə də olmaz). Avtopilotsuz debug yarışlarında `--fresh-profile`.
 - GitHub: `aqilmuraudov/yaska-racing` (köhnə `bakucitykart` yönləndirilir). Push yalnız sahib istəyəndə.
 
-## Vəziyyət (0.20.3, versionCode 53)
+## Vəziyyət (0.20.4, versionCode 54)
 Hazır: menyu, mağaza, uşaq avto-idarəsi, Bakı Kuboku, Rekord+ghost, gündəlik tapşırıq, gündüz/gün batımı/gecə,
 4 şəhər (Dəniz sahili, Göydələnlər, İçərişəhər, Qarabağ), finiş replay-i, ilk dərs, stiker albomu, rəqib portretləri,
 gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), kart konturu,
@@ -44,7 +44,7 @@ gecə işıqları (saxta, real işıq yox), kontakt kölgə xəritəsi (AoMap), 
 Qarabağ xəritəsi (0.19.0, böyük): 4,9 km bir dövrə, Xankəndi → Şuşa yaylası → Laçın → Həkəri → Araz sahili (Xudafərin körpüləri: 15 və 11 aşırımlı, `karabakh_bridges.py`) → Xankəndi; relyef/meşə/lampalar/körpülər tam Blender-də
 (`tools/blender/karabakh_*.py`, ardıcıllıq TUNING.md-də). 0.19.1: Aqilin adını çəkdiyi abidələr hazırdır (Şuşa, Xankəndi, Laçın + Hoçaz; `karabakh_{khankendi,shusha,lachin}.py`, yerləşmə `tools/karabakh_layout.py`). Aqil şəkil göndərəndə model ona uyğunlaşdırılır. 0.19.2: hər şəhərin girişində bayraqlı ad lövhəsi (`karabakh_signs.py`), bütün abidələr yolun 3–9 m yanında, Həkəri Laçında yolun yanından axır (bulvar, kafe yolla su arasında).
 0.20.0: şəhər seçimi iki addımlı - əvvəl Bakı / Qarabağ, sonra xəritələri (`TrackList.REGIONS`). Telefonda FPS: `python tools/phone_fps.py` (USB).
-0.20.1: Qarabağın qısa xəritələri Şuşa və Laçın (`tools/karabakh_maps_layout.py`), Laçın təpədə sıx şəhər (`karabakh_lachin_town.py`, "town" açarı), görməli yerlərin ad lövhələri və Bayraq meydanı (`karabakh_names.py`). 0.20.2: telefon videolarına görə düzəlişlər (pop-in yox, kiçik lövhələr, HOÇAZ hərfləri, Şuşa qalası) və Xankəndi qısa xəritəsi (`karabakh_khankendi`) və müasir şəkillərə görə şəhər (`karabakh_khankendi_town.py`: 5/9 mərtəbəli bloklar, yeni tağlı binalar, köhnə evlər), böyük xəritədə də. 0.20.3: paket `az.yaskaracing.game` (köhnə oyun telefonda ayrıca qalır; irəliləyişi köçürmək: `python tools/migrate_profile.py`).
+0.20.1: Qarabağın qısa xəritələri Şuşa və Laçın (`tools/karabakh_maps_layout.py`), Laçın təpədə sıx şəhər (`karabakh_lachin_town.py`, "town" açarı), görməli yerlərin ad lövhələri və Bayraq meydanı (`karabakh_names.py`). 0.20.2: telefon videolarına görə düzəlişlər (pop-in yox, kiçik lövhələr, HOÇAZ hərfləri, Şuşa qalası) və Xankəndi qısa xəritəsi (`karabakh_khankendi`) və müasir şəkillərə görə şəhər (`karabakh_khankendi_town.py`: 5/9 mərtəbəli bloklar, yeni tağlı binalar, köhnə evlər), böyük xəritədə də. 0.20.3: paket `az.yaskaracing.game` (köhnə oyun telefonda ayrıca qalır; irəliləyişi köçürmək: `python tools/migrate_profile.py`). 0.20.4: böyük xəritədə Şuşa şəhəri də (107 köhnə ev, yalnız yaylanın üstündə, `keep`).
 Vizual yoxlama yalnız Blender render ilə (Godot pəncərəsi yox).
 Əvvəlki iş GPU-suz bulud mühitində aparılıb — **heç bir rəqəm real telefonda ölçülməyib.**
 

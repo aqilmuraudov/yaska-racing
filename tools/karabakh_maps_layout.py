@@ -34,6 +34,22 @@ CLEAR = 3.0
 COMPASS = {"N": (0.0, -1.0), "S": (0.0, 1.0), "E": (1.0, 0.0), "W": (-1.0, 0.0)}
 
 # id, road hint (x, z), side (compass), w (along road), d (deep)
+# 0.20.4 the big map's Şuşa town stays on the plateau table (karabakh_terrain.py SHUSHA ellipse
+# (50, -255, 300, 150), flat inside 0.8) and off the Daşaltı gorge cliffs (GORGE polyline, cut to 52 m)
+_GORGE = np.array([[345.0, -140.0], [200.0, -92.0], [20.0, -68.0], [-150.0, -92.0]])
+
+
+def _on_shusha_table(x, z):
+    if math.hypot((x - 50.0) / 300.0, (z + 255.0) / 150.0) > 0.78:
+        return False
+    for a, b in zip(_GORGE[:-1], _GORGE[1:]):
+        ab = b - a
+        t = min(max(((x - a[0]) * ab[0] + (z - a[1]) * ab[1]) / float(ab @ ab), 0.0), 1.0)
+        if math.hypot(x - a[0] - t * ab[0], z - a[1] - t * ab[1]) < 68.0:
+            return False
+    return True
+
+
 CONFIG = {
     "karabakh_shusha": {
         "zone": "shusha",
@@ -114,7 +130,14 @@ CONFIG = {
                              ("kb_xk_new4", 32.0, 15.0, 0.15)],
                   "block_road": 0.45, "block_ring": 0.4, "block_cross": 0.3,
                   "avenue": lambda x, z: True, "avenue_p": 0.75,
-                  "avenue_blocks": [("kb_xk_new4", 32.0, 15.0, 0.8), ("kb_xk_villa", 16.0, 13.0, 0.2)]}],
+                  "avenue_blocks": [("kb_xk_new4", 32.0, 15.0, 0.8), ("kb_xk_villa", 16.0, 13.0, 0.2)]},
+                 # 0.20.4 (owner: "Şuşa on the big map has no houses"): the short map's old stone houses
+                 # on the Şuşa plateau road and contour streets both sides (no blocks of flats)
+                 {"prefix": "sh_", "rings_in": [42.0, 84.0], "rings_out": [42.0, 84.0],
+                  "cross": [(110, -272), (-40, -272), (200, -238)], "rounds": [], "street_w": 5.0, "seed": 29,
+                  "area": (40.0, -275.0, 205.0), "block_p": 0.0, "keep": _on_shusha_table,
+                  "types": [("kb_sh_house_a", 12.0, 11.0, 0.34), ("kb_sh_house_b", 12.0, 11.0, 0.33),
+                            ("kb_sh_house_c", 12.0, 11.0, 0.33)]}],
     },
 }
 CFG = CONFIG[TID]
@@ -485,9 +508,11 @@ for tc in _TOWNS:
     def in_area(x, z, margin=0.0):
         return AREA is None or math.hypot(x - AREA[0], z - AREA[1]) < AREA[2] - margin
 
+    KEEP = tc.get("keep")
+
     def street_ok(q):
         x, z = float(q[0]), float(q[1])
-        if not in_area(x, z):
+        if not in_area(x, z) or (KEEP is not None and not KEEP(x, z)):
             return False
         if not (TX[0] + 40 < x < TX[1] - 40 and TX[2] + 40 < z < TX[3] - 40):
             return False
@@ -578,6 +603,8 @@ for tc in _TOWNS:
         if not all(TX[0] + 30 < x < TX[1] - 30 and TX[2] + 30 < z < TX[3] - 30 for x, z in zip(xs, zs)):
             return False
         if not in_area(c[0], c[1], -15.0):
+            return False
+        if KEEP is not None and not all(KEEP(x, z) for x, z in zip(xs, zs)):
             return False
         if road_gap(xs, zs) < CLEAR or street_gap(xs, zs) < 0.8:
             return False

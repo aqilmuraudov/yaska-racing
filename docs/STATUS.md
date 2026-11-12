@@ -1,6 +1,13 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-12 · Build: 0.20.3 · Engine: Godot 4.4.1-stable
+Date: 2026-11-12 · Build: 0.20.4 · Engine: Godot 4.4.1-stable
+
+## Update 0.20.4 (versionCode 54) — the Şuşa town on the big Qarabağ map
+- Owner 2026-11-12 (asked whether all three towns have houses; on the big map Şuşa had only its sights): the short map's old stone houses (`kb_sh_house_a/b/c`) on the big map's Şuşa plateau too - **107 houses** (22 along the race road, the rest on 5 contour streets both sides of the road and 2 cross streets), a third big-map town in `tools/karabakh_maps_layout.py` (prefix `sh_`, area (40, -275) r 205, no blocks of flats). The Laçın (155) and Xankəndi (114) towns are unchanged (same houses, same streets). Terrain rebuilt (`karabakh_terrain.py`; 376 town instances).
+- First try put ~40 houses below the plateau, in the Daşaltı gorge and on its cliffs (render `kb_10_shusha_over_gorge`); fixed with a `keep` test per town: every house corner and street point inside the plateau table (ellipse (50, -255, 300 x 150) ≤ 0.78; flat inside 0.8) and ≥ 68 m from the gorge line (the cut ends at 52 m + 9 m wobble). Renders `docs/screenshots/0.20.4/` (town from above, from the road, over the gorge, mosque, Vaqif, signs).
+- Strict suite: **325 methods, 28640 checks, 0 failures, 0 script errors**. Round 46 (Şuşa houses on the table, off the gorge, behind the run-off; other towns unchanged); round 41 knows the third town.
+- Headless big-map race (autopilot AI + chaos player, seed 5): all six finished (AI 191.1-193.3 s), 2 stuck events > 1 s, worst 1.2 s.
+- Phone FPS not measured (the big map now has 376 town buildings; no phone connected).
 
 ## Update 0.20.3 (versionCode 53) — new Android package az.yaskaracing.game
 - Owner 2026-11-12: "paketin adını da dəyişə bilərik? yaskaracing olaraq olsun". Package `az.bakuturbo.game` -> `az.yaskaracing.game` (`export_presets.cfg`), done before the Play Store release (a published package can never change). Same signing key (SHA-256 726cd353…6e25d9). No gameplay change from 0.20.2.
