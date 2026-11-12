@@ -13,7 +13,7 @@ extends Node
 ## * While the overlay is on, one CSV line per second goes to
 ##   user://logs/perf_<time>.csv, so a 10-15 minute session on a phone shows
 ##   sustained (thermal) performance: pull it with
-##   adb shell run-as az.bakuturbo.game cat files/logs/perf_....csv
+##   adb shell run-as az.yaskaracing.game cat files/logs/perf_....csv
 
 const FALLBACK_WINDOW := 4.0
 const FALLBACK_SHARE := 0.25

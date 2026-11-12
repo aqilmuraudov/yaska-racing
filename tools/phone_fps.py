@@ -18,7 +18,7 @@ import sys
 import time
 
 ADB = r"C:/Tools/AndroidSdk/platform-tools/adb.exe"
-PKG = "az.bakuturbo.game"
+PKG = "az.yaskaracing.game"
 ACT = PKG + "/com.godot.game.GodotApp"
 STATS = re.compile(r"STATS t=\S+ fps=(\d+) avg_ms=([\d.]+) worst_ms=([\d.]+) cpu_proc_ms=([\d.]+) "
                    r"cpu_phys_ms=([\d.]+) gpu_ms=([\d.]+) .*?draw_calls=(\d+) prims=(\d+) race_t=([\d.]+)")

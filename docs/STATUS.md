@@ -1,6 +1,12 @@
 # Status, verification evidence and known issues
 
-Date: 2026-11-12 · Build: 0.20.2 · Engine: Godot 4.4.1-stable
+Date: 2026-11-12 · Build: 0.20.3 · Engine: Godot 4.4.1-stable
+
+## Update 0.20.3 (versionCode 53) — new Android package az.yaskaracing.game
+- Owner 2026-11-12: "paketin adını da dəyişə bilərik? yaskaracing olaraq olsun". Package `az.bakuturbo.game` -> `az.yaskaracing.game` (`export_presets.cfg`), done before the Play Store release (a published package can never change). Same signing key (SHA-256 726cd353…6e25d9). No gameplay change from 0.20.2.
+- On the phone this is a **separate app**: the old Yaska Racing (az.bakuturbo.game) stays installed beside it, and the new one starts with an empty profile. `tools/migrate_profile.py` copies the old app's saved files (profile, settings, ghosts, logs) into the new one over USB (`adb run-as`, both are debug builds; `--dry-run` lists them). **Not run yet: no phone was connected.** Uninstall the old app after checking.
+- `tools/phone_fps.py` and the perf-log hint use the new package.
+- Strict suite: **321 methods, 27349 checks, 0 failures, 0 script errors**. Round 45 (package name, version, tools).
 
 ## Update 0.20.2 (versionCode 52) — the owner's phone videos of 0.20.1, short Qarabağ map Xankəndi (2026-11-12)
 - **Pop-in while driving** ("houses and other things appear behind / change as I drive"): town houses, blocks, cypresses (`kb_house*`, `kb_sh_house*`, `kb_lc_*`) keep their full low-poly model at every distance (`TrackDecor.full_lod`: no near / far swap) and stay in view to 900 m (`skyline_min`); the Qarabağ forest, lamps and posts to 450 m (were cut at the decor distance, 260 m on Medium; near model swapped at ~110 m). `KarabakhDecor.TOWN_VIEW / FOREST_VIEW`. Not measured on the phone (FPS cost unknown; the houses are 220-1420 tris).

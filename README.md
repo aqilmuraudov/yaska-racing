@@ -4,8 +4,9 @@ A 3D kart racer for young children, set in a colourful "mini Baku".
 Godot 4.4.1, GDScript, Jolt physics, Android-first (landscape, Mobile
 renderer) with Windows builds for development. Formerly called BAKU TURBO.
 
-Package: `az.bakuturbo.game` (kept from the first builds so updates install
-over the old app). Currency: manat / qəpik (₼). No ads, no purchases, no
+Package: `az.yaskaracing.game` (since 0.20.3, owner's choice; builds up to
+0.20.2 were `az.bakuturbo.game` and install as a separate app). Never change it
+after the Play Store release. Currency: manat / qəpik (₼). No ads, no purchases, no
 personal data, no internet (Google Play Families).
 
 Current state, version history and known issues: [docs/STATUS.md](docs/STATUS.md).
