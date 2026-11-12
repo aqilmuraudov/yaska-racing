@@ -2,6 +2,26 @@
 
 Date: 2026-11-12 · Build: 0.20.4 · Engine: Godot 4.4.1-stable
 
+## 0.21 WIP (not released: no APK, versionCode still 54) — sharper karts and Laçın (2026-11-12)
+Owner: "raise the graphics / textures of the characters and cars", then "raise the quality of Laçın - buildings, lettering, famous places and Hoçaz - 2x". Commits `123c1b9` (karts) and `69e2b17` (Laçın). **Work in progress, not a finished release.**
+
+**Done**
+- **Karts + drivers (all 7)**: baked at 4096 -> 2048 (were 2048 -> 1024); `kart_common.py` writes albedo / normal / ORM at 2048 (14.0 MB ETC2 `.ctex` per kart, measured with a headless import; was ~3.5 MB). Rig, pivots, wheel radii, palette, shader untouched.
+- **Lettering fix**: the variable Baloo 2 font filled the holes of E / A / B (tyre / body text read "V=LV=T", "YASYA"). Kart text now uses `tools/blender/fonts/Baloo2-Regular-static.ttf` (wght 400, overlaps removed with fontTools + skia-pathops).
+- **Silhouette**: head / hair 20x14 -> 28x20 segments, eye whites 14x10 -> 20x14, tyre 24 -> 40 steps and 7 -> 9 profile points. Near tris were ~11.0k (Yaska), now 11.1-14.4k (Yaska 13,774, Buddy 13,382, Hop 11,884, Bamboo 13,498, Amber 11,286, Velvet 11,058, Cloud 14,442); far LOD <= 1.9k (`FAR_RATIO` lowered for head / eyes / wheels).
+- **Laçın (also used by the big map, Şuşa, Xankəndi where the sets are shared)**: Laçın town houses, Laçın landmarks and the town entry signs baked at 4096 -> 4096 (albedo 2048 -> 4096); name boards 1024 -> 2048 (bake 4096); Laçın terrain + mountain textures `--res 4096` (were 2048). Normal / ORM of these sets stay capped at 1024 by their import settings (0.19.1 decision). `sizes.json` unchanged.
+- **Hoçaz**: gullies / rock ribs on the cliff face only (`peak_crest`, 40 m ridged noise, +-1.7 % of height); the shape (owner's photo) is unchanged. Heights differ only inside the peak footprint (4,856 points, max 1.6 m); `town.json`, `trees.json` identical to 0.20.4; far LOD under landmarks / houses within limits (worst 0.03 m / 0.33 m).
+- `tests/test_round25.gd` now expects 2048 kart textures (edited, **not run**). `run()` writes `tools/blender/out/.gdignore` (a bake leftover stalled the headless Godot import for 30 min).
+- Before / after Blender renders (published in the chat, not in the repo).
+
+**Not done / not verified**
+- **Strict test suite not run** (postponed by the owner); rounds that pin kart / Laçın assets may fail. No `tests/test_round47.gd`, **versionCode not raised, TUNING.md not updated, no APK built.**
+- **Phone FPS / memory not measured** (no phone is reachable from this cloud machine). Everything above was judged only in **Blender renders**, not with `kart_baked.gdshader` or at phone resolution; at race distance the difference will be small, mostly visible in the garage / replay close-ups.
+- **Size cost (measured `.ctex`, projected for the APK)**: karts +10.5 MB each (~+74 MB for 7; ~84 MB VRAM for six karts in a race vs ~21 MB); Laçın ~+75 MB (houses / landmarks / signs 25.2 MB each, were 8.4; names 8.4, was 4.2; Laçın terrain + mountains 27.5 MB lossless, was ~7). The APK was 276 MB before, so **~+150 MB**; the Play base-module limit must be checked before 1.0.
+- **Hoçaz gain is modest**: the texture is cleaner, the gullies are hardly visible. A real change needs a new shape / rock material - a design decision for the owner.
+- The 4096 bakes are 1:1 (no supersampling): 8192 would need ~18 GB RAM (the machine has 15 GB). Baking took ~21-24 min per set on 4 CPU cores (no GPU).
+- Not touched: other cities (Dəniz sahili, Göydələnlər - their current texture sizes are not recorded here), the big Qarabağ map's own terrain (still 4096 as before), Xankəndi / Şuşa town sets (shared sets already at 4096 -> 2048).
+
 ## Update 0.20.4 (versionCode 54) — the Şuşa town on the big Qarabağ map
 - Owner 2026-11-12 (asked whether all three towns have houses; on the big map Şuşa had only its sights): the short map's old stone houses (`kb_sh_house_a/b/c`) on the big map's Şuşa plateau too - **107 houses** (22 along the race road, the rest on 5 contour streets both sides of the road and 2 cross streets), a third big-map town in `tools/karabakh_maps_layout.py` (prefix `sh_`, area (40, -275) r 205, no blocks of flats). The Laçın (155) and Xankəndi (114) towns are unchanged (same houses, same streets). Terrain rebuilt (`karabakh_terrain.py`; 376 town instances).
 - First try put ~40 houses below the plateau, in the Daşaltı gorge and on its cliffs (render `kb_10_shusha_over_gorge`); fixed with a `keep` test per town: every house corner and street point inside the plateau table (ellipse (50, -255, 300 x 150) ≤ 0.78; flat inside 0.8) and ≥ 68 m from the gorge line (the cut ends at 52 m + 9 m wobble). Renders `docs/screenshots/0.20.4/` (town from above, from the road, over the gorge, mosque, Vaqif, signs).
